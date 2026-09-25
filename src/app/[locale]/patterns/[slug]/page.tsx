@@ -179,12 +179,6 @@ export default async function PatternDetailPage({
             />
           )}
 
-          <div className="soft-card mt-6 p-4 text-sm">
-            <p className="font-bold text-gold">{t("confidence")}</p>
-            <p className="mt-1 capitalize text-muted">
-              {pattern.confidence} — {t("confidenceNote")}
-            </p>
-          </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {categories
               .filter((c) => pattern.categoryIds.includes(c.id))

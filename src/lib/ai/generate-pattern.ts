@@ -51,11 +51,16 @@ Return ONLY JSON:
 Rules:
 - US crochet terms only in instructions.
 - Every round MUST include instructions, operations[], and accurate numeric result.
-- Stitch math must be consistent. Prefer clear beginner wording when difficulty is beginner/easy.
+- The number in parentheses at the end of instructions MUST equal "result". Write the count once only, e.g. "inc x6 (12)" not "(12) (12)".
+- operations MUST mathematically produce the same "result". If a step is embroidery, appliqué loops, or hard to encode, use operations: [{"type":"text","text":"..."}] and set result to the stated count.
+- After "fasten off", result may be 0; include {"type":"fasten_off"}.
+- For foundation rows (ch N, sc across), result is stitches worked (usually N-1), NOT ch + sc.
+- Stitch math must be consistent round-to-round for amigurumi bodies.
+- Prefer clear beginner wording when difficulty is beginner/easy.
 - Include ALL components from the design specification with enough rounds to form the shape.
 - operations.type: magic_ring, chain, sc, hdc, dc, slst, inc, dec, repeat, skip, join, fasten_off, blo, flo, turn, text
 - For (sc, inc) x 6 use: [{"type":"repeat","repeat":6,"of":[{"type":"sc","stitches":1},{"type":"inc","repeat":1}]}]
-- Assembly and finishing must be concrete shop-quality steps.`,
+- Assembly and finishing must be concrete shop-quality steps. Do not number steps yourself with "1." prefixes if avoidable.`,
       },
       {
         role: "user",

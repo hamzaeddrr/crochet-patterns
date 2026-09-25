@@ -1,14 +1,14 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import type { CrochetPattern } from "@/types";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import type { CrochetPattern, PatternComponent } from "@/types";
 import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
 
 function wrapText(
   text: string,
-  font: { widthOfTextAtSize: (t: string, s: number) => number },
+  font: PDFFont,
   size: number,
   maxWidth: number
 ): string[] {
-  const words = text.split(/\s+/);
+  const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
   for (const word of words) {
@@ -21,6 +21,49 @@ function wrapText(
     }
   }
   if (current) lines.push(current);
+  return lines.length ? lines : [""];
+}
+
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Strip trailing "(12)" if we already print the stitch count separately. */
+function cleanInstructions(instructions: string, result?: number): string {
+  let text = instructions.trim();
+  if (typeof result === "number") {
+    const re = new RegExp(`\\s*\\(${result}\\)\\s*$`);
+    text = text.replace(re, "").trim();
+    // Also strip a second duplicate count if present: "(12) (12)"
+    text = text.replace(re, "").trim();
+  }
+  text = text.replace(/\s*\((\d+)\)\s*\(\1\)\s*$/g, " ($1)").trim();
+  return text;
+}
+
+/** Normalize "1. Step" / "1. 1. Step" → "Step" before we number. */
+function cleanStep(step: string): string {
+  return step.replace(/^\s*(\d+\.\s*)+/g, "").trim();
+}
+
+function formatSizeCm(size?: number): string {
+  if (!size || !Number.isFinite(size)) return "—";
+  const rounded = Math.round(size * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`;
+}
+
+function whatYouMakeLines(pattern: CrochetPattern): string[] {
+  const lines: string[] = [];
+  for (const c of pattern.content.components) {
+    const make = c.make && c.make > 1 ? c.make : 1;
+    const label = c.name.trim();
+    if (!label) continue;
+    lines.push(make > 1 ? `${make} × ${label}` : `1 × ${label}`);
+  }
+  if (!lines.length) {
+    lines.push(`1 × ${pattern.content.title.en}`);
+  }
   return lines;
 }
 
@@ -37,8 +80,13 @@ export async function buildPatternPdf(
   const pageW = 595.28;
   const pageH = 841.89;
   const margin = 48;
+  const contentW = pageW - margin * 2;
+  const difficulty = capitalize(pattern.designSpec.difficulty);
+  const sizeLabel = formatSizeCm(pattern.designSpec.size_cm);
+  const timeLabel = pattern.designSpec.estimated_time || "—";
+  const title = pattern.content.title.en;
 
-  // Cover
+  // —— Cover ——
   {
     const page = pdf.addPage([pageW, pageH]);
     page.drawRectangle({
@@ -50,26 +98,27 @@ export async function buildPatternPdf(
     });
     page.drawRectangle({
       x: 0,
-      y: pageH - 120,
+      y: pageH - 100,
       width: pageW,
-      height: 120,
+      height: 100,
       color: rose,
     });
     page.drawText("LOOPCRAFT", {
       x: margin,
-      y: pageH - 55,
+      y: pageH - 48,
       size: 14,
       font: fontBold,
       color: rgb(1, 1, 1),
     });
     page.drawText("Crochet Pattern", {
       x: margin,
-      y: pageH - 78,
+      y: pageH - 72,
       size: 11,
       font,
       color: rgb(1, 0.92, 0.94),
     });
 
+    let imageBottom = pageH - 130;
     if (pattern.imagePath) {
       try {
         const imgBytes = await readPublicAsset(pattern.imagePath);
@@ -79,137 +128,179 @@ export async function buildPatternPdf(
         const image = isJpg
           ? await pdf.embedJpg(imgBytes)
           : await pdf.embedPng(
-              await (
-                await import("sharp")
-              )
-                .default(imgBytes)
-                .png()
-                .toBuffer()
+              await (await import("sharp")).default(imgBytes).png().toBuffer()
             );
-        const maxW = pageW - margin * 2;
-        const maxH = 360;
+        const maxW = contentW;
+        const maxH = 380;
         const scale = Math.min(maxW / image.width, maxH / image.height);
         const w = image.width * scale;
         const h = image.height * scale;
+        const y = pageH - 130 - h;
         page.drawImage(image, {
           x: (pageW - w) / 2,
-          y: pageH - 160 - h,
+          y,
           width: w,
           height: h,
         });
+        imageBottom = y - 24;
       } catch {
-        // image optional on cover
+        imageBottom = pageH - 280;
       }
+    } else {
+      imageBottom = pageH - 280;
     }
 
-    const title = pattern.content.title.en;
-    page.drawText(title.slice(0, 60), {
-      x: margin,
-      y: 160,
-      size: 22,
-      font: fontBold,
-      color: ink,
-    });
+    const titleY = Math.min(imageBottom, 200);
+    const titleLines = wrapText(title, fontBold, 22, contentW);
+    let ty = titleY;
+    for (const line of titleLines.slice(0, 3)) {
+      page.drawText(line, {
+        x: margin,
+        y: ty,
+        size: 22,
+        font: fontBold,
+        color: ink,
+      });
+      ty -= 28;
+    }
     page.drawText(
-      `${pattern.designSpec.difficulty} · ${pattern.designSpec.size_cm || "—"} cm · ${pattern.confidence} confidence`,
+      `Difficulty: ${difficulty}  ·  Finished size: ${sizeLabel} cm  ·  Estimated time: ${timeLabel}`,
       {
         x: margin,
-        y: 130,
+        y: Math.max(ty - 8, 56),
         size: 11,
         font,
         color: muted,
       }
     );
-    page.drawText("Reviewed draft — always swatch and check gauge.", {
-      x: margin,
-      y: 70,
-      size: 9,
-      font,
-      color: muted,
-    });
   }
 
-  const addTextPage = (heading: string, blocks: string[]) => {
-    let page = pdf.addPage([pageW, pageH]);
-    let y = pageH - margin;
-    const drawHeading = () => {
-      page.drawText(heading, {
-        x: margin,
-        y,
-        size: 16,
-        font: fontBold,
-        color: rose,
-      });
-      y -= 28;
-    };
-    drawHeading();
-    for (const block of blocks) {
-      const lines = wrapText(block, font, 11, pageW - margin * 2);
-      for (const line of lines) {
-        if (y < margin + 40) {
-          page = pdf.addPage([pageW, pageH]);
-          y = pageH - margin;
-          drawHeading();
-        }
-        page.drawText(line, { x: margin, y, size: 11, font, color: ink });
-        y -= 16;
-      }
-      y -= 10;
+  // Streaming multi-section layout (denser pages)
+  let page: PDFPage = pdf.addPage([pageW, pageH]);
+  let y = pageH - margin;
+
+  const ensureSpace = (needed: number) => {
+    if (y - needed < margin + 36) {
+      page = pdf.addPage([pageW, pageH]);
+      y = pageH - margin;
     }
   };
 
-  addTextPage("Project info", [
-    pattern.content.summary.en,
-    `Difficulty: ${pattern.designSpec.difficulty}`,
-    `Finished size: ${pattern.designSpec.size_cm || "see pattern"} cm`,
-    `Estimated time: ${pattern.designSpec.estimated_time || "—"}`,
-    `Yarn: ${pattern.designSpec.yarn_weight || "—"} · Hook: ${pattern.designSpec.hook_mm || pattern.content.materials.hook} mm`,
-    `Confidence: ${pattern.confidence} (AI-assisted draft — test before selling as verified)`,
-  ]);
+  const drawHeading = (heading: string) => {
+    ensureSpace(40);
+    page.drawText(heading, {
+      x: margin,
+      y,
+      size: 16,
+      font: fontBold,
+      color: rose,
+    });
+    y -= 22;
+  };
 
-  addTextPage("Materials", [
-    `Yarn: ${pattern.content.materials.yarn.join("; ")}`,
-    `Hook: ${pattern.content.materials.hook}`,
-    `Notions: ${pattern.content.materials.notions.join(", ")}`,
-    pattern.content.materials.gauge
-      ? `Gauge: ${pattern.content.materials.gauge}`
-      : "",
-  ].filter(Boolean));
+  const drawParagraph = (text: string, size = 11, bold = false) => {
+    const f = bold ? fontBold : font;
+    const lines = wrapText(text, f, size, contentW);
+    for (const line of lines) {
+      ensureSpace(16);
+      page.drawText(line, { x: margin, y, size, font: f, color: ink });
+      y -= 15;
+    }
+  };
 
-  addTextPage(
-    "Abbreviations (US)",
-    pattern.content.abbreviations.map((a) => `${a.abbr} — ${a.meaning}`)
-  );
+  const drawSpacer = (px = 10) => {
+    y -= px;
+  };
+
+  // —— What You'll Make ——
+  drawHeading("What You'll Make");
+  drawParagraph(title, 13, true);
+  drawSpacer(6);
+  drawParagraph(`Finished size: ${sizeLabel} cm`);
+  drawParagraph(`Difficulty: ${difficulty}`);
+  drawParagraph(`Estimated time: ${timeLabel}`);
+  drawSpacer(8);
+  drawParagraph("This pattern includes:", 11, true);
+  drawSpacer(4);
+  for (const item of whatYouMakeLines(pattern)) {
+    drawParagraph(`•  ${item}`);
+  }
+  drawSpacer(6);
+  if (pattern.content.summary.en?.trim()) {
+    drawParagraph(pattern.content.summary.en.trim());
+  }
+  drawSpacer(16);
+
+  // —— Materials ——
+  drawHeading("Materials");
+  drawParagraph(`Yarn: ${pattern.content.materials.yarn.join("; ")}`);
+  drawParagraph(`Hook: ${pattern.content.materials.hook}`);
+  drawParagraph(`Notions: ${pattern.content.materials.notions.join(", ")}`);
+  if (pattern.content.materials.gauge) {
+    drawParagraph(`Gauge: ${pattern.content.materials.gauge}`);
+  }
+  drawSpacer(16);
+
+  // —— Abbreviations ——
+  drawHeading("Abbreviations (US)");
+  for (const a of pattern.content.abbreviations) {
+    drawParagraph(`${a.abbr} — ${a.meaning}`);
+  }
+  drawSpacer(16);
+
+  // —— Components ——
+  const writeComponent = (component: PatternComponent) => {
+    drawHeading(component.name);
+    if (component.make && component.make > 1) {
+      drawParagraph(`Make ${component.make}.`, 11, true);
+    }
+    if (component.notes?.trim()) {
+      drawParagraph(component.notes.trim());
+      drawSpacer(4);
+    }
+    for (const r of component.rounds) {
+      const instr = cleanInstructions(r.instructions, r.result);
+      const count =
+        typeof r.result === "number" && r.result > 0 ? ` (${r.result})` : "";
+      const prefix = component.construction === "flat" || /turn/i.test(instr)
+        ? `Row ${r.round}`
+        : `Rnd ${r.round}`;
+      // If instructions already start with Rnd/Row, don't double-prefix awkwardly
+      const body = /^(rnd|row|round)\s*\d+/i.test(instr)
+        ? `${instr}${count}`
+        : `${prefix}: ${instr}${count}`;
+      drawParagraph(body);
+    }
+    drawSpacer(12);
+  };
 
   for (const component of pattern.content.components) {
-    const lines = [
-      component.make && component.make > 1 ? `Make ${component.make}.` : "",
-      component.notes || "",
-      ...component.rounds.map(
-        (r) =>
-          `Rnd ${r.round}: ${r.instructions}${r.result ? ` (${r.result})` : ""}`
-      ),
-    ].filter(Boolean);
-    addTextPage(component.name, lines);
+    writeComponent(component);
   }
 
+  // —— Assembly ——
   if (pattern.content.assembly.length) {
-    addTextPage(
-      "Assembly",
-      pattern.content.assembly.map((s, i) => `${i + 1}. ${s}`)
-    );
+    drawHeading("Assembly");
+    pattern.content.assembly.forEach((step, i) => {
+      drawParagraph(`${i + 1}. ${cleanStep(step)}`);
+      drawSpacer(4);
+    });
+    drawSpacer(8);
   }
+
+  // —— Finishing ——
   if (pattern.content.finishing.length) {
-    addTextPage(
-      "Finishing",
-      pattern.content.finishing.map((s, i) => `${i + 1}. ${s}`)
-    );
+    drawHeading("Finishing");
+    pattern.content.finishing.forEach((step, i) => {
+      drawParagraph(`${i + 1}. ${cleanStep(step)}`);
+      drawSpacer(4);
+    });
   }
 
   // Page numbers
   const pages = pdf.getPages();
-  pages.forEach((page, i) => {
-    page.drawText(`${i + 1} / ${pages.length}`, {
+  pages.forEach((p, i) => {
+    p.drawText(`${i + 1} / ${pages.length}`, {
       x: pageW - margin - 40,
       y: 24,
       size: 9,

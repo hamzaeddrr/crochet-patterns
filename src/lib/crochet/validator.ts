@@ -11,14 +11,17 @@ function opDelta(op: StitchOperation): number | null {
     case "magic_ring":
       return op.stitches ?? 6;
     case "chain":
-      return op.stitches ?? 0;
+      // Foundation chains are not live stitches the same way; ignore for net count
+      // unless this is the only op (handled elsewhere).
+      return 0;
     case "sc":
     case "hdc":
     case "dc":
     case "slst":
       return op.stitches ?? 1;
     case "inc":
-      return (op.repeat ?? 1) * 1;
+      // Each inc adds +1 stitch vs the stitch consumed
+      return op.repeat ?? 1;
     case "dec":
       return -((op.repeat ?? 1) * 1);
     case "skip":
@@ -45,14 +48,27 @@ function opDelta(op: StitchOperation): number | null {
   }
 }
 
-/** Estimate stitch count change from operations when AI provides ops. */
+function opsAreNonCountable(operations: StitchOperation[]): boolean {
+  if (!operations.length) return true;
+  return operations.every((o) =>
+    ["text", "fasten_off", "join", "turn", "blo", "flo", "skip"].includes(
+      o.type
+    )
+  );
+}
+
+function roundHasFastenOff(round: PatternRound): boolean {
+  if (/fasten\s*off|\bFO\b/i.test(round.instructions || "")) return true;
+  return (round.operations || []).some((o) => o.type === "fasten_off");
+}
+
+/** Estimate stitch count from operations when AI provides countable ops. */
 export function estimateRoundResult(
   previousCount: number,
   operations: StitchOperation[]
 ): number | null {
-  if (!operations.length) return null;
+  if (!operations.length || opsAreNonCountable(operations)) return null;
 
-  // Classic amigurumi: magic ring starts absolute count
   if (operations.some((o) => o.type === "magic_ring")) {
     let total = 0;
     for (const op of operations) {
@@ -61,6 +77,30 @@ export function estimateRoundResult(
       total += d;
     }
     return total;
+  }
+
+  // Foundation: chain then work across — prefer sc/hdc/dc totals, ignore chain length
+  const hasChain = operations.some((o) => o.type === "chain");
+  const workOps = operations.filter((o) => o.type !== "chain");
+  if (hasChain && workOps.length) {
+    let total = 0;
+    let known = false;
+    for (const op of workOps) {
+      if (op.type === "magic_ring") continue;
+      if (["sc", "hdc", "dc", "slst"].includes(op.type)) {
+        total += op.stitches ?? 1;
+        known = true;
+      } else if (op.type === "inc") {
+        total += (op.repeat ?? 1) * 2; // 2 stitches made
+        known = true;
+      } else if (op.type === "repeat") {
+        const d = opDelta(op);
+        if (d === null) return null;
+        total += d;
+        known = true;
+      }
+    }
+    if (known) return total;
   }
 
   let delta = 0;
@@ -73,14 +113,10 @@ export function estimateRoundResult(
   }
   if (!known) return null;
 
-  // Inc/dec style: result = previous + net change from inc/dec,
-  // while sc stitches often replace stitches 1:1.
-  // Prefer AI-declared result; this is a secondary check.
   const hasIncDec = operations.some(
     (o) => o.type === "inc" || o.type === "dec" || o.type === "repeat"
   );
   if (hasIncDec) {
-    // Parse common pattern: (sc, inc) x N → +N from previous
     const repeatOp = operations.find((o) => o.type === "repeat");
     if (repeatOp?.of && repeatOp.repeat) {
       let netPer = 0;
@@ -107,7 +143,25 @@ export function estimateRoundResult(
     return previousCount + delta;
   }
 
+  // Plain sc around: stitch count stays the same
+  if (
+    operations.every((o) =>
+      ["sc", "hdc", "dc", "slst", "turn", "blo", "flo"].includes(o.type)
+    )
+  ) {
+    return previousCount > 0 ? previousCount : delta;
+  }
+
   return previousCount > 0 ? previousCount : delta;
+}
+
+/** Pull the last parenthetical count from instructions, e.g. "... (24)". */
+export function parseResultFromInstructions(
+  instructions: string
+): number | null {
+  const matches = [...instructions.matchAll(/\((\d+)\)/g)];
+  if (!matches.length) return null;
+  return Number(matches[matches.length - 1][1]);
 }
 
 function validateComponent(component: PatternComponent): ValidationIssue[] {
@@ -136,7 +190,19 @@ function validateComponent(component: PatternComponent): ValidationIssue[] {
       continue;
     }
 
-    const expected = estimateRoundResult(prev, round.operations || []);
+    // Fasten-off ending at 0 is intentional
+    if (roundHasFastenOff(round) && round.result === 0) {
+      prev = 0;
+      continue;
+    }
+
+    const ops = round.operations || [];
+    if (opsAreNonCountable(ops)) {
+      prev = round.result;
+      continue;
+    }
+
+    const expected = estimateRoundResult(prev, ops);
     if (expected !== null && expected !== round.result) {
       issues.push({
         componentId: component.id,
@@ -164,7 +230,66 @@ export function validatePatternComponents(
   };
 }
 
-/** Human-readable US crochet line from a round (fallback display). */
+/**
+ * Auto-repair unreliable AI operations so validation matches maker-facing text.
+ * Trusts instruction counts / declared result; neutralizes bad ops.
+ */
+export function repairPatternComponents(
+  components: PatternComponent[]
+): { components: PatternComponent[]; fixed: number } {
+  let fixed = 0;
+
+  const next = components.map((component) => {
+    let prev = 0;
+    const rounds = component.rounds.map((round) => {
+      let result = round.result;
+      const parsed = parseResultFromInstructions(round.instructions || "");
+      if (parsed !== null && parsed !== result) {
+        result = parsed;
+        fixed += 1;
+      }
+
+      if (roundHasFastenOff(round) && (result === 0 || parsed === 0)) {
+        prev = 0;
+        return {
+          ...round,
+          result: 0,
+          operations: [{ type: "fasten_off" as const }],
+        };
+      }
+
+      const ops = round.operations || [];
+      const expected = estimateRoundResult(prev, ops);
+      if (
+        !opsAreNonCountable(ops) &&
+        expected !== null &&
+        typeof result === "number" &&
+        expected !== result
+      ) {
+        // Keep maker text + result; drop conflicting machine ops
+        fixed += 1;
+        prev = result;
+        return {
+          ...round,
+          result,
+          operations: [
+            {
+              type: "text" as const,
+              text: round.instructions,
+            },
+          ],
+        };
+      }
+
+      prev = typeof result === "number" ? result : prev;
+      return { ...round, result, operations: ops };
+    });
+    return { ...component, rounds };
+  });
+
+  return { components: next, fixed };
+}
+
 export function formatRoundLine(round: PatternRound): string {
   if (round.instructions?.trim()) return round.instructions.trim();
   return `Round ${round.round}`;

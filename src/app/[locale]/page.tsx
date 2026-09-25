@@ -10,6 +10,8 @@ import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 import { pageSeoMetadata } from "@/lib/seo/page-meta";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

@@ -7,7 +7,10 @@ import {
 import { generatePatternContent } from "./generate-pattern";
 import { generatePatternImage } from "./generate-image";
 import { translatePatternContent } from "./translate";
-import { validatePatternComponents } from "@/lib/crochet/validator";
+import {
+  repairPatternComponents,
+  validatePatternComponents,
+} from "@/lib/crochet/validator";
 import { buildPatternPdf } from "@/lib/pdf/build-pattern-pdf";
 import {
   readSiteContent,
@@ -64,6 +67,9 @@ export async function generateFullPattern(
     }
   }
 
+  // Auto-fix unreliable AI stitch ops before validation / save
+  const repaired = repairPatternComponents(finalContent.components);
+  finalContent = { ...finalContent, components: repaired.components };
   const validation = validatePatternComponents(finalContent.components);
   const confidence = confidenceFromSpec(designSpec);
 

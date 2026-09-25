@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import type {
   BlogPost,
   Category,
@@ -180,6 +181,8 @@ function normalizeContent(parsed: Partial<SiteContent>): SiteContent {
 }
 
 export async function readSiteContent(): Promise<SiteContent> {
+  // CMS data lives in Blob/local JSON and changes without redeploy.
+  noStore();
   const parsed = await readJsonDocument<Partial<SiteContent>>(
     DOC,
     defaultContent()

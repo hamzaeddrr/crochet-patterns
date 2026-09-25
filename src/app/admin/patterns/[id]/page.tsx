@@ -24,18 +24,25 @@ export default function AdminPatternDetailPage() {
   const [seoTitleEn, setSeoTitleEn] = useState("");
   const [seoDescEn, setSeoDescEn] = useState("");
   const [priceUsd, setPriceUsd] = useState("4.99");
+  const [featured, setFeatured] = useState(false);
+  const [free, setFree] = useState(false);
+  const [status, setStatus] = useState<PatternStatus>("draft");
 
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Not found");
-        setPattern(data.pattern);
-        setTitleEn(data.pattern.content.title.en);
-        setSummaryEn(data.pattern.content.summary.en);
-        setSeoTitleEn(data.pattern.content.seoTitle.en);
-        setSeoDescEn(data.pattern.content.seoDescription.en);
-        setPriceUsd(centsToDollarInput(data.pattern.priceCents ?? 499));
+        const p = data.pattern as CrochetPattern;
+        setPattern(p);
+        setTitleEn(p.content.title.en);
+        setSummaryEn(p.content.summary.en);
+        setSeoTitleEn(p.content.seoTitle.en);
+        setSeoDescEn(p.content.seoDescription.en);
+        setPriceUsd(centsToDollarInput(p.priceCents ?? 499));
+        setFeatured(Boolean(p.featured));
+        setFree(Boolean(p.free));
+        setStatus(p.status);
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -43,24 +50,39 @@ export default function AdminPatternDetailPage() {
   async function patch(body: Record<string, unknown>) {
     setSaving(true);
     setMessage("");
-    const res = await fetch(`/api/admin/patterns/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error || "Save failed");
-      return;
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Save failed");
+        return null;
+      }
+      const p = data.pattern as CrochetPattern;
+      setPattern(p);
+      setFeatured(Boolean(p.featured));
+      setFree(Boolean(p.free));
+      setStatus(p.status);
+      setMessage("Saved");
+      return p;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed");
+      return null;
+    } finally {
+      setSaving(false);
     }
-    setPattern(data.pattern);
-    setMessage("Saved");
   }
 
-  async function saveCopy() {
+  async function saveAll() {
     if (!pattern) return;
-    await patch({
+    const saved = await patch({
+      featured,
+      free,
+      status,
       priceCents: dollarsToCents(Number(priceUsd)),
       currency: "usd",
       content: {
@@ -71,51 +93,94 @@ export default function AdminPatternDetailPage() {
         seoDescription: { ...pattern.content.seoDescription, en: seoDescEn },
       },
     });
+    if (saved && featured && saved.status !== "published") {
+      setMessage("Saved — set status to published for Featured to appear on the homepage");
+    }
   }
 
   async function rebuildPdf() {
     setSaving(true);
-    const res = await fetch(`/api/admin/patterns/${id}/pdf`, { method: "POST" });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error || "PDF failed");
-      return;
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}/pdf`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "PDF failed");
+        return;
+      }
+      setPattern(data.pattern);
+      setMessage("PDF rebuilt");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "PDF failed");
+    } finally {
+      setSaving(false);
     }
-    setPattern(data.pattern);
-    setMessage("PDF rebuilt");
   }
 
   async function revalidate() {
     setSaving(true);
-    const res = await fetch(`/api/admin/patterns/${id}/validate`, {
-      method: "POST",
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error || "Validate failed");
-      return;
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Validate failed");
+        return;
+      }
+      setPattern(data.pattern);
+      setMessage(
+        data.pattern.validation.ok
+          ? "Validation OK"
+          : `${data.pattern.validation.issues.length} issues`
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Validate failed");
+    } finally {
+      setSaving(false);
     }
-    setPattern(data.pattern);
-    setMessage(
-      data.pattern.validation.ok
-        ? "Validation OK"
-        : `${data.pattern.validation.issues.length} issues`
-    );
+  }
+
+  async function autoFixStitches() {
+    setSaving(true);
+    setMessage("Repairing stitch ops…");
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repair: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Repair failed");
+        return;
+      }
+      setPattern(data.pattern);
+      setMessage(
+        data.pattern.validation.ok
+          ? `Stitch counts fixed (${data.fixed || 0} rounds). Validation OK.`
+          : `Repaired ${data.fixed || 0} rounds — ${data.pattern.validation.issues.length} issues remain.`
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Repair failed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function retranslate() {
-    setSaving(true);
     await patch({ action: "retranslate" });
-    setSaving(false);
   }
 
   async function regenImage() {
-    setSaving(true);
     setMessage("Regenerating image…");
     await patch({ action: "regenerateImage" });
-    setSaving(false);
   }
 
   async function remove() {
@@ -142,10 +207,18 @@ export default function AdminPatternDetailPage() {
 
   return (
     <AdminShell title={pattern.content.title.en}>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link href="/admin/patterns" className="text-sm text-slate-400">
           ← Library
         </Link>
+        <button
+          type="button"
+          onClick={saveAll}
+          disabled={saving}
+          className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
         {message && <span className="text-sm text-emerald-400">{message}</span>}
         {error && <span className="text-sm text-rose-400">{error}</span>}
       </div>
@@ -158,6 +231,7 @@ export default function AdminPatternDetailPage() {
                 src={pattern.imagePath}
                 alt=""
                 fill
+                unoptimized={/^https?:\/\//i.test(pattern.imagePath)}
                 className="object-cover"
               />
             ) : (
@@ -170,10 +244,9 @@ export default function AdminPatternDetailPage() {
             Status
             <select
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-              value={pattern.status}
-              onChange={(e) =>
-                patch({ status: e.target.value as PatternStatus })
-              }
+              value={status}
+              disabled={saving}
+              onChange={(e) => setStatus(e.target.value as PatternStatus)}
             >
               {(
                 [
@@ -190,19 +263,26 @@ export default function AdminPatternDetailPage() {
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
-              checked={pattern.featured}
-              onChange={(e) => patch({ featured: e.target.checked })}
+              checked={featured}
+              disabled={saving}
+              onChange={(e) => setFeatured(e.target.checked)}
             />
-            Featured
+            Featured on homepage
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <p className="text-xs text-slate-500">
+            Featured only shows on the site when status is{" "}
+            <span className="text-slate-300">published</span>. Click{" "}
+            <span className="text-slate-300">Save changes</span> after toggling.
+          </p>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
-              checked={pattern.free}
-              onChange={(e) => patch({ free: e.target.checked })}
+              checked={free}
+              disabled={saving}
+              onChange={(e) => setFree(e.target.checked)}
             />
             Free download
           </label>
@@ -213,6 +293,7 @@ export default function AdminPatternDetailPage() {
               min="0"
               step="0.01"
               value={priceUsd}
+              disabled={saving}
               onChange={(e) => setPriceUsd(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             />
@@ -221,24 +302,32 @@ export default function AdminPatternDetailPage() {
             <button
               type="button"
               disabled={saving}
-              onClick={saveCopy}
-              className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-bold text-white"
+              onClick={saveAll}
+              className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save copy & price
+              {saving ? "Saving…" : "Save changes"}
             </button>
             <button
               type="button"
               disabled={saving}
               onClick={revalidate}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
               Re-run stitch validation
             </button>
             <button
               type="button"
               disabled={saving}
+              onClick={autoFixStitches}
+              className="rounded-lg border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+            >
+              Auto-fix stitch counts
+            </button>
+            <button
+              type="button"
+              disabled={saving}
               onClick={retranslate}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
               Re-translate FR/ES
             </button>
@@ -246,7 +335,7 @@ export default function AdminPatternDetailPage() {
               type="button"
               disabled={saving}
               onClick={regenImage}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
               Regenerate image
             </button>
@@ -254,7 +343,7 @@ export default function AdminPatternDetailPage() {
               type="button"
               disabled={saving}
               onClick={rebuildPdf}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
               Rebuild PDF
             </button>
@@ -262,15 +351,17 @@ export default function AdminPatternDetailPage() {
               <a
                 href={pattern.pdfPath}
                 target="_blank"
+                rel="noreferrer"
                 className="rounded-lg bg-slate-800 px-3 py-2 text-center text-sm font-bold text-white"
               >
                 Open PDF (admin)
               </a>
             )}
-            {pattern.status === "published" && (
+            {status === "published" && (
               <a
                 href={`/patterns/${pattern.slug}`}
                 target="_blank"
+                rel="noreferrer"
                 className="text-center text-sm text-rose-300"
               >
                 View on site →
@@ -349,7 +440,7 @@ export default function AdminPatternDetailPage() {
               </ul>
             )}
             <p className="mt-2 text-xs capitalize text-slate-500">
-              Confidence: {pattern.confidence}
+              Confidence: {pattern.confidence} (admin only)
             </p>
           </section>
 
