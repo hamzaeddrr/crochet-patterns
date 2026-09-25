@@ -11,14 +11,18 @@ export function isServerlessReadonlyFs(): boolean {
   );
 }
 
-function blobToken(): string | undefined {
-  return process.env.BLOB_READ_WRITE_TOKEN || undefined;
+function hasBlobCredentials(): boolean {
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN ||
+      process.env.BLOB_STORE_ID ||
+      process.env.VERCEL_OIDC_TOKEN
+  );
 }
 
 /**
  * Persist a public asset.
- * - Local: writes under /public and returns a site-relative path.
- * - Vercel: uploads to Vercel Blob (requires BLOB_READ_WRITE_TOKEN) and returns the HTTPS URL.
+ * - Local (no Blob creds): writes under /public and returns a site-relative path.
+ * - Vercel / with Blob: uploads via @vercel/blob (OIDC or BLOB_READ_WRITE_TOKEN).
  */
 export async function savePublicAsset(
   relativePath: string,
@@ -26,22 +30,24 @@ export async function savePublicAsset(
   contentType: string
 ): Promise<string> {
   const key = relativePath.replace(/^\/+/, "");
-  const token = blobToken();
-  const useBlob = Boolean(token) || isServerlessReadonlyFs();
+  const useBlob = hasBlobCredentials() || isServerlessReadonlyFs();
 
   if (useBlob) {
-    if (!token) {
+    if (!hasBlobCredentials() && isServerlessReadonlyFs()) {
       throw new Error(
-        "BLOB_READ_WRITE_TOKEN is required on Vercel to store images and PDFs. Add it in Vercel → Project → Storage → Blob, then Environment Variables."
+        "No Vercel Blob credentials. Connect a Blob store to this project (Storage → Blob), or set BLOB_READ_WRITE_TOKEN, then redeploy."
       );
     }
-    const blob = await put(key, data, {
+    const options: Parameters<typeof put>[2] = {
       access: "public",
       contentType,
-      token,
       addRandomSuffix: false,
       allowOverwrite: true,
-    });
+    };
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      options.token = process.env.BLOB_READ_WRITE_TOKEN;
+    }
+    const blob = await put(key, data, options);
     return blob.url;
   }
 
