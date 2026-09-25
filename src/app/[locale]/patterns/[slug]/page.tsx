@@ -100,7 +100,7 @@ export default async function PatternDetailPage({
         image: pattern.imagePath ? siteUrl(pattern.imagePath) : undefined,
         offers: {
           "@type": "Offer",
-          priceCurrency: (pattern.currency || "eur").toUpperCase(),
+          priceCurrency: (pattern.currency || "usd").toUpperCase(),
           price: (pattern.priceCents / 100).toFixed(2),
           availability: "https://schema.org/InStock",
         },

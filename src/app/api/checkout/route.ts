@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         {
           quantity: 1,
           price_data: {
-            currency: (pattern.currency || "eur").toLowerCase(),
+            currency: (pattern.currency || "usd").toLowerCase(),
             unit_amount: pattern.priceCents,
             product_data: {
               name: pattern.content.title.en,

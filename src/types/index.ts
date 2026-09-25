@@ -161,6 +161,12 @@ export interface PageCopy {
   heroTitle?: LocalizedString;
   heroSubtitle?: LocalizedString;
   body?: LocalizedString;
+  /** Home hero visual card overlay */
+  heroCardEyebrow?: LocalizedString;
+  heroCardTitle?: LocalizedString;
+  heroCardBody?: LocalizedString;
+  /** Public path or absolute URL for home hero image */
+  heroImage?: string;
 }
 
 export interface BlogPost {
@@ -211,7 +217,7 @@ export function pickLocalized(
   return value[locale] || value.en || "";
 }
 
-export function formatPrice(cents: number, currency = "eur"): string {
+export function formatPrice(cents: number, currency = "usd"): string {
   try {
     return new Intl.NumberFormat("en", {
       style: "currency",
@@ -220,4 +226,16 @@ export function formatPrice(cents: number, currency = "eur"): string {
   } catch {
     return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
   }
+}
+
+/** Convert a dollar amount (e.g. 4.99) to Stripe cents. */
+export function dollarsToCents(dollars: number): number {
+  if (!Number.isFinite(dollars) || dollars <= 0) return 0;
+  return Math.round(dollars * 100);
+}
+
+/** Convert stored cents to a dollar string for admin inputs. */
+export function centsToDollarInput(cents: number): string {
+  if (!Number.isFinite(cents)) return "0";
+  return (cents / 100).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { centsToDollarInput, dollarsToCents } from "@/types";
 
 type Category = {
   id: string;
@@ -22,7 +23,7 @@ export default function AdminGeneratePage() {
   const [skipTranslate, setSkipTranslate] = useState(false);
   const [featured, setFeatured] = useState(false);
   const [free, setFree] = useState(false);
-  const [priceCents, setPriceCents] = useState("499");
+  const [priceUsd, setPriceUsd] = useState("4.99");
   const [allowNewCategory, setAllowNewCategory] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
@@ -36,7 +37,7 @@ export default function AdminGeneratePage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.settings?.defaultPriceCents) {
-          setPriceCents(String(d.settings.defaultPriceCents));
+          setPriceUsd(centsToDollarInput(d.settings.defaultPriceCents));
         }
       })
       .catch(() => {});
@@ -71,7 +72,8 @@ export default function AdminGeneratePage() {
           allowNewCategory,
           featured,
           free,
-          priceCents: free ? 0 : Number(priceCents) || 499,
+          priceCents: free ? 0 : dollarsToCents(Number(priceUsd)) || 499,
+          currency: "usd",
           translate: !skipTranslate,
           generateImage: !skipImage,
           generatePdf: true,
@@ -144,11 +146,13 @@ export default function AdminGeneratePage() {
           </label>
           {!free && (
             <label className="block text-sm text-slate-300 sm:col-span-2">
-              Price (cents)
+              Price (USD)
               <input
                 type="number"
-                value={priceCents}
-                onChange={(e) => setPriceCents(e.target.value)}
+                min="0"
+                step="0.01"
+                value={priceUsd}
+                onChange={(e) => setPriceUsd(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
             </label>

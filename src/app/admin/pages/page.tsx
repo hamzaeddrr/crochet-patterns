@@ -17,11 +17,14 @@ const PAGE_KEYS = [
 type Loc = { en: string; fr: string; es: string };
 
 export default function AdminPagesSeoPage() {
-  const [pages, setPages] = useState<Record<string, Record<string, Loc | string>>>({});
+  const [pages, setPages] = useState<
+    Record<string, Record<string, Loc | string>>
+  >({});
   const [key, setKey] = useState<(typeof PAGE_KEYS)[number]>("home");
   const [msg, setMsg] = useState("");
   const [tagline, setTagline] = useState<Loc>({ en: "", fr: "", es: "" });
   const [siteName, setSiteName] = useState("Loopcraft");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/cms")
@@ -42,6 +45,16 @@ export default function AdminPagesSeoPage() {
       [key]: {
         ...page,
         [field]: { ...current, [loc]: value },
+      },
+    });
+  }
+
+  function setHeroImage(path: string) {
+    setPages({
+      ...pages,
+      [key]: {
+        ...page,
+        heroImage: path,
       },
     });
   }
@@ -70,6 +83,22 @@ export default function AdminPagesSeoPage() {
     setMsg(res.ok ? "Site settings saved" : "Save failed");
   }
 
+  async function uploadHero(file: File) {
+    setUploading(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    setUploading(false);
+    if (!res.ok) {
+      setMsg(data.error || "Upload failed");
+      return;
+    }
+    setHeroImage(data.path);
+    setMsg(`Image uploaded: ${data.path} — click Save home`);
+  }
+
   const locField = (field: string, label: string) => (
     <div className="space-y-2">
       <p className="text-sm font-medium text-slate-300">{label}</p>
@@ -85,6 +114,9 @@ export default function AdminPagesSeoPage() {
       ))}
     </div>
   );
+
+  const heroImage =
+    typeof page.heroImage === "string" ? page.heroImage : "";
 
   return (
     <AdminShell title="Pages & SEO">
@@ -120,7 +152,9 @@ export default function AdminPagesSeoPage() {
             type="button"
             onClick={() => setKey(k)}
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              key === k ? "bg-rose-500 text-white" : "bg-slate-800 text-slate-400"
+              key === k
+                ? "bg-rose-500 text-white"
+                : "bg-slate-800 text-slate-400"
             }`}
           >
             {k}
@@ -132,8 +166,50 @@ export default function AdminPagesSeoPage() {
         {locField("seoTitle", "SEO title")}
         {locField("seoDescription", "SEO description")}
         {(key === "home" || key === "about" || key === "contact") &&
-          locField("heroTitle", "Hero / title")}
-        {key === "home" && locField("heroSubtitle", "Hero subtitle")}
+          locField("heroTitle", "Hero / title (left column)")}
+        {key === "home" && locField("heroSubtitle", "Hero subtitle (left)")}
+
+        {key === "home" && (
+          <div className="space-y-3 border-t border-slate-800 pt-4">
+            <h3 className="font-semibold text-white">Hero image card</h3>
+            <p className="text-xs text-slate-500">
+              Right-side photo on the homepage. Upload a JPG/PNG/WebP, or paste a
+              path like <code className="text-slate-400">/site/hero.jpg</code>.
+            </p>
+            {heroImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={heroImage}
+                alt="Hero preview"
+                className="h-40 w-32 rounded-xl object-cover"
+              />
+            )}
+            <input
+              type="text"
+              value={heroImage}
+              onChange={(e) => setHeroImage(e.target.value)}
+              placeholder="/site/my-hero.webp"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            />
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-950">
+              {uploading ? "Uploading…" : "Upload image"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadHero(f);
+                }}
+              />
+            </label>
+            {locField("heroCardEyebrow", "Card eyebrow")}
+            {locField("heroCardTitle", "Card title")}
+            {locField("heroCardBody", "Card body")}
+          </div>
+        )}
+
         {["about", "contact", "privacy", "terms"].includes(key) &&
           locField("body", "Body")}
         <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { centsToDollarInput, dollarsToCents } from "@/types";
 
 type SettingsPublic = {
   contentModel: string;
@@ -35,8 +36,10 @@ export default function AdminSettingsPage() {
           imageQuality: d.settings.imageQuality,
           imageSize: d.settings.imageSize,
           siteUrl: d.settings.siteUrl,
-          defaultCurrency: d.settings.defaultCurrency,
-          defaultPriceCents: String(d.settings.defaultPriceCents),
+          defaultCurrency: d.settings.defaultCurrency || "usd",
+          defaultPriceDollars: centsToDollarInput(
+            d.settings.defaultPriceCents ?? 499
+          ),
           stripePublishableKey: d.settings.stripePublishableKey || "",
         });
       });
@@ -50,7 +53,9 @@ export default function AdminSettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        defaultPriceCents: Number(form.defaultPriceCents) || 499,
+        defaultCurrency: (form.defaultCurrency || "usd").toLowerCase(),
+        defaultPriceCents:
+          dollarsToCents(Number(form.defaultPriceDollars)) || 499,
         openaiApiKey: form.openaiApiKey || undefined,
         stripeSecretKey: form.stripeSecretKey || undefined,
         stripeWebhookSecret: form.stripeWebhookSecret || undefined,
@@ -66,6 +71,9 @@ export default function AdminSettingsPage() {
     setMsg("Settings saved");
     setForm((f) => ({
       ...f,
+      defaultPriceDollars: centsToDollarInput(
+        data.settings.defaultPriceCents ?? 499
+      ),
       openaiApiKey: "",
       stripeSecretKey: "",
       stripeWebhookSecret: "",
@@ -114,8 +122,13 @@ export default function AdminSettingsPage() {
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="font-semibold text-white">Site & pricing</h2>
           {field("siteUrl", "Public site URL")}
-          {field("defaultCurrency", "Default currency", "text", "eur")}
-          {field("defaultPriceCents", "Default price (cents)", "number")}
+          {field("defaultCurrency", "Default currency", "text", "usd")}
+          {field(
+            "defaultPriceDollars",
+            "Default price (USD)",
+            "number",
+            "e.g. 4.99"
+          )}
         </section>
 
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">

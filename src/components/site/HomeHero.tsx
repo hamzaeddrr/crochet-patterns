@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 
 export function HomeHero({
@@ -8,11 +9,19 @@ export function HomeHero({
   subtitle,
   cta,
   ctaSecondary,
+  cardEyebrow = "Soft makes · Clear rounds",
+  cardTitle = "Stitch by stitch",
+  cardBody = "Cozy patterns with photos and print-ready PDFs.",
+  heroImage,
 }: {
   title: string;
   subtitle: string;
   cta: string;
   ctaSecondary: string;
+  cardEyebrow?: string;
+  cardTitle?: string;
+  cardBody?: string;
+  heroImage?: string;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +67,6 @@ export function HomeHero({
         />
       </svg>
 
-      {/* Decorative yarn balls */}
       <div className="anim-bob pointer-events-none absolute left-[6%] top-36 hidden h-16 w-16 rounded-full bg-apricot/25 blur-[1px] lg:block" />
       <div
         className="anim-bob pointer-events-none absolute right-[8%] top-44 hidden h-12 w-12 rounded-full bg-celadon/35 lg:block"
@@ -113,16 +121,28 @@ export function HomeHero({
             }}
           >
             <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-bg-deep">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgba(217,107,82,0.5),transparent_48%),radial-gradient(circle_at_78%_78%,rgba(143,165,139,0.45),transparent_45%),radial-gradient(circle_at_50%_50%,rgba(196,154,90,0.2),transparent_55%)]" />
+              {heroImage ? (
+                <Image
+                  src={heroImage}
+                  alt=""
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width:1024px) 100vw, 40vw"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgba(217,107,82,0.5),transparent_48%),radial-gradient(circle_at_78%_78%,rgba(143,165,139,0.45),transparent_45%),radial-gradient(circle_at_50%_50%,rgba(196,154,90,0.2),transparent_55%)]" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end p-7 text-bone">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">
-                  Soft makes · Clear rounds
+                  {cardEyebrow}
                 </p>
                 <p className="mt-2 font-display text-4xl leading-none">
-                  Stitch by stitch
+                  {cardTitle}
                 </p>
                 <p className="mt-3 max-w-[13rem] text-sm text-bone/75">
-                  Cozy patterns with photos and print-ready PDFs.
+                  {cardBody}
                 </p>
               </div>
             </div>

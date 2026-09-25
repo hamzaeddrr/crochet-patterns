@@ -55,7 +55,11 @@ export async function PATCH(
   if (typeof body.featured === "boolean") next.featured = body.featured;
   if (typeof body.free === "boolean") next.free = body.free;
   if (typeof body.priceCents === "number") next.priceCents = body.priceCents;
-  if (typeof body.currency === "string") next.currency = body.currency;
+  if (typeof body.priceDollars === "number") {
+    next.priceCents = Math.round(body.priceDollars * 100);
+  }
+  if (typeof body.currency === "string") next.currency = body.currency.toLowerCase();
+  else if (!next.currency) next.currency = "usd";
   if (Array.isArray(body.categoryIds)) {
     next.categoryIds = body.categoryIds.map(String);
   }

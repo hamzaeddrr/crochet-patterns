@@ -16,8 +16,15 @@ export async function POST(request: NextRequest) {
       featured: body.featured === true,
       free: body.free === true,
       priceCents:
-        typeof body.priceCents === "number" ? body.priceCents : undefined,
-      currency: typeof body.currency === "string" ? body.currency : undefined,
+        typeof body.priceDollars === "number"
+          ? Math.round(body.priceDollars * 100)
+          : typeof body.priceCents === "number"
+            ? body.priceCents
+            : undefined,
+      currency:
+        typeof body.currency === "string"
+          ? body.currency.toLowerCase()
+          : "usd",
       translate: body.translate !== false,
       generateImage: body.generateImage !== false,
       generatePdf: body.generatePdf !== false,

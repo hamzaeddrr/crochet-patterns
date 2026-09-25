@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         sessionId: session.id,
         email: session.customer_details?.email || undefined,
         amountCents: session.amount_total || 0,
-        currency: session.currency || "eur",
+        currency: session.currency || "usd",
       });
     }
   }

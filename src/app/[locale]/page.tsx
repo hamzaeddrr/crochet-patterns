@@ -43,6 +43,16 @@ export default async function HomePage({
   const subtitle = home?.heroSubtitle
     ? pickLocalized(home.heroSubtitle, locale) || t("subtitle")
     : t("subtitle");
+  const cardEyebrow = home?.heroCardEyebrow
+    ? pickLocalized(home.heroCardEyebrow, locale) || undefined
+    : undefined;
+  const cardTitle = home?.heroCardTitle
+    ? pickLocalized(home.heroCardTitle, locale) || undefined
+    : undefined;
+  const cardBody = home?.heroCardBody
+    ? pickLocalized(home.heroCardBody, locale) || undefined
+    : undefined;
+  const heroImage = home?.heroImage?.trim() || undefined;
 
   return (
     <>
@@ -51,6 +61,10 @@ export default async function HomePage({
         subtitle={subtitle}
         cta={t("cta")}
         ctaSecondary={t("ctaSecondary")}
+        cardEyebrow={cardEyebrow}
+        cardTitle={cardTitle}
+        cardBody={cardBody}
+        heroImage={heroImage}
       />
 
       <StitchMarquee />

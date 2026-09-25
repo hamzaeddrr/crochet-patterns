@@ -35,7 +35,7 @@ export function defaultAdminSettings(): AdminSettings {
     imageQuality: process.env.OPENAI_IMAGE_QUALITY || "high",
     imageSize: process.env.OPENAI_IMAGE_SIZE || "auto",
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
-    defaultCurrency: process.env.DEFAULT_CURRENCY || "eur",
+    defaultCurrency: process.env.DEFAULT_CURRENCY || "usd",
     defaultPriceCents: Number(process.env.DEFAULT_PRICE_CENTS || 499),
   };
 }

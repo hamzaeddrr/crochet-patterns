@@ -84,6 +84,12 @@ function defaultPages(): SiteContent["pages"] {
         fr: "Modèles de studio avec photos et PDF prêts à imprimer.",
         es: "Patrones de estudio con fotos y PDF listos para imprimir.",
       },
+      heroCardEyebrow: emptyLocalized("Soft makes · Clear rounds"),
+      heroCardTitle: emptyLocalized("Stitch by stitch"),
+      heroCardBody: emptyLocalized(
+        "Cozy patterns with photos and print-ready PDFs."
+      ),
+      heroImage: "",
       seoTitle: emptyLocalized("Loopcraft — Crochet Patterns"),
       seoDescription: {
         en: "Beautiful crochet patterns with clear instructions and printable PDFs.",
@@ -156,7 +162,7 @@ function normalizePattern(p: CrochetPattern): CrochetPattern {
     ...p,
     free: p.free === true,
     priceCents: typeof p.priceCents === "number" ? p.priceCents : 499,
-    currency: p.currency || "eur",
+    currency: p.currency || "usd",
     featured: Boolean(p.featured),
     categoryIds: p.categoryIds || [],
   };

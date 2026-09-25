@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       sessionId: session.id,
       email: session.customer_details?.email || undefined,
       amountCents: session.amount_total || 0,
-      currency: session.currency || "eur",
+      currency: session.currency || "usd",
     });
 
     const existing = request.cookies.get(UNLOCK_COOKIE)?.value;

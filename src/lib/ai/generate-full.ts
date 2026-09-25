@@ -117,7 +117,7 @@ export async function generateFullPattern(
       typeof input.priceCents === "number"
         ? input.priceCents
         : settings.defaultPriceCents,
-    currency: input.currency || settings.defaultCurrency || "eur",
+    currency: input.currency || settings.defaultCurrency || "usd",
     categoryIds,
     createdAt: now,
     updatedAt: now,

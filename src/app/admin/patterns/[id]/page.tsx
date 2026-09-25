@@ -5,7 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/AdminShell";
-import type { CrochetPattern, PatternStatus } from "@/types";
+import {
+  centsToDollarInput,
+  dollarsToCents,
+  type CrochetPattern,
+  type PatternStatus,
+} from "@/types";
 
 export default function AdminPatternDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +23,7 @@ export default function AdminPatternDetailPage() {
   const [summaryEn, setSummaryEn] = useState("");
   const [seoTitleEn, setSeoTitleEn] = useState("");
   const [seoDescEn, setSeoDescEn] = useState("");
-  const [priceCents, setPriceCents] = useState("499");
+  const [priceUsd, setPriceUsd] = useState("4.99");
 
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
@@ -30,7 +35,7 @@ export default function AdminPatternDetailPage() {
         setSummaryEn(data.pattern.content.summary.en);
         setSeoTitleEn(data.pattern.content.seoTitle.en);
         setSeoDescEn(data.pattern.content.seoDescription.en);
-        setPriceCents(String(data.pattern.priceCents ?? 499));
+        setPriceUsd(centsToDollarInput(data.pattern.priceCents ?? 499));
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -56,7 +61,8 @@ export default function AdminPatternDetailPage() {
   async function saveCopy() {
     if (!pattern) return;
     await patch({
-      priceCents: Number(priceCents) || 0,
+      priceCents: dollarsToCents(Number(priceUsd)),
+      currency: "usd",
       content: {
         ...pattern.content,
         title: { ...pattern.content.title, en: titleEn },
@@ -201,11 +207,13 @@ export default function AdminPatternDetailPage() {
             Free download
           </label>
           <label className="block text-sm text-slate-400">
-            Price (cents)
+            Price (USD)
             <input
               type="number"
-              value={priceCents}
-              onChange={(e) => setPriceCents(e.target.value)}
+              min="0"
+              step="0.01"
+              value={priceUsd}
+              onChange={(e) => setPriceUsd(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             />
           </label>
