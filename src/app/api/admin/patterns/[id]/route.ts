@@ -39,7 +39,12 @@ export async function PATCH(
   }
 
   if (body.action === "regenerateImage") {
-    const img = await generatePatternImage(next.id, next.designSpec);
+    const img = await generatePatternImage(
+      next.id,
+      next.designSpec,
+      undefined,
+      next.content
+    );
     next.imagePath = img.imagePath;
     next.thumbnailPath = img.thumbnailPath;
     const saved = await upsertPattern(next);

@@ -1,6 +1,9 @@
 import sharp from "sharp";
 import { getOpenAI } from "./openai";
-import { designSpecToImagePrompt } from "./design-spec";
+import {
+  designSpecToImagePrompt,
+  patternContentToImagePrompt,
+} from "./design-spec";
 import {
   resolveImageModel,
   resolveImageQuality,
@@ -12,7 +15,7 @@ import {
   type FlareGenerateQuality,
 } from "./flare-types";
 import { savePublicAsset } from "@/lib/storage/assets";
-import type { DesignSpec } from "@/types";
+import type { DesignSpec, PatternContent } from "@/types";
 
 export interface GeneratedImagePaths {
   imagePath: string;
@@ -35,16 +38,24 @@ const GPT_IMAGE_QUALITIES = new Set(["low", "medium", "high", "auto"]);
 function resolveSafeImageParams(
   model: string,
   rawQuality: string,
-  rawSize: string
+  rawSize: string,
+  preferLandscape: boolean
 ): { quality: string; size: string } {
   const flare = isFlareModel(model);
 
-  let size = (rawSize || (flare ? "auto" : "1024x1024")).toLowerCase();
+  let size = (
+    rawSize ||
+    (preferLandscape ? "1536x1024" : flare ? "auto" : "1024x1024")
+  ).toLowerCase();
   if (!STANDARD_SIZES.has(size)) {
-    size = flare ? "auto" : "1024x1024";
+    size = preferLandscape ? "1536x1024" : flare ? "auto" : "1024x1024";
   }
   if (!flare && size === "auto") {
-    size = "1024x1024";
+    size = preferLandscape ? "1536x1024" : "1024x1024";
+  }
+  // Multi-step storyboard reads better in landscape
+  if (preferLandscape && size === "1024x1024") {
+    size = "1536x1024";
   }
 
   let quality = (rawQuality || "high").toLowerCase();
@@ -63,15 +74,22 @@ function resolveSafeImageParams(
 export async function generatePatternImage(
   patternId: string,
   spec: DesignSpec,
-  customPrompt?: string
+  customPrompt?: string,
+  content?: PatternContent
 ): Promise<GeneratedImagePaths> {
   const openai = await getOpenAI();
-  const promptUsed = customPrompt?.trim() || designSpecToImagePrompt(spec);
+  const fromPattern = Boolean(content?.components?.length);
+  const promptUsed =
+    customPrompt?.trim() ||
+    (content
+      ? patternContentToImagePrompt(spec, content)
+      : designSpecToImagePrompt(spec));
   const model = await resolveImageModel();
   const { quality, size } = resolveSafeImageParams(
     model,
     await resolveImageQuality(),
-    await resolveImageSize()
+    await resolveImageSize(),
+    fromPattern
   );
 
   const body: Record<string, unknown> = {
@@ -97,7 +115,11 @@ export async function generatePatternImage(
       model,
       prompt: promptUsed,
       n: 1,
-      size: isFlareModel(model) ? "auto" : "1024x1024",
+      size: isFlareModel(model)
+        ? "auto"
+        : fromPattern
+          ? "1536x1024"
+          : "1024x1024",
       quality: "high",
     };
     result = (await openai.images.generate(
@@ -118,13 +140,22 @@ export async function generatePatternImage(
     throw new Error("Image generation returned no data");
   }
 
+  const canvas = { r: 250, g: 247, b: 242, alpha: 1 };
+
+  // Keep full collage visible (no crop) — cards use object-contain
   const heroBuf = await sharp(buffer)
-    .resize(1200, 1200, { fit: "cover" })
+    .resize(1400, fromPattern ? 1000 : 1400, {
+      fit: "contain",
+      background: canvas,
+    })
     .webp({ quality: 88 })
     .toBuffer();
 
   const thumbBuf = await sharp(buffer)
-    .resize(480, 480, { fit: "cover" })
+    .resize(640, fromPattern ? 460 : 640, {
+      fit: "contain",
+      background: canvas,
+    })
     .webp({ quality: 80 })
     .toBuffer();
 

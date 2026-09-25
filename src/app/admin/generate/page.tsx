@@ -58,10 +58,10 @@ export default function AdminGeneratePage() {
     setError("");
     setStep("1/4 Design spec");
     setLog(
-      "Running professional one-shot: design → pattern → image → translate → PDF…"
+      "Running: design → crochet pattern → step collage image from pattern → PDF…"
     );
     try {
-      setStep("2/4 Pattern + image");
+      setStep("2/4 Writing crochet pattern");
       const res = await fetch("/api/admin/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,7 +80,7 @@ export default function AdminGeneratePage() {
           save: true,
         }),
       });
-      setStep("3/4 Saving draft");
+      setStep("3/4 Image from pattern + save");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
       setStep("4/4 Done");
@@ -102,8 +102,8 @@ export default function AdminGeneratePage() {
     <AdminShell title="AI Generate">
       <div className="max-w-2xl space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-6">
         <p className="text-sm text-slate-400">
-          One-shot professional generate: design spec, full pattern, product
-          image (gpt-image-2.5-flare), stitch check, FR/ES, PDF — all in one run.
+          One-shot generate: design → full crochet pattern first → multi-step
+          collage image matched to that pattern → stitch check, FR/ES, PDF.
         </p>
 
         <label className="flex items-center gap-2 text-sm text-slate-300">

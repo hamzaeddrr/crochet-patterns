@@ -73,10 +73,16 @@ export async function generateFullPattern(
   const validation = validatePatternComponents(finalContent.components);
   const confidence = confidenceFromSpec(designSpec);
 
+  // Pattern is written first; image is derived from that finished pattern
   let imagePath: string | undefined;
   let thumbnailPath: string | undefined;
   if (input.generateImage !== false) {
-    const img = await generatePatternImage(id, designSpec);
+    const img = await generatePatternImage(
+      id,
+      designSpec,
+      undefined,
+      finalContent
+    );
     imagePath = img.imagePath;
     thumbnailPath = img.thumbnailPath;
   }
