@@ -1,0 +1,450 @@
+import type { PatternComponent } from "@/types";
+
+const ACCENTS = [
+  "#d96b52",
+  "#8fa58b",
+  "#c49a5a",
+  "#6e655e",
+  "#c4573f",
+  "#a3b8a0",
+];
+
+export function PatternMakePath({
+  components,
+  hasAssembly,
+  hasFinishing,
+  title,
+  subtitle,
+  jumpLabel,
+  assembleLabel,
+  finishLabel,
+  interactive,
+}: {
+  components: PatternComponent[];
+  hasAssembly: boolean;
+  hasFinishing: boolean;
+  title: string;
+  subtitle: string;
+  jumpLabel: string;
+  assembleLabel: string;
+  finishLabel: string;
+  interactive: boolean;
+}) {
+    const steps: { id: string; label: string; meta?: string; href?: string }[] =
+    components.map((c) => ({
+      id: c.id,
+      label: c.name,
+      meta:
+        c.rounds.length > 0
+          ? `R1–${c.rounds[c.rounds.length - 1]?.round ?? c.rounds.length}${
+              c.make && c.make > 1 ? ` · ×${c.make}` : ""
+            }`
+          : c.make && c.make > 1
+            ? `×${c.make}`
+            : undefined,
+      href: interactive ? `#part-${c.id}` : undefined,
+    }));
+
+  if (hasAssembly) {
+    steps.push({
+      id: "assembly",
+      label: assembleLabel,
+      href: interactive ? "#assembly" : undefined,
+    });
+  }
+  if (hasFinishing) {
+    steps.push({
+      id: "finishing",
+      label: finishLabel,
+      href: interactive ? "#finishing" : undefined,
+    });
+  }
+
+  return (
+    <section className="overflow-hidden rounded-[1.75rem] border border-line bg-[#fffdf9]">
+      <div className="border-b border-line px-5 py-4 sm:px-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gold">
+          {jumpLabel}
+        </p>
+        <h2 className="mt-1 font-display text-2xl text-ink sm:text-3xl">
+          {title}
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm text-muted">{subtitle}</p>
+      </div>
+      <div className="overflow-x-auto px-4 py-5 sm:px-6">
+        <ol className="flex min-w-max items-stretch gap-0">
+          {steps.map((step, i) => {
+            const color = ACCENTS[i % ACCENTS.length];
+            const inner = (
+              <>
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-bone"
+                  style={{ background: color }}
+                >
+                  {i + 1}
+                </span>
+                <span className="mt-2 max-w-[7.5rem] text-center font-display text-sm leading-snug text-ink">
+                  {step.label}
+                </span>
+                {step.meta ? (
+                  <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+                    {step.meta}
+                  </span>
+                ) : null}
+              </>
+            );
+            return (
+              <li key={step.id} className="flex items-center">
+                {step.href ? (
+                  <a
+                    href={step.href}
+                    className="flex w-[8.25rem] flex-col items-center rounded-2xl px-2 py-2 transition hover:bg-elevated/80"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div className="flex w-[8.25rem] flex-col items-center px-2 py-2">
+                    {inner}
+                  </div>
+                )}
+                {i < steps.length - 1 ? (
+                  <span
+                    aria-hidden
+                    className="mx-0.5 mb-6 h-px w-6 shrink-0 bg-line sm:w-8"
+                  />
+                ) : null}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+export function PatternPartsDiagram({
+  components,
+  objectLabel,
+  title,
+  subtitle,
+  finishedLabel,
+  interactive,
+}: {
+  components: PatternComponent[];
+  objectLabel: string;
+  title: string;
+  subtitle: string;
+  finishedLabel: string;
+  interactive: boolean;
+}) {
+  const parts = components.slice(0, 8);
+  const n = Math.max(parts.length, 1);
+  const cx = 200;
+  const cy = 168;
+  const r = 78;
+
+  return (
+    <section className="overflow-hidden rounded-[1.75rem] border border-line bg-[#fffdf9]">
+      <div className="border-b border-line px-5 py-4 sm:px-6">
+        <h2 className="font-display text-2xl text-ink sm:text-3xl">{title}</h2>
+        <p className="mt-1 text-sm text-muted">{subtitle}</p>
+      </div>
+      <div className="grid gap-4 p-4 sm:grid-cols-[1.2fr_0.8fr] sm:p-6">
+        <div className="relative overflow-hidden rounded-[1.35rem] bg-[radial-gradient(ellipse_at_50%_40%,rgba(217,107,82,0.1),transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(143,165,139,0.16),transparent_50%),#f3ebe0]">
+          <svg
+            viewBox="0 0 400 320"
+            className="h-auto w-full"
+            role="img"
+            aria-label={title}
+          >
+            <circle
+              cx={cx}
+              cy={cy}
+              r={62}
+              fill="#faf7f2"
+              stroke="#d96b52"
+              strokeWidth="2.5"
+            />
+            <text
+              x={cx}
+              y={cy - 4}
+              textAnchor="middle"
+              className="fill-ink"
+              style={{ fontSize: 13, fontWeight: 700 }}
+            >
+              {finishedLabel}
+            </text>
+            <text
+              x={cx}
+              y={cy + 14}
+              textAnchor="middle"
+              style={{ fontSize: 11, fill: "#6e655e" }}
+            >
+              {objectLabel.length > 22
+                ? `${objectLabel.slice(0, 20)}…`
+                : objectLabel}
+            </text>
+
+            {parts.map((part, i) => {
+              const angle = -Math.PI / 2 + (i / n) * Math.PI * 2;
+              const px = cx + Math.cos(angle) * r;
+              const py = cy + Math.sin(angle) * r;
+              const lx = cx + Math.cos(angle) * 128;
+              const ly = cy + Math.sin(angle) * 118;
+              const color = ACCENTS[i % ACCENTS.length];
+              return (
+                <g key={part.id}>
+                  <line
+                    x1={cx + Math.cos(angle) * 62}
+                    y1={cy + Math.sin(angle) * 62}
+                    x2={px}
+                    y2={py}
+                    stroke={color}
+                    strokeWidth="1.5"
+                    strokeDasharray="4 3"
+                    opacity="0.7"
+                  />
+                  <circle cx={px} cy={py} r="18" fill={color} opacity="0.95" />
+                  <text
+                    x={px}
+                    y={py + 4}
+                    textAnchor="middle"
+                    fill="#fffaf7"
+                    style={{ fontSize: 11, fontWeight: 700 }}
+                  >
+                    {i + 1}
+                  </text>
+                  <text
+                    x={lx}
+                    y={ly}
+                    textAnchor="middle"
+                    style={{ fontSize: 11, fontWeight: 600, fill: "#2b2522" }}
+                  >
+                    {part.name.length > 14
+                      ? `${part.name.slice(0, 12)}…`
+                      : part.name}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        <ul className="flex flex-col justify-center gap-2">
+          {parts.map((part, i) => {
+            const color = ACCENTS[i % ACCENTS.length];
+            const rounds = part.rounds.length;
+            const content = (
+              <>
+                <span
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-bone"
+                  style={{ background: color }}
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-ink">
+                    {part.name}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {rounds > 0 ? `${rounds} rnds` : part.construction}
+                    {part.make && part.make > 1 ? ` · make ${part.make}` : ""}
+                  </span>
+                </span>
+              </>
+            );
+            return (
+              <li key={part.id}>
+                {interactive ? (
+                  <a
+                    href={`#part-${part.id}`}
+                    className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5 transition hover:border-apricot/40 hover:bg-elevated"
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5">
+                    {content}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+export function PatternColorLegend({
+  colors,
+  title,
+}: {
+  colors: string[];
+  title: string;
+}) {
+  if (!colors.length) return null;
+  return (
+    <div className="rounded-[1.35rem] border border-line bg-[#fffdf9] px-5 py-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+        {title}
+      </p>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {colors.map((c) => (
+          <li
+            key={c}
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-bg px-3 py-1.5 text-sm text-ink"
+          >
+            <span
+              className="h-3.5 w-3.5 rounded-full border border-ink/10 shadow-sm"
+              style={{ background: guessCssColor(c) }}
+              aria-hidden
+            />
+            {c}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function guessCssColor(name: string): string {
+  const n = name.toLowerCase();
+  const map: Record<string, string> = {
+    navy: "#1e3a5f",
+    blue: "#3b6ea5",
+    teal: "#4a9b8c",
+    cream: "#f5ead7",
+    white: "#f7f4ef",
+    ivory: "#f3ebe0",
+    yellow: "#e6c35c",
+    gold: "#c49a5a",
+    pink: "#e8a0b0",
+    coral: "#d96b52",
+    apricot: "#d96b52",
+    green: "#8fa58b",
+    sage: "#8fa58b",
+    mint: "#a3b8a0",
+    red: "#c4573f",
+    burgundy: "#7a2e2e",
+    brown: "#6b4a35",
+    beige: "#d9cbb8",
+    grey: "#9a938a",
+    gray: "#9a938a",
+    black: "#2b2522",
+    purple: "#7a6b8a",
+    lavender: "#b7a7c9",
+    orange: "#e0894a",
+  };
+  for (const [key, val] of Object.entries(map)) {
+    if (n.includes(key)) return val;
+  }
+  return "#c4b8a8";
+}
+
+export function StitchCountChart({
+  component,
+  title,
+  emptyLabel,
+}: {
+  component: PatternComponent;
+  title: string;
+  emptyLabel: string;
+}) {
+  const points = component.rounds
+    .filter((r) => typeof r.result === "number" && r.result >= 0)
+    .map((r) => ({ x: r.round, y: r.result }));
+
+  if (points.length < 2) {
+    return (
+      <p className="px-5 py-3 text-xs text-muted">{emptyLabel}</p>
+    );
+  }
+
+  const padX = 28;
+  const padY = 18;
+  const w = 320;
+  const h = 120;
+  const minY = Math.min(...points.map((p) => p.y));
+  const maxY = Math.max(...points.map((p) => p.y));
+  const minX = points[0].x;
+  const maxX = points[points.length - 1].x;
+  const spanY = Math.max(maxY - minY, 1);
+  const spanX = Math.max(maxX - minX, 1);
+
+  const coords = points.map((p) => {
+    const x = padX + ((p.x - minX) / spanX) * (w - padX * 2);
+    const y = h - padY - ((p.y - minY) / spanY) * (h - padY * 2);
+    return { ...p, px: x, py: y };
+  });
+
+  const path = coords
+    .map((c, i) => `${i === 0 ? "M" : "L"} ${c.px.toFixed(1)} ${c.py.toFixed(1)}`)
+    .join(" ");
+
+  const area =
+    path +
+    ` L ${coords[coords.length - 1].px.toFixed(1)} ${(h - padY).toFixed(1)} L ${coords[0].px.toFixed(1)} ${(h - padY).toFixed(1)} Z`;
+
+  return (
+    <div className="border-t border-line bg-elevated/40 px-4 py-3 sm:px-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+          {title}
+        </p>
+        <p className="text-xs text-muted">
+          {minY} → {maxY} sts
+        </p>
+      </div>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="mt-1 h-auto w-full max-w-md"
+        role="img"
+        aria-label={title}
+      >
+        <path d={area} fill="rgba(217,107,82,0.12)" />
+        <path
+          d={path}
+          fill="none"
+          stroke="#d96b52"
+          strokeWidth="2.2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {coords.map((c) => (
+          <g key={c.x}>
+            <circle cx={c.px} cy={c.py} r="3.2" fill="#c4573f" />
+            {(c.x === minX ||
+              c.x === maxX ||
+              c.y === minY ||
+              c.y === maxY) && (
+              <text
+                x={c.px}
+                y={c.py - 8}
+                textAnchor="middle"
+                style={{ fontSize: 9, fill: "#6e655e", fontWeight: 700 }}
+              >
+                {c.y}
+              </text>
+            )}
+          </g>
+        ))}
+        <text
+          x={padX}
+          y={h - 4}
+          style={{ fontSize: 9, fill: "#9a938a" }}
+        >
+          R{minX}
+        </text>
+        <text
+          x={w - padX}
+          y={h - 4}
+          textAnchor="end"
+          style={{ fontSize: 9, fill: "#9a938a" }}
+        >
+          R{maxX}
+        </text>
+      </svg>
+    </div>
+  );
+}

@@ -13,9 +13,15 @@ import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { PatternCard } from "@/components/site/PatternCard";
 import { BuyPatternButton } from "@/components/site/BuyPatternButton";
+import {
+  PatternColorLegend,
+  PatternMakePath,
+  PatternPartsDiagram,
+  StitchCountChart,
+} from "@/components/site/PatternVisualGuide";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
-
+import { Reveal } from "@/components/site/Reveal";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -209,6 +215,75 @@ export default async function PatternDetailPage({
         </div>
       </div>
 
+      <Reveal className="mt-12">
+        <PatternMakePath
+          components={pattern.content.components}
+          hasAssembly={pattern.content.assembly.length > 0}
+          hasFinishing={pattern.content.finishing.length > 0}
+          title={t("makePathTitle")}
+          subtitle={t("makePathSubtitle")}
+          jumpLabel={t("makePathEyebrow")}
+          assembleLabel={t("assembly")}
+          finishLabel={t("finishing")}
+          interactive={unlocked}
+        />
+      </Reveal>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <Reveal delay={60}>
+          <PatternPartsDiagram
+            components={pattern.content.components}
+            objectLabel={pattern.designSpec.object.replace(/_/g, " ")}
+            title={t("partsTitle")}
+            subtitle={t("partsSubtitle")}
+            finishedLabel={t("finishedPiece")}
+            interactive={unlocked}
+          />
+        </Reveal>
+        <Reveal delay={120} className="space-y-4">
+          <PatternColorLegend
+            colors={pattern.designSpec.colors || []}
+            title={t("colorPalette")}
+          />
+          {pattern.imagePath ? (
+            <div className="overflow-hidden rounded-[1.35rem] border border-line bg-[#fffdf9]">
+              <div className="border-b border-line px-5 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                  {t("stepGuide")}
+                </p>
+                <p className="mt-1 text-sm text-muted">{t("stepGuideHint")}</p>
+              </div>
+              <div className="relative aspect-[5/4] bg-elevated/50">
+                <Image
+                  src={
+                    versionedAssetUrl(pattern.imagePath, pattern.updatedAt) ||
+                    pattern.imagePath
+                  }
+                  alt={title}
+                  fill
+                  unoptimized
+                  className="object-contain p-3"
+                  sizes="(max-width:1024px) 100vw, 40vw"
+                />
+              </div>
+              {unlocked ? (
+                <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
+                  {pattern.content.components.slice(0, 4).map((c, i) => (
+                    <a
+                      key={c.id}
+                      href={`#part-${c.id}`}
+                      className="rounded-full bg-elevated px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-apricot hover:text-bone"
+                    >
+                      {i + 1}. {c.name}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </Reveal>
+      </div>
+
       <div className="mt-16 grid gap-8 lg:grid-cols-2">
         <section className="soft-card p-6">
           <h2 className="font-display text-3xl text-ink">{t("materials")}</h2>
@@ -255,20 +330,34 @@ export default async function PatternDetailPage({
 
       {unlocked ? (
         <>
-          <section className="mt-16">
+          <section className="mt-16" id="instructions">
             <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
             <div className="mt-6 space-y-6">
               {pattern.content.components.map((component) => (
                 <div
                   key={component.id}
-                  className="overflow-hidden rounded-[1.5rem] border border-line bg-bg"
+                  id={`part-${component.id}`}
+                  className="scroll-mt-28 overflow-hidden rounded-[1.5rem] border border-line bg-bg"
                 >
-                  <div className="bg-apricot px-5 py-4 font-display text-xl text-bone">
-                    {component.name}
-                    {component.make && component.make > 1
-                      ? ` · make ${component.make}`
-                      : ""}
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-apricot px-5 py-4">
+                    <h3 className="font-display text-xl text-bone">
+                      {component.name}
+                      {component.make && component.make > 1
+                        ? ` · make ${component.make}`
+                        : ""}
+                    </h3>
+                    <a
+                      href="#instructions"
+                      className="text-xs font-bold uppercase tracking-wider text-bone/80 hover:text-bone"
+                    >
+                      {t("jumpToRounds")}
+                    </a>
                   </div>
+                  <StitchCountChart
+                    component={component}
+                    title={t("stitchChart")}
+                    emptyLabel={t("stitchChartEmpty")}
+                  />
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                       <thead className="bg-elevated text-muted">
@@ -299,10 +388,27 @@ export default async function PatternDetailPage({
           </section>
 
           {pattern.content.assembly.length > 0 && (
-            <section className="soft-card mt-12 p-6">
+            <section
+              id="assembly"
+              className="soft-card mt-12 scroll-mt-28 p-6"
+            >
               <h2 className="font-display text-3xl text-ink">{t("assembly")}</h2>
               <ol className="mt-5 list-decimal space-y-3 pl-5 text-sm text-muted">
                 {pattern.content.assembly.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          {pattern.content.finishing.length > 0 && (
+            <section
+              id="finishing"
+              className="soft-card mt-12 scroll-mt-28 p-6"
+            >
+              <h2 className="font-display text-3xl text-ink">{t("finishing")}</h2>
+              <ol className="mt-5 list-decimal space-y-3 pl-5 text-sm text-muted">
+                {pattern.content.finishing.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ol>

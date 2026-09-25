@@ -49,8 +49,20 @@
     "all": "Todos los patrones",
     "filterAll": "Todos",
     "lockedTitle": "Patrón completo tras la compra",
-    "lockedBody": "Ves la foto, el resumen y un adelanto de materiales. Compra una vez para desbloquear rondas, ensamblaje y PDF.",
-    "lockedTeaser": "…lista completa tras desbloquear"
+    "lockedBody": "Ves la foto, el resumen, la ruta de trabajo y el diagrama de piezas. Compra una vez para desbloquear rondas, gráficos de puntos, ensamblaje y PDF.",
+    "lockedTeaser": "…lista completa tras desbloquear",
+    "makePathTitle": "Cómo se hace",
+    "makePathSubtitle": "Sigue la ruta desde la primera pieza hasta el proyecto terminado. Toca un paso para saltar.",
+    "makePathEyebrow": "Ruta",
+    "partsTitle": "Diagrama de piezas",
+    "partsSubtitle": "Cada pieza numerada se teje aparte y luego se une al proyecto final.",
+    "finishedPiece": "Listo",
+    "colorPalette": "Paleta de color",
+    "stitchChart": "Puntos por ronda",
+    "stitchChartEmpty": "No hay rondas suficientes para el gráfico.",
+    "stepGuide": "Pasos visuales",
+    "stepGuideHint": "El collage sigue la ruta — cada panel corresponde a una etapa del patrón.",
+    "jumpToRounds": "Ir a las rondas"
   },
   "categories": {
     "title": "Categorías",

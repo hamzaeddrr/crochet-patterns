@@ -49,8 +49,20 @@
     "all": "All patterns",
     "filterAll": "All",
     "lockedTitle": "Full pattern unlocked after purchase",
-    "lockedBody": "You can see the project photo, summary, and a materials teaser. Buy once to unlock every round, assembly steps, and the printable PDF.",
-    "lockedTeaser": "…full yarn list after unlock"
+    "lockedBody": "You can see the project photo, summary, make path, and parts diagram. Buy once to unlock every round, stitch charts, assembly steps, and the printable PDF.",
+    "lockedTeaser": "…full yarn list after unlock",
+    "makePathTitle": "How you’ll make it",
+    "makePathSubtitle": "Follow the path from first piece to finished project. Tap a step to jump to that section.",
+    "makePathEyebrow": "Make path",
+    "partsTitle": "Parts diagram",
+    "partsSubtitle": "Each numbered piece is crocheted separately, then joined into the finished make.",
+    "finishedPiece": "Finished",
+    "colorPalette": "Color palette",
+    "stitchChart": "Stitch count by round",
+    "stitchChartEmpty": "Not enough rounds to chart yet.",
+    "stepGuide": "Visual steps",
+    "stepGuideHint": "Use the collage with the make path — each panel maps to a stage of this pattern.",
+    "jumpToRounds": "Jump to rounds"
   },
   "categories": {
     "title": "Categories",
