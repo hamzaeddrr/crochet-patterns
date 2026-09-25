@@ -288,76 +288,6 @@ function SymbolLegend({
   );
 }
 
-function FlatRowChart({
-  symbols,
-  roundNumber,
-  result,
-}: {
-  symbols: ChartSymbol[];
-  roundNumber: number;
-  result: number;
-}) {
-  const runs = collapseSymbolRuns(symbols);
-  const glyphs: ChartSymbol[] = [];
-  for (const run of runs) {
-    if (run.kind === "text" || run.kind === "fo") continue;
-    const n = Math.min(
-      run.count || 1,
-      run.kind === "ch" || run.kind === "sc" ? 10 : 6
-    );
-    for (let i = 0; i < n; i++) glyphs.push({ kind: run.kind });
-  }
-
-  return (
-    <div className="rounded-[1.25rem] border border-line bg-[linear-gradient(180deg,#f7f1e8_0%,#efe7db_100%)] p-4">
-      <p className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-        Row chart · R{roundNumber} · {result} sts
-      </p>
-      <div className="mt-3 overflow-x-auto pb-1">
-        <div className="flex min-w-max items-end justify-center gap-0.5 px-1">
-          {glyphs.slice(0, 36).map((g, i) => (
-            <span
-              key={`${g.kind}-${i}`}
-              className="inline-flex h-9 w-5 items-center justify-center rounded-sm bg-bone/80"
-            >
-              <SymbolGlyph kind={g.kind} size={16} />
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
-        {runs
-          .filter((r) => r.kind !== "text")
-          .map((r, i) => (
-            <span
-              key={`${r.kind}-run-${i}`}
-              className="inline-flex items-center gap-1.5 rounded-full bg-bone px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-            >
-              <SymbolGlyph kind={r.kind} size={14} color={ACCENT} />
-              {SYMBOL_LABELS[r.kind]}
-              {(r.count || 1) > 1 ? ` ×${r.count}` : ""}
-            </span>
-          ))}
-      </div>
-    </div>
-  );
-}
-
-function isFlatConstruction(component: PatternComponent): boolean {
-  const c = `${component.construction} ${component.name}`.toLowerCase();
-  if (/amigurumi|in[- ]?the[- ]?round|magic.?ring|circular/.test(c)) {
-    return false;
-  }
-  if (/flat|panel|strap|gusset|flap|row|strip/.test(c)) return true;
-  // Heuristic: foundation chain + turn patterns are flat
-  const ops = component.rounds[0]?.operations || [];
-  const hasTurn = component.rounds.some((r) =>
-    (r.operations || []).some((o) => o.type === "turn")
-  );
-  const hasChain = ops.some((o) => o.type === "chain");
-  return hasTurn || (hasChain && !ops.some((o) => o.type === "magic_ring"));
-}
-
 export function CrochetStitchDiagram({
   component,
   title,
@@ -366,7 +296,6 @@ export function CrochetStitchDiagram({
   writtenOrderLabel,
   legendLabel,
   emptyLabel,
-  flatSubtitle,
   previewOnly,
 }: {
   component: PatternComponent;
@@ -376,7 +305,6 @@ export function CrochetStitchDiagram({
   writtenOrderLabel: string;
   legendLabel: string;
   emptyLabel: string;
-  flatSubtitle?: string;
   /** Locked teaser: only first chartable round, no full picker */
   previewOnly?: boolean;
 }) {
@@ -387,8 +315,6 @@ export function CrochetStitchDiagram({
       ),
     [component.rounds]
   );
-
-  const flat = isFlatConstruction(component);
 
   const [activeRound, setActiveRound] = useState(
     chartableRounds[0]?.round ?? component.rounds[0]?.round ?? 1
@@ -402,9 +328,12 @@ export function CrochetStitchDiagram({
     [round]
   );
 
-  // Hide entirely for embroidery / fabric / pompom-style “rounds”
   if (!chartableRounds.length || !round) {
-    return null;
+    return (
+      <div className="border-t border-line bg-[#fffdf9] px-5 py-4 text-sm text-muted">
+        {emptyLabel}
+      </div>
+    );
   }
 
   const roundsToShow = previewOnly
@@ -417,12 +346,7 @@ export function CrochetStitchDiagram({
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
           {title}
         </p>
-        <p className="mt-1 text-sm text-muted">
-          {flat
-            ? flatSubtitle ||
-              "Flat / row chart using standard crochet symbols (read left → right)."
-            : subtitle}
-        </p>
+        <p className="mt-1 text-sm text-muted">{subtitle}</p>
       </div>
 
       {!previewOnly && roundsToShow.length > 1 ? (
@@ -447,35 +371,21 @@ export function CrochetStitchDiagram({
         </div>
       ) : null}
 
-      <div
-        className={`grid gap-5 p-4 sm:p-5 ${
-          flat ? "sm:grid-cols-1" : "sm:grid-cols-[1fr_1fr]"
-        }`}
-      >
-        {flat ? (
-          <FlatRowChart
-            symbols={symbols}
-            roundNumber={round.round}
-            result={round.result}
-          />
-        ) : (
-          <CircularRoundChart
-            symbols={symbols}
-            roundNumber={round.round}
-            result={round.result}
-          />
-        )}
+      <div className="grid gap-5 p-4 sm:grid-cols-[1fr_1fr] sm:p-5">
+        <CircularRoundChart
+          symbols={symbols}
+          roundNumber={round.round}
+          result={round.result}
+        />
         <div className="flex flex-col justify-center gap-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
               {writtenOrderLabel}
             </p>
             <p className="mt-1 text-sm text-ink/80">{round.instructions}</p>
-            {!flat ? (
-              <div className="mt-3">
-                <LinearSymbolStrip symbols={symbols} />
-              </div>
-            ) : null}
+            <div className="mt-3">
+              <LinearSymbolStrip symbols={symbols} />
+            </div>
           </div>
           <SymbolLegend
             title={legendLabel}

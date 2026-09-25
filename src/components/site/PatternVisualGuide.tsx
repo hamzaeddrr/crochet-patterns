@@ -346,75 +346,35 @@ export function StitchCountChart({
   component,
   title,
   emptyLabel,
-  evenLabel,
 }: {
   component: PatternComponent;
   title: string;
   emptyLabel: string;
-  /** Shown when every round has the same stitch count (flat panel / strap). */
-  evenLabel?: string;
 }) {
   const points = component.rounds
-    .filter((r) => typeof r.result === "number" && r.result > 0)
+    .filter((r) => typeof r.result === "number" && r.result >= 0)
     .map((r) => ({ x: r.round, y: r.result }));
 
   if (points.length < 2) {
-    return null;
-  }
-
-  const minY = Math.min(...points.map((p) => p.y));
-  const maxY = Math.max(...points.map((p) => p.y));
-  const minX = points[0].x;
-  const maxX = points[points.length - 1].x;
-  const isEven = minY === maxY;
-
-  // Constant stitch count: don't draw a misleading empty line chart
-  if (isEven) {
     return (
-      <div className="border-t border-line bg-elevated/40 px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-            {title}
-          </p>
-          <p className="text-xs font-bold text-celadon">
-            {points.length} rnds · {minY} sts each
-          </p>
-        </div>
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-celadon/25 bg-celadon/10 px-4 py-3">
-          <span className="font-display text-3xl text-ink">{minY}</span>
-          <span className="text-sm leading-snug text-muted">
-            {evenLabel ||
-              "Even stitch count — no increases or decreases (flat panel / strap)."}
-          </span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {points.map((p) => (
-            <span
-              key={p.x}
-              className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-bold text-ink"
-            >
-              R{p.x}
-            </span>
-          ))}
-        </div>
-      </div>
+      <p className="px-5 py-3 text-xs text-muted">{emptyLabel}</p>
     );
   }
 
   const padX = 28;
-  const padY = 22;
+  const padY = 18;
   const w = 320;
   const h = 120;
-  // Pad Y so the line isn't glued to the top/bottom edge
-  const yPad = Math.max(2, Math.round((maxY - minY) * 0.15));
-  const yMin = Math.max(0, minY - yPad);
-  const yMax = maxY + yPad;
-  const spanY = Math.max(yMax - yMin, 1);
+  const minY = Math.min(...points.map((p) => p.y));
+  const maxY = Math.max(...points.map((p) => p.y));
+  const minX = points[0].x;
+  const maxX = points[points.length - 1].x;
+  const spanY = Math.max(maxY - minY, 1);
   const spanX = Math.max(maxX - minX, 1);
 
   const coords = points.map((p) => {
     const x = padX + ((p.x - minX) / spanX) * (w - padX * 2);
-    const y = h - padY - ((p.y - yMin) / spanY) * (h - padY * 2);
+    const y = h - padY - ((p.y - minY) / spanY) * (h - padY * 2);
     return { ...p, px: x, py: y };
   });
 
@@ -469,7 +429,11 @@ export function StitchCountChart({
             )}
           </g>
         ))}
-        <text x={padX} y={h - 4} style={{ fontSize: 9, fill: "#9a938a" }}>
+        <text
+          x={padX}
+          y={h - 4}
+          style={{ fontSize: 9, fill: "#9a938a" }}
+        >
           R{minX}
         </text>
         <text

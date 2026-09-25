@@ -358,13 +358,11 @@ export default async function PatternDetailPage({
                     component={component}
                     title={t("stitchChart")}
                     emptyLabel={t("stitchChartEmpty")}
-                    evenLabel={t("stitchChartEven")}
                   />
                   <CrochetStitchDiagram
                     component={component}
                     title={t("stitchDiagramTitle")}
                     subtitle={t("stitchDiagramSubtitle")}
-                    flatSubtitle={t("stitchDiagramFlatSubtitle")}
                     roundLabel={t("stitchDiagramRound")}
                     writtenOrderLabel={t("stitchDiagramWritten")}
                     legendLabel={t("stitchDiagramLegend")}
@@ -438,7 +436,6 @@ export default async function PatternDetailPage({
                 component={pattern.content.components[0]}
                 title={t("stitchDiagramTitle")}
                 subtitle={t("stitchDiagramSubtitle")}
-                flatSubtitle={t("stitchDiagramFlatSubtitle")}
                 roundLabel={t("stitchDiagramRound")}
                 writtenOrderLabel={t("stitchDiagramWritten")}
                 legendLabel={t("stitchDiagramLegend")}
