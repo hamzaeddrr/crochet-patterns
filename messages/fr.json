@@ -49,7 +49,7 @@
     "all": "Tous les modèles",
     "filterAll": "Tous",
     "lockedTitle": "Modèle complet après achat",
-    "lockedBody": "Photo, résumé, parcours de fabrication et schéma des pièces visibles. Un achat débloque les rangs, graphiques de mailles, assemblage et PDF.",
+    "lockedBody": "Photo, résumé, parcours, schéma des pièces et un diagramme d’échantillon visibles. Un achat débloque les rangs, diagrammes complets, assemblage et PDF.",
     "lockedTeaser": "…liste complète après déblocage",
     "makePathTitle": "Comment le réaliser",
     "makePathSubtitle": "Suivez le parcours de la première pièce au projet fini. Touchez une étape pour y aller.",
@@ -62,7 +62,13 @@
     "stitchChartEmpty": "Pas assez de tours pour un graphique.",
     "stepGuide": "Étapes visuelles",
     "stepGuideHint": "La mosaïque suit le parcours — chaque panneau correspond à une étape du modèle.",
-    "jumpToRounds": "Aller aux tours"
+    "jumpToRounds": "Aller aux tours",
+    "stitchDiagramTitle": "Diagramme de mailles",
+    "stitchDiagramSubtitle": "Symboles de crochet standard pour ce tour — lecture dans le sens horaire depuis le haut.",
+    "stitchDiagramRound": "Tour",
+    "stitchDiagramWritten": "Ordre écrit",
+    "stitchDiagramLegend": "Légende",
+    "stitchDiagramEmpty": "Pas d’opérations diagrammables pour cette pièce."
   },
   "categories": {
     "title": "Catégories",

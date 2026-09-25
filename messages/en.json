@@ -49,7 +49,7 @@
     "all": "All patterns",
     "filterAll": "All",
     "lockedTitle": "Full pattern unlocked after purchase",
-    "lockedBody": "You can see the project photo, summary, make path, and parts diagram. Buy once to unlock every round, stitch charts, assembly steps, and the printable PDF.",
+    "lockedBody": "You can see the project photo, summary, make path, parts diagram, and a sample stitch chart. Buy once to unlock every round, full stitch diagrams, assembly steps, and the printable PDF.",
     "lockedTeaser": "…full yarn list after unlock",
     "makePathTitle": "How you’ll make it",
     "makePathSubtitle": "Follow the path from first piece to finished project. Tap a step to jump to that section.",
@@ -62,7 +62,13 @@
     "stitchChartEmpty": "Not enough rounds to chart yet.",
     "stepGuide": "Visual steps",
     "stepGuideHint": "Use the collage with the make path — each panel maps to a stage of this pattern.",
-    "jumpToRounds": "Jump to rounds"
+    "jumpToRounds": "Jump to rounds",
+    "stitchDiagramTitle": "Crochet stitch diagram",
+    "stitchDiagramSubtitle": "Standard crochet chart symbols for this round — read clockwise from the top.",
+    "stitchDiagramRound": "Rnd",
+    "stitchDiagramWritten": "Written order",
+    "stitchDiagramLegend": "Symbol key",
+    "stitchDiagramEmpty": "No chartable stitch operations for this piece yet."
   },
   "categories": {
     "title": "Categories",

@@ -19,6 +19,7 @@ import {
   PatternPartsDiagram,
   StitchCountChart,
 } from "@/components/site/PatternVisualGuide";
+import { CrochetStitchDiagram } from "@/components/site/CrochetStitchDiagram";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 import { Reveal } from "@/components/site/Reveal";
@@ -358,6 +359,15 @@ export default async function PatternDetailPage({
                     title={t("stitchChart")}
                     emptyLabel={t("stitchChartEmpty")}
                   />
+                  <CrochetStitchDiagram
+                    component={component}
+                    title={t("stitchDiagramTitle")}
+                    subtitle={t("stitchDiagramSubtitle")}
+                    roundLabel={t("stitchDiagramRound")}
+                    writtenOrderLabel={t("stitchDiagramWritten")}
+                    legendLabel={t("stitchDiagramLegend")}
+                    emptyLabel={t("stitchDiagramEmpty")}
+                  />
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                       <thead className="bg-elevated text-muted">
@@ -416,17 +426,36 @@ export default async function PatternDetailPage({
           )}
         </>
       ) : (
-        <section className="soft-card mt-16 p-8 text-center">
-          <h2 className="font-display text-3xl text-ink">{t("lockedTitle")}</h2>
-          <p className="mx-auto mt-3 max-w-md text-muted">{t("lockedBody")}</p>
-          <div className="mt-6 flex justify-center">
-            <BuyPatternButton
-              slug={pattern.slug}
-              locale={locale}
-              priceCents={pattern.priceCents}
-              currency={pattern.currency}
-              label={t("buy")}
-            />
+        <section className="mt-16 space-y-6">
+          {pattern.content.components[0] ? (
+            <div className="overflow-hidden rounded-[1.5rem] border border-line bg-bg">
+              <div className="bg-apricot px-5 py-4 font-display text-xl text-bone">
+                {pattern.content.components[0].name} · {t("stitchDiagramTitle")}
+              </div>
+              <CrochetStitchDiagram
+                component={pattern.content.components[0]}
+                title={t("stitchDiagramTitle")}
+                subtitle={t("stitchDiagramSubtitle")}
+                roundLabel={t("stitchDiagramRound")}
+                writtenOrderLabel={t("stitchDiagramWritten")}
+                legendLabel={t("stitchDiagramLegend")}
+                emptyLabel={t("stitchDiagramEmpty")}
+                previewOnly
+              />
+            </div>
+          ) : null}
+          <div className="soft-card p-8 text-center">
+            <h2 className="font-display text-3xl text-ink">{t("lockedTitle")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-muted">{t("lockedBody")}</p>
+            <div className="mt-6 flex justify-center">
+              <BuyPatternButton
+                slug={pattern.slug}
+                locale={locale}
+                priceCents={pattern.priceCents}
+                currency={pattern.currency}
+                label={t("buy")}
+              />
+            </div>
           </div>
         </section>
       )}

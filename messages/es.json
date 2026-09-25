@@ -49,7 +49,7 @@
     "all": "Todos los patrones",
     "filterAll": "Todos",
     "lockedTitle": "Patrón completo tras la compra",
-    "lockedBody": "Ves la foto, el resumen, la ruta de trabajo y el diagrama de piezas. Compra una vez para desbloquear rondas, gráficos de puntos, ensamblaje y PDF.",
+    "lockedBody": "Ves la foto, el resumen, la ruta, el diagrama de piezas y una muestra del diagrama de puntos. Compra una vez para desbloquear rondas, diagramas completos, ensamblaje y PDF.",
     "lockedTeaser": "…lista completa tras desbloquear",
     "makePathTitle": "Cómo se hace",
     "makePathSubtitle": "Sigue la ruta desde la primera pieza hasta el proyecto terminado. Toca un paso para saltar.",
@@ -62,7 +62,13 @@
     "stitchChartEmpty": "No hay rondas suficientes para el gráfico.",
     "stepGuide": "Pasos visuales",
     "stepGuideHint": "El collage sigue la ruta — cada panel corresponde a una etapa del patrón.",
-    "jumpToRounds": "Ir a las rondas"
+    "jumpToRounds": "Ir a las rondas",
+    "stitchDiagramTitle": "Diagrama de puntos",
+    "stitchDiagramSubtitle": "Símbolos de crochet estándar para esta ronda — se lee en sentido horario desde arriba.",
+    "stitchDiagramRound": "Rnd",
+    "stitchDiagramWritten": "Orden escrito",
+    "stitchDiagramLegend": "Leyenda",
+    "stitchDiagramEmpty": "Aún no hay operaciones diagramables para esta pieza."
   },
   "categories": {
     "title": "Categorías",
