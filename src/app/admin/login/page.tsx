@@ -16,11 +16,14 @@ export default function AdminLoginPage() {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password: password.trim() }),
     });
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
-      setError("Invalid password");
+      setError(
+        typeof data.error === "string" ? data.error : "Invalid password"
+      );
       return;
     }
     router.push("/admin");

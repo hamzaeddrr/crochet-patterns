@@ -6,19 +6,27 @@ import {
 } from "@/lib/admin/auth";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const password = String(body.password || "");
-  if (!(await checkAdminPassword(password))) {
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+  try {
+    const body = await request.json();
+    const password = String(body.password || "");
+    if (!(await checkAdminPassword(password))) {
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+    const token = createAdminSessionToken();
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(ADMIN_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 14,
+    });
+    return res;
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Login failed" },
+      { status: 500 }
+    );
   }
-  const token = createAdminSessionToken();
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(ADMIN_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 14,
-  });
-  return res;
 }

@@ -131,6 +131,10 @@ export default function AdminSettingsPage() {
 
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="font-semibold text-white">Admin access</h2>
+          <p className="text-xs text-slate-500">
+            Login uses <code className="text-slate-400">ADMIN_PASSWORD</code>{" "}
+            from env when set. Override below only if env is empty.
+          </p>
           {field("adminPassword", "New admin password", "password")}
         </section>
 

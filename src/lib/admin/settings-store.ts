@@ -41,18 +41,28 @@ export function defaultAdminSettings(): AdminSettings {
 }
 
 async function ensure(): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
   try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.access(FILE);
   } catch {
-    await fs.writeFile(FILE, JSON.stringify(defaultAdminSettings(), null, 2));
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(FILE, JSON.stringify(defaultAdminSettings(), null, 2));
+    } catch (err) {
+      // Read-only/ephemeral FS (e.g. some serverless) — skip persist
+      console.warn("admin-settings.json not writable:", err);
+    }
   }
 }
 
 export async function readAdminSettings(): Promise<AdminSettings> {
   await ensure();
-  const raw = JSON.parse(await fs.readFile(FILE, "utf8")) as AdminSettings;
-  return { ...defaultAdminSettings(), ...raw };
+  try {
+    const raw = JSON.parse(await fs.readFile(FILE, "utf8")) as AdminSettings;
+    return { ...defaultAdminSettings(), ...raw };
+  } catch {
+    return defaultAdminSettings();
+  }
 }
 
 export async function saveAdminSettings(
