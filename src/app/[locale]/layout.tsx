@@ -1,25 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Nunito } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { NextIntlClientProvider } from "next-intl";
 import { locales, type Locale } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { siteUrl } from "@/lib/utils";
-import "../globals.css";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  variable: "--font-body",
-  display: "swap",
-});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -77,16 +63,10 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body
-        className={`${fraunces.variable} ${nunito.variable} min-h-screen antialiased`}
-      >
-        <NextIntlClientProvider messages={messages}>
-          <SiteHeader locale={locale} />
-          <main className="min-h-[70vh]">{children}</main>
-          <SiteFooter />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <SiteHeader locale={locale} />
+      <main className="min-h-[70vh]">{children}</main>
+      <SiteFooter />
+    </NextIntlClientProvider>
   );
 }
