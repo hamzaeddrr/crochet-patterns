@@ -1,4 +1,4 @@
-import { getOpenAI, contentModel } from "./openai";
+import { chatCompletion } from "./openai";
 import type { DesignSpec, PatternContent } from "@/types";
 import { emptyLocalized } from "@/types";
 import { slugify } from "@/lib/utils";
@@ -7,9 +7,7 @@ export async function generatePatternContent(
   prompt: string,
   spec: DesignSpec
 ): Promise<{ content: PatternContent; suggestedSlug: string }> {
-  const openai = await getOpenAI();
-  const completion = await openai.chat.completions.create({
-    model: await contentModel(),
+  const completion = await chatCompletion({
     temperature: 0.25,
     response_format: { type: "json_object" },
     messages: [

@@ -1,4 +1,4 @@
-import { getOpenAI, contentModel } from "./openai";
+import { chatCompletion } from "./openai";
 import type { LocalizedString, PatternContent } from "@/types";
 import type { Locale } from "@/i18n/routing";
 
@@ -7,10 +7,8 @@ async function translateText(
   target: Exclude<Locale, "en">
 ): Promise<string> {
   if (!text.trim()) return text;
-  const openai = await getOpenAI();
   const lang = target === "fr" ? "French" : "Spanish";
-  const completion = await openai.chat.completions.create({
-    model: await contentModel(),
+  const completion = await chatCompletion({
     temperature: 0.2,
     messages: [
       {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getOpenAI, contentModel } from "./openai";
+import { chatCompletion } from "./openai";
 import type { DesignSpec } from "@/types";
 
 const designSpecSchema = z.object({
@@ -20,9 +20,7 @@ const designSpecSchema = z.object({
 });
 
 export async function inventCreativeSubject(): Promise<string> {
-  const openai = await getOpenAI();
-  const completion = await openai.chat.completions.create({
-    model: await contentModel(),
+  const completion = await chatCompletion({
     temperature: 0.95,
     messages: [
       {
@@ -44,9 +42,7 @@ export async function inventCreativeSubject(): Promise<string> {
 }
 
 export async function generateDesignSpec(prompt: string): Promise<DesignSpec> {
-  const openai = await getOpenAI();
-  const completion = await openai.chat.completions.create({
-    model: await contentModel(),
+  const completion = await chatCompletion({
     temperature: 0.4,
     response_format: { type: "json_object" },
     messages: [

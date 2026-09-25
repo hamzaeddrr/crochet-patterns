@@ -8,7 +8,11 @@ import {
   resolveImageQuality,
   resolveImageSize,
 } from "@/lib/admin/settings-store";
-import { isFlareModel } from "./flare-types";
+import {
+  isFlareGenerateQuality,
+  isFlareModel,
+  type FlareGenerateQuality,
+} from "./flare-types";
 import type { DesignSpec } from "@/types";
 
 export interface GeneratedImagePaths {
@@ -20,6 +24,45 @@ export interface GeneratedImagePaths {
   size: string;
 }
 
+const STANDARD_SIZES = new Set([
+  "1024x1024",
+  "1024x1536",
+  "1536x1024",
+  "auto",
+]);
+
+const GPT_IMAGE_QUALITIES = new Set(["low", "medium", "high", "auto"]);
+
+function resolveSafeImageParams(
+  model: string,
+  rawQuality: string,
+  rawSize: string
+): { quality: string; size: string } {
+  const flare = isFlareModel(model);
+
+  let size = (rawSize || (flare ? "auto" : "1024x1024")).toLowerCase();
+  if (!STANDARD_SIZES.has(size)) {
+    size = flare ? "auto" : "1024x1024";
+  }
+  // Non-flare gpt-image models: prefer explicit square if "auto" unsupported
+  if (!flare && size === "auto") {
+    size = "1024x1024";
+  }
+
+  let quality = (rawQuality || (flare ? "high" : "high")).toLowerCase();
+  if (flare) {
+    if (!isFlareGenerateQuality(quality)) {
+      quality = "high" satisfies FlareGenerateQuality;
+    }
+  } else if (!GPT_IMAGE_QUALITIES.has(quality)) {
+    // Map flare-only values down for classic gpt-image
+    if (quality === "xhigh" || quality === "max") quality = "high";
+    else quality = "high";
+  }
+
+  return { quality, size };
+}
+
 export async function generatePatternImage(
   patternId: string,
   spec: DesignSpec,
@@ -28,22 +71,43 @@ export async function generatePatternImage(
   const openai = await getOpenAI();
   const promptUsed = customPrompt?.trim() || designSpecToImagePrompt(spec);
   const model = await resolveImageModel();
-  const quality = await resolveImageQuality();
-  const size = isFlareModel(model)
-    ? (await resolveImageSize()) || "auto"
-    : (await resolveImageSize()) === "auto"
-      ? "1024x1024"
-      : await resolveImageSize();
+  const { quality, size } = resolveSafeImageParams(
+    model,
+    await resolveImageQuality(),
+    await resolveImageSize()
+  );
 
-  const result = (await openai.images.generate({
+  const body: Record<string, unknown> = {
     model,
     prompt: promptUsed,
-    size: size as "1024x1024" | "auto",
-    quality: quality as "high" | "auto",
+    size,
+    quality,
     n: 1,
-  } as Parameters<typeof openai.images.generate>[0])) as {
+  };
+
+  let result: {
     data?: Array<{ b64_json?: string | null; url?: string | null }>;
   };
+
+  try {
+    result = (await openai.images.generate(
+      body as unknown as Parameters<typeof openai.images.generate>[0]
+    )) as typeof result;
+  } catch (err) {
+    // Retry with safest known-good params if model rejects quality/size/etc.
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn("Image generate retry after:", message);
+    const fallback: Record<string, unknown> = {
+      model,
+      prompt: promptUsed,
+      n: 1,
+      size: isFlareModel(model) ? "auto" : "1024x1024",
+      quality: "high",
+    };
+    result = (await openai.images.generate(
+      fallback as unknown as Parameters<typeof openai.images.generate>[0]
+    )) as typeof result;
+  }
 
   const b64 = result.data?.[0]?.b64_json;
   const url = result.data?.[0]?.url;
