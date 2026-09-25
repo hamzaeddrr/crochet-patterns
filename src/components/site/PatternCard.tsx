@@ -6,6 +6,7 @@ import { formatPrice, pickLocalized, type CrochetPattern } from "@/types";
 import type { Locale } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight } from "lucide-react";
+import { versionedAssetUrl } from "@/lib/utils";
 
 export function PatternCard({
   pattern,
@@ -20,8 +21,9 @@ export function PatternCard({
   const tc = useTranslations("common");
   const title = pickLocalized(pattern.content.title, locale);
   const summary = pickLocalized(pattern.content.summary, locale);
-  const src = pattern.thumbnailPath || pattern.imagePath;
-  const remote = Boolean(src && /^https?:\/\//i.test(src));
+  // Prefer full hero (multi-step collage); thumb is only a fallback
+  const raw = pattern.imagePath || pattern.thumbnailPath;
+  const src = versionedAssetUrl(raw, pattern.updatedAt);
   const priceLabel = pattern.free
     ? t("free")
     : formatPrice(pattern.priceCents, pattern.currency);
@@ -45,10 +47,11 @@ export function PatternCard({
           <div className="relative flex aspect-[5/4] items-center justify-center p-4 sm:p-5">
             {src ? (
               <Image
+                key={src}
                 src={src}
                 alt={title}
                 fill
-                unoptimized={remote}
+                unoptimized
                 className="object-contain drop-shadow-[0_12px_28px_rgba(43,37,34,0.14)] transition duration-700 ease-out group-hover:scale-[1.04] group-hover:-translate-y-1"
                 sizes="(max-width:768px) 100vw, 33vw"
               />

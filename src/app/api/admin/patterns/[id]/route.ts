@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   deletePattern,
   getPatternById,
@@ -10,6 +11,19 @@ import type { PatternStatus } from "@/types";
 
 /** Image regen + translate can exceed default serverless limits. */
 export const maxDuration = 300;
+
+function revalidatePatternPages(slug: string) {
+  revalidatePath("/");
+  revalidatePath("/fr");
+  revalidatePath("/es");
+  revalidatePath("/patterns");
+  revalidatePath("/fr/patterns");
+  revalidatePath("/es/patterns");
+  revalidatePath(`/patterns/${slug}`);
+  revalidatePath(`/fr/patterns/${slug}`);
+  revalidatePath(`/es/patterns/${slug}`);
+  revalidatePath("/admin/patterns");
+}
 
 export async function GET(
   _request: NextRequest,
@@ -52,6 +66,7 @@ export async function PATCH(
       next.imagePath = img.imagePath;
       next.thumbnailPath = img.thumbnailPath;
       const saved = await upsertPattern(next);
+      revalidatePatternPages(saved.slug);
       return NextResponse.json({
         pattern: saved,
         image: {
@@ -93,6 +108,9 @@ export async function PATCH(
   }
 
   const saved = await upsertPattern(next);
+  if (saved.status === "published" || pattern.status === "published") {
+    revalidatePatternPages(saved.slug);
+  }
   return NextResponse.json({ pattern: saved });
 }
 

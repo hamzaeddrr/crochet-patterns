@@ -13,8 +13,10 @@ import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { PatternCard } from "@/components/site/PatternCard";
 import { BuyPatternButton } from "@/components/site/BuyPatternButton";
-import { siteUrl } from "@/lib/utils";
+import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -50,7 +52,14 @@ export async function generateMetadata({
       url,
       type: "article",
       images: pattern.imagePath
-        ? [{ url: siteUrl(pattern.imagePath) }]
+        ? [
+            {
+              url: versionedAssetUrl(
+                siteUrl(pattern.imagePath),
+                pattern.updatedAt
+              )!,
+            },
+          ]
         : undefined,
     },
   };
@@ -115,13 +124,18 @@ export default async function PatternDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-elevated shadow-[0_16px_40px_rgba(43,37,34,0.08)]">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-elevated shadow-[0_16px_40px_rgba(43,37,34,0.08)] sm:aspect-[5/4]">
           {pattern.imagePath ? (
             <Image
-              src={pattern.imagePath}
+              key={`${pattern.imagePath}-${pattern.updatedAt}`}
+              src={
+                versionedAssetUrl(pattern.imagePath, pattern.updatedAt) ||
+                pattern.imagePath
+              }
               alt={title}
               fill
-              className="object-cover"
+              unoptimized
+              className="object-contain p-4"
               priority
               sizes="(max-width:1024px) 100vw, 50vw"
             />

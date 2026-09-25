@@ -8,6 +8,8 @@ import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { pageSeoMetadata } from "@/lib/seo/page-meta";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

@@ -19,6 +19,19 @@ export function siteUrl(path = ""): string {
   const base = (
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
   ).replace(/\/$/, "");
+  if (/^https?:\/\//i.test(path)) return path;
   const p = path.startsWith("/") ? path : path ? `/${path}` : "";
   return `${base}${p}`;
 }
+
+/** Append a version query so browsers / Next Image never show a stale asset. */
+export function versionedAssetUrl(
+  url: string | undefined,
+  version?: string | number | null
+): string | undefined {
+  if (!url) return undefined;
+  if (version == null || version === "") return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(String(version))}`;
+}
+
