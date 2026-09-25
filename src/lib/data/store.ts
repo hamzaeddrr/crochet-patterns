@@ -1,5 +1,3 @@
-import { promises as fs } from "fs";
-import path from "path";
 import type {
   BlogPost,
   Category,
@@ -8,9 +6,9 @@ import type {
   SiteContent,
 } from "@/types";
 import { emptyLocalized } from "@/types";
+import { readJsonDocument, writeJsonDocument } from "@/lib/storage/json-store";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const CONTENT_FILE = path.join(DATA_DIR, "site-content.json");
+const DOC = "site-content";
 
 const defaultCategories: Category[] = [
   {
@@ -168,23 +166,7 @@ function normalizePattern(p: CrochetPattern): CrochetPattern {
   };
 }
 
-async function ensureDataFile(): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(CONTENT_FILE);
-  } catch {
-    await fs.writeFile(
-      CONTENT_FILE,
-      JSON.stringify(defaultContent(), null, 2),
-      "utf8"
-    );
-  }
-}
-
-export async function readSiteContent(): Promise<SiteContent> {
-  await ensureDataFile();
-  const raw = await fs.readFile(CONTENT_FILE, "utf8");
-  const parsed = JSON.parse(raw) as Partial<SiteContent>;
+function normalizeContent(parsed: Partial<SiteContent>): SiteContent {
   const base = defaultContent();
   return {
     categories: parsed.categories?.length
@@ -197,9 +179,16 @@ export async function readSiteContent(): Promise<SiteContent> {
   };
 }
 
+export async function readSiteContent(): Promise<SiteContent> {
+  const parsed = await readJsonDocument<Partial<SiteContent>>(
+    DOC,
+    defaultContent()
+  );
+  return normalizeContent(parsed);
+}
+
 export async function saveSiteContent(content: SiteContent): Promise<void> {
-  await ensureDataFile();
-  await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), "utf8");
+  await writeJsonDocument(DOC, content);
 }
 
 export async function getPublishedPatterns(): Promise<CrochetPattern[]> {

@@ -11,12 +11,24 @@ export function isServerlessReadonlyFs(): boolean {
   );
 }
 
-function hasBlobCredentials(): boolean {
+export function hasBlobCredentials(): boolean {
   return Boolean(
     process.env.BLOB_READ_WRITE_TOKEN ||
       process.env.BLOB_STORE_ID ||
       process.env.VERCEL_OIDC_TOKEN
   );
+}
+
+export function blobPutOptions(): Parameters<typeof put>[2] {
+  const options: Parameters<typeof put>[2] = {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+  };
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    options.token = process.env.BLOB_READ_WRITE_TOKEN;
+  }
+  return options;
 }
 
 /**
@@ -38,16 +50,10 @@ export async function savePublicAsset(
         "No Vercel Blob credentials. Connect a Blob store to this project (Storage → Blob), or set BLOB_READ_WRITE_TOKEN, then redeploy."
       );
     }
-    const options: Parameters<typeof put>[2] = {
-      access: "public",
+    const blob = await put(key, data, {
+      ...blobPutOptions(),
       contentType,
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    };
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      options.token = process.env.BLOB_READ_WRITE_TOKEN;
-    }
-    const blob = await put(key, data, options);
+    });
     return blob.url;
   }
 

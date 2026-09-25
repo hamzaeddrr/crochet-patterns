@@ -1,9 +1,10 @@
 import { createHmac, timingSafeEqual, randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
 import type { PurchaseRecord } from "@/types";
+import { readJsonDocument, writeJsonDocument } from "@/lib/storage/json-store";
 
 export const UNLOCK_COOKIE = "loopcraft_unlock";
+
+const DOC = "purchases";
 
 function unlockSecret(): string {
   return (
@@ -63,22 +64,8 @@ export function isPatternUnlocked(
   return parseUnlockMap(token).has(patternId);
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const PURCHASES_FILE = path.join(DATA_DIR, "purchases.json");
-
-async function ensurePurchases(): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(PURCHASES_FILE);
-  } catch {
-    await fs.writeFile(PURCHASES_FILE, "[]", "utf8");
-  }
-}
-
 export async function readPurchases(): Promise<PurchaseRecord[]> {
-  await ensurePurchases();
-  const raw = await fs.readFile(PURCHASES_FILE, "utf8");
-  return JSON.parse(raw) as PurchaseRecord[];
+  return readJsonDocument<PurchaseRecord[]>(DOC, []);
 }
 
 export async function recordPurchase(
@@ -98,7 +85,7 @@ export async function recordPurchase(
     unlockedAt: input.unlockedAt || new Date().toISOString(),
   };
   list.unshift(record);
-  await fs.writeFile(PURCHASES_FILE, JSON.stringify(list, null, 2), "utf8");
+  await writeJsonDocument(DOC, list);
   return record;
 }
 

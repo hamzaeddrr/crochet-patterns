@@ -1,5 +1,4 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { readJsonDocument, writeJsonDocument } from "@/lib/storage/json-store";
 
 export type FlareQuality =
   | "low"
@@ -25,8 +24,7 @@ export interface AdminSettings {
   updatedAt?: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const FILE = path.join(DATA_DIR, "admin-settings.json");
+const DOC = "admin-settings";
 
 export function defaultAdminSettings(): AdminSettings {
   return {
@@ -40,29 +38,12 @@ export function defaultAdminSettings(): AdminSettings {
   };
 }
 
-async function ensure(): Promise<void> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.access(FILE);
-  } catch {
-    try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      await fs.writeFile(FILE, JSON.stringify(defaultAdminSettings(), null, 2));
-    } catch (err) {
-      // Read-only/ephemeral FS (e.g. some serverless) — skip persist
-      console.warn("admin-settings.json not writable:", err);
-    }
-  }
-}
-
 export async function readAdminSettings(): Promise<AdminSettings> {
-  await ensure();
-  try {
-    const raw = JSON.parse(await fs.readFile(FILE, "utf8")) as AdminSettings;
-    return { ...defaultAdminSettings(), ...raw };
-  } catch {
-    return defaultAdminSettings();
-  }
+  const raw = await readJsonDocument<Partial<AdminSettings>>(
+    DOC,
+    defaultAdminSettings()
+  );
+  return { ...defaultAdminSettings(), ...raw };
 }
 
 export async function saveAdminSettings(
@@ -74,7 +55,6 @@ export async function saveAdminSettings(
     ...patch,
     updatedAt: new Date().toISOString(),
   };
-  // Don't wipe secrets if empty string sent for "leave unchanged"
   if (patch.openaiApiKey === "") delete next.openaiApiKey;
   if (patch.stripeSecretKey === "") delete next.stripeSecretKey;
   if (patch.stripeWebhookSecret === "") delete next.stripeWebhookSecret;
@@ -91,7 +71,7 @@ export async function saveAdminSettings(
   if (patch.adminPassword === undefined && current.adminPassword) {
     next.adminPassword = current.adminPassword;
   }
-  await fs.writeFile(FILE, JSON.stringify(next, null, 2), "utf8");
+  await writeJsonDocument(DOC, next);
   return next;
 }
 

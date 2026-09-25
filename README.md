@@ -9,7 +9,8 @@ Public crochet pattern website with an **admin-only** AI studio and Stripe unloc
 - OpenAI: `gpt-5-mini` (text) + `gpt-image-2.5-flare` (images) — overridable in Admin → Settings
 - Stripe Checkout (one pattern → unlock cookie + PDF)
 - Stitch-count validator + PDF export
-- JSON stores in `data/` (`site-content.json`, `admin-settings.json`, `purchases.json`)
+- JSON stores in `data/` locally; on Vercel they persist in **Vercel Blob** (`data/*.json`)
+- Pattern images/PDFs also use Vercel Blob on production
 
 ## Setup
 
