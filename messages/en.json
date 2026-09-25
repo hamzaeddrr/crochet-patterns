@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "siteName": "Loopcraft",
+    "defaultTitle": "Loopcraft — Crochet Patterns",
+    "defaultDescription": "Beautiful crochet patterns with clear instructions, materials lists, and printable PDFs. English, French, and Spanish."
+  },
+  "nav": {
+    "patterns": "Patterns",
+    "categories": "Categories",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact",
+    "browse": "Browse patterns"
+  },
+  "home": {
+    "eyebrow": "Crochet patterns made to make",
+    "title": "From first loop to finished make.",
+    "subtitle": "Studio-crafted crochet patterns with project photos and print-ready PDFs — for makers who care about the stitches.",
+    "cta": "Enter the collection",
+    "ctaSecondary": "Browse by mood",
+    "featured": "On the hook",
+    "categoriesTitle": "Find your next obsession",
+    "categoriesSubtitle": "Amigurumi, wearables, home — pick a lane.",
+    "whyTitle": "Built like a pattern studio, not a template dump.",
+    "why1Title": "Readable rounds",
+    "why1Body": "Round-by-round instructions with stitch counts you can trust while you work.",
+    "why2Title": "Print-worthy PDFs",
+    "why2Body": "Layouts designed for the sofa, the train, and the project bag.",
+    "why3Title": "Human-reviewed",
+    "why3Body": "Every pattern passes through our studio before it reaches your hook."
+  },
+  "patterns": {
+    "title": "Crochet patterns",
+    "subtitle": "Browse free and premium patterns.",
+    "empty": "No patterns published yet. Check back soon.",
+    "difficulty": "Difficulty",
+    "free": "Free",
+    "download": "Download PDF",
+    "materials": "Materials",
+    "abbreviations": "Abbreviations",
+    "instructions": "Instructions",
+    "assembly": "Assembly",
+    "finishing": "Finishing",
+    "confidence": "Pattern confidence",
+    "confidenceNote": "AI-assisted studio draft. Always verify stitch counts while you crochet.",
+    "related": "More patterns",
+    "all": "All patterns",
+    "filterAll": "All"
+  },
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Explore patterns by type.",
+    "count": "{count} patterns"
+  },
+  "about": {
+    "title": "About Loopcraft",
+    "body": "Loopcraft is a crochet pattern studio. We design and publish clear, beautiful patterns with project photos and printable PDFs — in English, French, and Spanish."
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "Questions about a pattern? Send us a note.",
+    "emailLabel": "Email",
+    "messageLabel": "Message",
+    "send": "Send message",
+    "note": "This demo form opens your email client."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Tips, tutorials, and studio notes.",
+    "empty": "Posts coming soon."
+  },
+  "footer": {
+    "tagline": "Crochet patterns with care.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "rights": "All rights reserved."
+  },
+  "common": {
+    "beginner": "Beginner",
+    "easy": "Easy",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "language": "Language"
+  }
+}

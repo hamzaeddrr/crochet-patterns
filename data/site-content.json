@@ -1,0 +1,73 @@
+{
+  "categories": [
+    {
+      "id": "amigurumi",
+      "slug": "amigurumi",
+      "name": {
+        "en": "Amigurumi",
+        "fr": "Amigurumi",
+        "es": "Amigurumi"
+      },
+      "description": {
+        "en": "Cute crocheted toys and characters.",
+        "fr": "Jolis jouets et personnages au crochet.",
+        "es": "Juguetes y personajes tiernos a crochet."
+      },
+      "icon": "🧸"
+    },
+    {
+      "id": "accessories",
+      "slug": "accessories",
+      "name": {
+        "en": "Accessories",
+        "fr": "Accessoires",
+        "es": "Accesorios"
+      },
+      "description": {
+        "en": "Bags, scarves, hats, and wearable extras.",
+        "fr": "Sacs, écharpes, chapeaux et accessoires.",
+        "es": "Bolsos, bufandas, gorros y extras."
+      },
+      "icon": "🧣"
+    },
+    {
+      "id": "home",
+      "slug": "home",
+      "name": {
+        "en": "Home & Decor",
+        "fr": "Maison & Déco",
+        "es": "Hogar y Decoración"
+      },
+      "description": {
+        "en": "Blankets, cushions, and cozy home makes.",
+        "fr": "Couvertures, coussins et créations cozy.",
+        "es": "Mantas, cojines y proyectos para el hogar."
+      },
+      "icon": "🏠"
+    },
+    {
+      "id": "seasonal",
+      "slug": "seasonal",
+      "name": {
+        "en": "Seasonal",
+        "fr": "Saisonnier",
+        "es": "Temporada"
+      },
+      "description": {
+        "en": "Holiday and seasonal crochet projects.",
+        "fr": "Projets de fêtes et de saison.",
+        "es": "Proyectos festivos y de temporada."
+      },
+      "icon": "🎄"
+    }
+  ],
+  "patterns": [],
+  "settings": {
+    "siteName": "Loopcraft",
+    "tagline": {
+      "en": "Beautiful crochet patterns, carefully crafted.",
+      "fr": "De beaux modèles au crochet, soigneusement créés.",
+      "es": "Hermosos patrones de crochet, cuidadosamente elaborados."
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "siteName": "Loopcraft",
+    "defaultTitle": "Loopcraft — Modèles au crochet",
+    "defaultDescription": "Beaux modèles au crochet avec instructions claires, listes de fournitures et PDF imprimables. Anglais, français et espagnol."
+  },
+  "nav": {
+    "patterns": "Modèles",
+    "categories": "Catégories",
+    "blog": "Blog",
+    "about": "À propos",
+    "contact": "Contact",
+    "browse": "Voir les modèles"
+  },
+  "home": {
+    "eyebrow": "Des modèles au crochet à réaliser",
+    "title": "Du premier rang à la pièce terminée.",
+    "subtitle": "Modèles de studio avec photos de projets et PDF prêts à imprimer — pour les crocheteuses exigeantes.",
+    "cta": "Entrer dans la collection",
+    "ctaSecondary": "Parcourir par humeur",
+    "featured": "Sur l’aiguille",
+    "categoriesTitle": "Trouvez votre prochaine obsession",
+    "categoriesSubtitle": "Amigurumi, accessoires, maison — choisissez une voie.",
+    "whyTitle": "Pensé comme un studio, pas un catalogue générique.",
+    "why1Title": "Rangs lisibles",
+    "why1Body": "Instructions rang par rang avec des comptes de mailles fiables.",
+    "why2Title": "PDF dignes d’impression",
+    "why2Body": "Des mises en page pour le canapé, le train et le sac à projets.",
+    "why3Title": "Relu en studio",
+    "why3Body": "Chaque modèle passe par notre atelier avant publication."
+  },
+  "patterns": {
+    "title": "Modèles au crochet",
+    "subtitle": "Parcourez les modèles gratuits et premium.",
+    "empty": "Aucun modèle publié pour le moment.",
+    "difficulty": "Niveau",
+    "free": "Gratuit",
+    "download": "Télécharger le PDF",
+    "materials": "Fournitures",
+    "abbreviations": "Abréviations",
+    "instructions": "Instructions",
+    "assembly": "Assemblage",
+    "finishing": "Finitions",
+    "confidence": "Confiance du modèle",
+    "confidenceNote": "Brouillon assisté par IA. Vérifiez toujours les comptes de mailles en crochetant.",
+    "related": "Autres modèles",
+    "all": "Tous les modèles",
+    "filterAll": "Tous"
+  },
+  "categories": {
+    "title": "Catégories",
+    "subtitle": "Explorez les modèles par type.",
+    "count": "{count} modèles"
+  },
+  "about": {
+    "title": "À propos de Loopcraft",
+    "body": "Loopcraft est un studio de modèles au crochet. Nous créons et publions des modèles clairs et beaux, avec photos et PDF — en anglais, français et espagnol."
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "Une question sur un modèle ? Écrivez-nous.",
+    "emailLabel": "E-mail",
+    "messageLabel": "Message",
+    "send": "Envoyer",
+    "note": "Ce formulaire démo ouvre votre client e-mail."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Astuces, tutoriels et notes du studio.",
+    "empty": "Articles bientôt disponibles."
+  },
+  "footer": {
+    "tagline": "Des modèles au crochet avec soin.",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "rights": "Tous droits réservés."
+  },
+  "common": {
+    "beginner": "Débutant",
+    "easy": "Facile",
+    "intermediate": "Intermédiaire",
+    "advanced": "Avancé",
+    "language": "Langue"
+  }
+}

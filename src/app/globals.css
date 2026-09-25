@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #faf7f2;
+  --bg-deep: #2b2522;
+  --elevated: #ede5da;
+  --ink: #2b2522;
+  --muted: #6e655e;
+  --line: #e0d6c8;
+  --apricot: #d96b52;
+  --apricot-deep: #c4573f;
+  --celadon: #8fa58b;
+  --celadon-bright: #a3b8a0;
+  --bone: #faf7f2;
+  --gold: #c49a5a;
+  --warn: #b45309;
+  --radius: 1.5rem;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-elevated: var(--elevated);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-apricot: var(--apricot);
+  --color-apricot-deep: var(--apricot-deep);
+  --color-celadon: var(--celadon);
+  --color-celadon-bright: var(--celadon-bright);
+  --color-bone: var(--bone);
+  --color-gold: var(--gold);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --radius-soft: 1.5rem;
+  --radius-bubble: 2.5rem;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.soft-card {
+  background: var(--elevated);
+  border-radius: var(--radius-soft);
+  border: 1px solid rgba(43, 37, 34, 0.06);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: var(--apricot);
+  color: #fffaf7;
+  padding: 0.85rem 1.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+  box-shadow: 0 10px 24px rgba(217, 107, 82, 0.22);
+}
+
+.btn-primary:hover {
+  background: var(--apricot-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(217, 107, 82, 0.28);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(43, 37, 34, 0.14);
+  background: transparent;
+  color: var(--ink);
+  padding: 0.8rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.btn-ghost:hover {
+  border-color: var(--celadon);
+  background: rgba(143, 165, 139, 0.12);
+}
+
+.hero-cozy {
+  background:
+    radial-gradient(ellipse 70% 55% at 90% 10%, rgba(217, 107, 82, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 5% 90%, rgba(143, 165, 139, 0.22), transparent 50%),
+    radial-gradient(ellipse 40% 35% at 50% 40%, rgba(196, 154, 90, 0.1), transparent 60%),
+    #faf7f2;
+}
+
+.dot-pattern {
+  background-image: radial-gradient(rgba(43, 37, 34, 0.07) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+
+@keyframes yarn-draw {
+  from {
+    stroke-dashoffset: 1200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes float-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.anim-yarn {
+  stroke-dasharray: 1200;
+  animation: yarn-draw 2.8s ease-out forwards;
+}
+
+.anim-bob {
+  animation: float-bob 5.5s ease-in-out infinite;
+}
+
+.anim-spin-slow {
+  animation: spin-slow 28s linear infinite;
+}
+
+.anim-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pattern-tile {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+
+.pattern-tile:hover {
+  transform: translateY(-8px) rotate(-0.6deg);
+  box-shadow: 0 18px 40px rgba(43, 37, 34, 0.1);
+}

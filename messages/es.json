@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "siteName": "Loopcraft",
+    "defaultTitle": "Loopcraft — Patrones de crochet",
+    "defaultDescription": "Hermosos patrones de crochet con instrucciones claras, materiales y PDF para imprimir. Inglés, francés y español."
+  },
+  "nav": {
+    "patterns": "Patrones",
+    "categories": "Categorías",
+    "blog": "Blog",
+    "about": "Acerca de",
+    "contact": "Contacto",
+    "browse": "Ver patrones"
+  },
+  "home": {
+    "eyebrow": "Patrones de crochet para crear",
+    "title": "Del primer punto a la pieza terminada.",
+    "subtitle": "Patrones de estudio con fotos del proyecto y PDF listos para imprimir — para makers exigentes.",
+    "cta": "Entrar a la colección",
+    "ctaSecondary": "Explorar por estilo",
+    "featured": "En el gancho",
+    "categoriesTitle": "Encuentra tu próxima obsesión",
+    "categoriesSubtitle": "Amigurumi, accesorios, hogar — elige tu camino.",
+    "whyTitle": "Hecho como un estudio, no como una plantilla.",
+    "why1Title": "Vueltas legibles",
+    "why1Body": "Instrucciones vuelta a vuelta con conteos en los que puedes confiar.",
+    "why2Title": "PDF dignos de impresión",
+    "why2Body": "Diseños para el sofá, el tren y la bolsa de proyectos.",
+    "why3Title": "Revisado en estudio",
+    "why3Body": "Cada patrón pasa por nuestro atelier antes de publicarse."
+  },
+  "patterns": {
+    "title": "Patrones de crochet",
+    "subtitle": "Explora patrones gratis y premium.",
+    "empty": "Aún no hay patrones publicados.",
+    "difficulty": "Dificultad",
+    "free": "Gratis",
+    "download": "Descargar PDF",
+    "materials": "Materiales",
+    "abbreviations": "Abreviaturas",
+    "instructions": "Instrucciones",
+    "assembly": "Ensamblaje",
+    "finishing": "Acabados",
+    "confidence": "Confianza del patrón",
+    "confidenceNote": "Borrador asistido por IA. Verifica siempre los conteos mientras tejes.",
+    "related": "Más patrones",
+    "all": "Todos los patrones",
+    "filterAll": "Todos"
+  },
+  "categories": {
+    "title": "Categorías",
+    "subtitle": "Explora patrones por tipo.",
+    "count": "{count} patrones"
+  },
+  "about": {
+    "title": "Acerca de Loopcraft",
+    "body": "Loopcraft es un estudio de patrones de crochet. Diseñamos y publicamos patrones claros y bonitos, con fotos y PDF — en inglés, francés y español."
+  },
+  "contact": {
+    "title": "Contacto",
+    "subtitle": "¿Preguntas sobre un patrón? Escríbenos.",
+    "emailLabel": "Correo",
+    "messageLabel": "Mensaje",
+    "send": "Enviar",
+    "note": "Este formulario demo abre tu cliente de correo."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Consejos, tutoriales y notas del estudio.",
+    "empty": "Pronto habrá publicaciones."
+  },
+  "footer": {
+    "tagline": "Patrones de crochet con cuidado.",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "rights": "Todos los derechos reservados."
+  },
+  "common": {
+    "beginner": "Principiante",
+    "easy": "Fácil",
+    "intermediate": "Intermedio",
+    "advanced": "Avanzado",
+    "language": "Idioma"
+  }
+}
