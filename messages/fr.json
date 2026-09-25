@@ -65,7 +65,9 @@
     "jumpToRounds": "Aller aux tours",
     "stitchDiagramTitle": "Diagramme de mailles",
     "stitchDiagramSubtitle": "Symboles de crochet standard pour ce tour — lecture dans le sens horaire depuis le haut.",
+    "stitchDiagramFlatSubtitle": "Diagramme en rangs avec symboles standard — lecture de gauche à droite.",
     "stitchDiagramRound": "Tour",
+    "stitchDiagramRow": "Rang",
     "stitchDiagramWritten": "Ordre écrit",
     "stitchDiagramLegend": "Légende",
     "stitchDiagramEmpty": "Pas d’opérations diagrammables pour cette pièce."

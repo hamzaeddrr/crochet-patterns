@@ -363,10 +363,11 @@ export default async function PatternDetailPage({
                     component={component}
                     title={t("stitchDiagramTitle")}
                     subtitle={t("stitchDiagramSubtitle")}
+                    flatSubtitle={t("stitchDiagramFlatSubtitle")}
                     roundLabel={t("stitchDiagramRound")}
+                    rowLabel={t("stitchDiagramRow")}
                     writtenOrderLabel={t("stitchDiagramWritten")}
                     legendLabel={t("stitchDiagramLegend")}
-                    emptyLabel={t("stitchDiagramEmpty")}
                   />
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -436,10 +437,11 @@ export default async function PatternDetailPage({
                 component={pattern.content.components[0]}
                 title={t("stitchDiagramTitle")}
                 subtitle={t("stitchDiagramSubtitle")}
+                flatSubtitle={t("stitchDiagramFlatSubtitle")}
                 roundLabel={t("stitchDiagramRound")}
+                rowLabel={t("stitchDiagramRow")}
                 writtenOrderLabel={t("stitchDiagramWritten")}
                 legendLabel={t("stitchDiagramLegend")}
-                emptyLabel={t("stitchDiagramEmpty")}
                 previewOnly
               />
             </div>

@@ -352,29 +352,33 @@ export function StitchCountChart({
   emptyLabel: string;
 }) {
   const points = component.rounds
-    .filter((r) => typeof r.result === "number" && r.result >= 0)
+    .filter((r) => typeof r.result === "number" && r.result > 0)
     .map((r) => ({ x: r.round, y: r.result }));
 
+  // Hide for fabric / embroidery / single non-stitch steps
   if (points.length < 2) {
-    return (
-      <p className="px-5 py-3 text-xs text-muted">{emptyLabel}</p>
-    );
+    return null;
   }
 
   const padX = 28;
-  const padY = 18;
+  const padY = 22;
   const w = 320;
   const h = 120;
   const minY = Math.min(...points.map((p) => p.y));
   const maxY = Math.max(...points.map((p) => p.y));
   const minX = points[0].x;
   const maxX = points[points.length - 1].x;
-  const spanY = Math.max(maxY - minY, 1);
+  const isEven = minY === maxY;
+  // Pad Y domain so an even line sits mid-chart (not stuck to the bottom)
+  const yPad = isEven ? Math.max(4, Math.round(minY * 0.25)) : Math.max(2, Math.round((maxY - minY) * 0.2));
+  const yMin = Math.max(0, minY - yPad);
+  const yMax = maxY + yPad;
+  const spanY = Math.max(yMax - yMin, 1);
   const spanX = Math.max(maxX - minX, 1);
 
   const coords = points.map((p) => {
     const x = padX + ((p.x - minX) / spanX) * (w - padX * 2);
-    const y = h - padY - ((p.y - minY) / spanY) * (h - padY * 2);
+    const y = h - padY - ((p.y - yMin) / spanY) * (h - padY * 2);
     return { ...p, px: x, py: y };
   });
 
@@ -388,12 +392,12 @@ export function StitchCountChart({
 
   return (
     <div className="border-t border-line bg-elevated/40 px-4 py-3 sm:px-5">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
           {title}
         </p>
         <p className="text-xs text-muted">
-          {minY} → {maxY} sts
+          {isEven ? `${minY} sts each · even` : `${minY} → ${maxY} sts`}
         </p>
       </div>
       <svg
@@ -411,29 +415,26 @@ export function StitchCountChart({
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {coords.map((c) => (
-          <g key={c.x}>
-            <circle cx={c.px} cy={c.py} r="3.2" fill="#c4573f" />
-            {(c.x === minX ||
-              c.x === maxX ||
-              c.y === minY ||
-              c.y === maxY) && (
-              <text
-                x={c.px}
-                y={c.py - 8}
-                textAnchor="middle"
-                style={{ fontSize: 9, fill: "#6e655e", fontWeight: 700 }}
-              >
-                {c.y}
-              </text>
-            )}
-          </g>
-        ))}
-        <text
-          x={padX}
-          y={h - 4}
-          style={{ fontSize: 9, fill: "#9a938a" }}
-        >
+        {coords.map((c, i) => {
+          const labelEvery =
+            points.length <= 8 || i === 0 || i === points.length - 1 || i % 4 === 0;
+          return (
+            <g key={c.x}>
+              <circle cx={c.px} cy={c.py} r="3.2" fill="#c4573f" />
+              {labelEvery ? (
+                <text
+                  x={c.px}
+                  y={c.py - 8}
+                  textAnchor="middle"
+                  style={{ fontSize: 9, fill: "#6e655e", fontWeight: 700 }}
+                >
+                  {c.y}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+        <text x={padX} y={h - 4} style={{ fontSize: 9, fill: "#9a938a" }}>
           R{minX}
         </text>
         <text
@@ -445,6 +446,8 @@ export function StitchCountChart({
           R{maxX}
         </text>
       </svg>
+      {/* keep emptyLabel referenced for API compat */}
+      <span className="sr-only">{emptyLabel}</span>
     </div>
   );
 }

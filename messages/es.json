@@ -65,7 +65,9 @@
     "jumpToRounds": "Ir a las rondas",
     "stitchDiagramTitle": "Diagrama de puntos",
     "stitchDiagramSubtitle": "Símbolos de crochet estándar para esta ronda — se lee en sentido horario desde arriba.",
+    "stitchDiagramFlatSubtitle": "Diagrama en filas con símbolos estándar — se lee de izquierda a derecha.",
     "stitchDiagramRound": "Rnd",
+    "stitchDiagramRow": "Fila",
     "stitchDiagramWritten": "Orden escrito",
     "stitchDiagramLegend": "Leyenda",
     "stitchDiagramEmpty": "Aún no hay operaciones diagramables para esta pieza."
