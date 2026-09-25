@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { readAdminSettings } from "@/lib/admin/settings-store";
 
 export const ADMIN_COOKIE = "loopcraft_admin";
 
@@ -37,7 +38,9 @@ export function verifySessionValue(token: string | undefined): boolean {
   }
 }
 
-export function checkAdminPassword(password: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD || "admin";
+export async function checkAdminPassword(password: string): Promise<boolean> {
+  const settings = await readAdminSettings();
+  const expected =
+    settings.adminPassword || process.env.ADMIN_PASSWORD || "admin";
   return password === expected;
 }

@@ -4,6 +4,8 @@ import {
   getPatternById,
   upsertPattern,
 } from "@/lib/data/store";
+import { translatePatternContent } from "@/lib/ai/translate";
+import { generatePatternImage } from "@/lib/ai/generate-image";
 import type { PatternStatus } from "@/types";
 
 export async function GET(
@@ -30,6 +32,20 @@ export async function PATCH(
   const body = await request.json();
   const next = { ...pattern, updatedAt: new Date().toISOString() };
 
+  if (body.action === "retranslate") {
+    next.content = await translatePatternContent(next.content, true);
+    const saved = await upsertPattern(next);
+    return NextResponse.json({ pattern: saved });
+  }
+
+  if (body.action === "regenerateImage") {
+    const img = await generatePatternImage(next.id, next.designSpec);
+    next.imagePath = img.imagePath;
+    next.thumbnailPath = img.thumbnailPath;
+    const saved = await upsertPattern(next);
+    return NextResponse.json({ pattern: saved });
+  }
+
   if (typeof body.status === "string") {
     next.status = body.status as PatternStatus;
     if (body.status === "published" && !next.publishedAt) {
@@ -38,8 +54,16 @@ export async function PATCH(
   }
   if (typeof body.featured === "boolean") next.featured = body.featured;
   if (typeof body.free === "boolean") next.free = body.free;
+  if (typeof body.priceCents === "number") next.priceCents = body.priceCents;
+  if (typeof body.currency === "string") next.currency = body.currency;
   if (Array.isArray(body.categoryIds)) {
     next.categoryIds = body.categoryIds.map(String);
+  }
+  if (body.content && typeof body.content === "object") {
+    next.content = { ...next.content, ...body.content };
+  }
+  if (typeof body.slug === "string" && body.slug.trim()) {
+    next.slug = body.slug.trim();
   }
 
   const saved = await upsertPattern(next);

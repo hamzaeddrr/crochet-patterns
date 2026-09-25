@@ -7,10 +7,10 @@ async function translateText(
   target: Exclude<Locale, "en">
 ): Promise<string> {
   if (!text.trim()) return text;
-  const openai = getOpenAI();
+  const openai = await getOpenAI();
   const lang = target === "fr" ? "French" : "Spanish";
   const completion = await openai.chat.completions.create({
-    model: contentModel(),
+    model: await contentModel(),
     temperature: 0.2,
     messages: [
       {
@@ -25,28 +25,35 @@ async function translateText(
 
 async function fillLocalized(
   en: string,
-  existing: LocalizedString
+  existing: LocalizedString,
+  force = false
 ): Promise<LocalizedString> {
-  const fr = existing.fr && existing.fr !== existing.en
-    ? existing.fr
-    : await translateText(en, "fr");
-  const es = existing.es && existing.es !== existing.en
-    ? existing.es
-    : await translateText(en, "es");
+  const needFr = force || !existing.fr || existing.fr === existing.en;
+  const needEs = force || !existing.es || existing.es === existing.en;
+  const fr = needFr ? await translateText(en, "fr") : existing.fr;
+  const es = needEs ? await translateText(en, "es") : existing.es;
   return { en, fr, es };
 }
 
 export async function translatePatternContent(
-  content: PatternContent
+  content: PatternContent,
+  force = false
 ): Promise<PatternContent> {
   return {
     ...content,
-    title: await fillLocalized(content.title.en, content.title),
-    summary: await fillLocalized(content.summary.en, content.summary),
-    seoTitle: await fillLocalized(content.seoTitle.en, content.seoTitle),
+    title: await fillLocalized(content.title.en, content.title, force),
+    summary: await fillLocalized(content.summary.en, content.summary, force),
+    seoTitle: await fillLocalized(content.seoTitle.en, content.seoTitle, force),
     seoDescription: await fillLocalized(
       content.seoDescription.en,
-      content.seoDescription
+      content.seoDescription,
+      force
     ),
   };
+}
+
+export async function translateLocalizedField(
+  en: string
+): Promise<LocalizedString> {
+  return fillLocalized(en, { en, fr: en, es: en }, true);
 }

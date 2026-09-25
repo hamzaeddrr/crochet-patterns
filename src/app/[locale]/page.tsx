@@ -7,6 +7,21 @@ import { Reveal } from "@/components/site/Reveal";
 import { getPublishedPatterns, readSiteContent } from "@/lib/data/store";
 import { pickLocalized } from "@/types";
 import type { Locale } from "@/i18n/routing";
+import type { Metadata } from "next";
+import { pageSeoMetadata } from "@/lib/seo/page-meta";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "home" });
+  return pageSeoMetadata("home", locale, "", {
+    title: "Loopcraft",
+    description: t("subtitle"),
+  });
+}
 
 export default async function HomePage({
   params,
@@ -20,13 +35,20 @@ export default async function HomePage({
   const patterns = await getPublishedPatterns();
   const featured = patterns.filter((p) => p.featured).slice(0, 6);
   const show = featured.length ? featured : patterns.slice(0, 6);
-  const { categories } = await readSiteContent();
+  const { categories, pages } = await readSiteContent();
+  const home = pages.home;
+  const title = home?.heroTitle
+    ? pickLocalized(home.heroTitle, locale) || t("title")
+    : t("title");
+  const subtitle = home?.heroSubtitle
+    ? pickLocalized(home.heroSubtitle, locale) || t("subtitle")
+    : t("subtitle");
 
   return (
     <>
       <HomeHero
-        title={t("title")}
-        subtitle={t("subtitle")}
+        title={title}
+        subtitle={subtitle}
         cta={t("cta")}
         ctaSecondary={t("ctaSecondary")}
       />
@@ -81,15 +103,13 @@ export default async function HomePage({
           </Reveal>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((c, i) => (
-              <Reveal key={c.id} delay={i * 70}>
+              <Reveal key={c.id} delay={i * 60}>
                 <Link
                   href={`/categories/${c.slug}`}
-                  className="group block rounded-[1.5rem] border border-ink/5 bg-bg p-6 transition hover:-translate-y-1 hover:border-celadon hover:shadow-[0_14px_30px_rgba(43,37,34,0.08)]"
+                  className="soft-card block p-5 transition hover:-translate-y-0.5"
                 >
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-celadon/20 font-display text-lg text-celadon">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-4 font-display text-2xl text-ink group-hover:text-apricot">
+                  <span className="text-2xl">{c.icon}</span>
+                  <h3 className="mt-3 font-display text-2xl text-ink">
                     {pickLocalized(c.name, locale)}
                   </h3>
                   <p className="mt-2 text-sm text-muted">
@@ -102,26 +122,25 @@ export default async function HomePage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <Reveal>
-          <h2 className="max-w-2xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+          <h2 className="font-display text-4xl text-ink sm:text-5xl">
             {t("whyTitle")}
           </h2>
         </Reveal>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {[
-            { n: "01", title: t("why1Title"), body: t("why1Body"), tone: "bg-apricot/10" },
-            { n: "02", title: t("why2Title"), body: t("why2Body"), tone: "bg-celadon/15" },
-            { n: "03", title: t("why3Title"), body: t("why3Body"), tone: "bg-gold/15" },
-          ].map((item, i) => (
-            <Reveal key={item.n} delay={i * 90}>
-              <div className={`rounded-[1.75rem] ${item.tone} p-7`}>
-                <p className="font-display text-sm text-muted">{item.n}</p>
-                <h3 className="mt-3 font-display text-2xl text-ink">
-                  {item.title}
-                </h3>
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {(
+            [
+              ["why1Title", "why1Body"],
+              ["why2Title", "why2Body"],
+              ["why3Title", "why3Body"],
+            ] as const
+          ).map(([titleKey, bodyKey], i) => (
+            <Reveal key={titleKey} delay={i * 80}>
+              <div className="soft-card p-6">
+                <h3 className="font-display text-2xl text-ink">{t(titleKey)}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted">
-                  {item.body}
+                  {t(bodyKey)}
                 </p>
               </div>
             </Reveal>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
@@ -7,11 +8,13 @@ import {
   getPublishedPatterns,
   readSiteContent,
 } from "@/lib/data/store";
-import { pickLocalized } from "@/types";
+import { formatPrice, pickLocalized } from "@/types";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { PatternCard } from "@/components/site/PatternCard";
+import { BuyPatternButton } from "@/components/site/BuyPatternButton";
 import { siteUrl } from "@/lib/utils";
+import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 
 export async function generateMetadata({
   params,
@@ -64,6 +67,11 @@ export default async function PatternDetailPage({
   const pattern = await getPatternBySlug(slug);
   if (!pattern || pattern.status !== "published") notFound();
 
+  const jar = await cookies();
+  const unlocked =
+    pattern.free ||
+    isPatternUnlocked(jar.get(UNLOCK_COOKIE)?.value, pattern.id);
+
   const t = await getTranslations("patterns");
   const tc = await getTranslations("common");
   const { categories } = await readSiteContent();
@@ -73,19 +81,35 @@ export default async function PatternDetailPage({
     .filter((p) => p.id !== pattern.id)
     .slice(0, 3);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: title,
-    description: summary,
-    image: pattern.imagePath ? siteUrl(pattern.imagePath) : undefined,
-    inLanguage: locale,
-    isAccessibleForFree: pattern.free,
-    genre: "Crochet pattern",
-  };
+  const jsonLd = pattern.free
+    ? {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: title,
+        description: summary,
+        image: pattern.imagePath ? siteUrl(pattern.imagePath) : undefined,
+        inLanguage: locale,
+        isAccessibleForFree: true,
+        genre: "Crochet pattern",
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: title,
+        description: summary,
+        image: pattern.imagePath ? siteUrl(pattern.imagePath) : undefined,
+        offers: {
+          "@type": "Offer",
+          priceCurrency: (pattern.currency || "eur").toUpperCase(),
+          price: (pattern.priceCents / 100).toFixed(2),
+          availability: "https://schema.org/InStock",
+        },
+      };
+
+  const pdfHref = `/api/patterns/${pattern.slug}/pdf`;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-20 pt-32 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-28 pt-32 sm:px-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -108,7 +132,9 @@ export default async function PatternDetailPage({
         <div className="lg:sticky lg:top-28">
           <p className="inline-flex rounded-full bg-elevated px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-celadon">
             {tc(pattern.designSpec.difficulty)}
-            {pattern.free ? ` · ${t("free")}` : ""}
+            {pattern.free
+              ? ` · ${t("free")}`
+              : ` · ${formatPrice(pattern.priceCents, pattern.currency)}`}
           </p>
           <h1 className="mt-4 font-display text-4xl text-ink sm:text-5xl">
             {title}
@@ -136,11 +162,23 @@ export default async function PatternDetailPage({
               </dd>
             </div>
           </dl>
-          {pattern.pdfPath && (
-            <a href={pattern.pdfPath} className="btn-primary mt-8" download>
+
+          {unlocked && pattern.pdfPath && (
+            <a href={pdfHref} className="btn-primary mt-8">
               {t("download")} →
             </a>
           )}
+          {!unlocked && (
+            <BuyPatternButton
+              className="mt-8"
+              slug={pattern.slug}
+              locale={locale}
+              priceCents={pattern.priceCents}
+              currency={pattern.currency}
+              label={t("buy")}
+            />
+          )}
+
           <div className="soft-card mt-6 p-4 text-sm">
             <p className="font-bold text-gold">{t("confidence")}</p>
             <p className="mt-1 capitalize text-muted">
@@ -167,19 +205,26 @@ export default async function PatternDetailPage({
         <section className="soft-card p-6">
           <h2 className="font-display text-3xl text-ink">{t("materials")}</h2>
           <ul className="mt-5 space-y-3 text-sm text-muted">
-            {pattern.content.materials.yarn.map((y) => (
+            {(unlocked
+              ? pattern.content.materials.yarn
+              : pattern.content.materials.yarn.slice(0, 2)
+            ).map((y) => (
               <li key={y} className="border-b border-line pb-2">
                 {y}
               </li>
             ))}
+            {!unlocked && pattern.content.materials.yarn.length > 2 && (
+              <li className="text-muted">{t("lockedTeaser")}</li>
+            )}
             <li className="border-b border-line pb-2">
               Hook: {pattern.content.materials.hook}
             </li>
-            {pattern.content.materials.notions.map((n) => (
-              <li key={n} className="border-b border-line pb-2">
-                {n}
-              </li>
-            ))}
+            {unlocked &&
+              pattern.content.materials.notions.map((n) => (
+                <li key={n} className="border-b border-line pb-2">
+                  {n}
+                </li>
+              ))}
           </ul>
         </section>
         <section className="soft-card p-6">
@@ -187,11 +232,11 @@ export default async function PatternDetailPage({
             {t("abbreviations")}
           </h2>
           <ul className="mt-5 grid grid-cols-2 gap-3 text-sm">
-            {pattern.content.abbreviations.map((a) => (
-              <li
-                key={a.abbr}
-                className="rounded-2xl bg-bg px-3 py-2.5"
-              >
+            {(unlocked
+              ? pattern.content.abbreviations
+              : pattern.content.abbreviations.slice(0, 4)
+            ).map((a) => (
+              <li key={a.abbr} className="rounded-2xl bg-bg px-3 py-2.5">
                 <span className="font-bold text-apricot">{a.abbr}</span>
                 <span className="text-muted"> — {a.meaning}</span>
               </li>
@@ -200,55 +245,75 @@ export default async function PatternDetailPage({
         </section>
       </div>
 
-      <section className="mt-16">
-        <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
-        <div className="mt-6 space-y-6">
-          {pattern.content.components.map((component) => (
-            <div
-              key={component.id}
-              className="overflow-hidden rounded-[1.5rem] border border-line bg-bg"
-            >
-              <div className="bg-apricot px-5 py-4 font-display text-xl text-bone">
-                {component.name}
-                {component.make && component.make > 1
-                  ? ` · make ${component.make}`
-                  : ""}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-elevated text-muted">
-                    <tr>
-                      <th className="px-5 py-3 font-semibold">Rnd</th>
-                      <th className="px-5 py-3 font-semibold">Instructions</th>
-                      <th className="px-5 py-3 font-semibold">Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {component.rounds.map((r) => (
-                      <tr key={r.round} className="border-t border-line">
-                        <td className="px-5 py-3 font-display text-lg text-gold">
-                          {r.round}
-                        </td>
-                        <td className="px-5 py-3">{r.instructions}</td>
-                        <td className="px-5 py-3 font-bold">{r.result}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      {unlocked ? (
+        <>
+          <section className="mt-16">
+            <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
+            <div className="mt-6 space-y-6">
+              {pattern.content.components.map((component) => (
+                <div
+                  key={component.id}
+                  className="overflow-hidden rounded-[1.5rem] border border-line bg-bg"
+                >
+                  <div className="bg-apricot px-5 py-4 font-display text-xl text-bone">
+                    {component.name}
+                    {component.make && component.make > 1
+                      ? ` · make ${component.make}`
+                      : ""}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-elevated text-muted">
+                        <tr>
+                          <th className="px-5 py-3 font-semibold">Rnd</th>
+                          <th className="px-5 py-3 font-semibold">
+                            Instructions
+                          </th>
+                          <th className="px-5 py-3 font-semibold">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {component.rounds.map((r) => (
+                          <tr key={r.round} className="border-t border-line">
+                            <td className="px-5 py-3 font-display text-lg text-gold">
+                              {r.round}
+                            </td>
+                            <td className="px-5 py-3">{r.instructions}</td>
+                            <td className="px-5 py-3 font-bold">{r.result}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      {pattern.content.assembly.length > 0 && (
-        <section className="soft-card mt-12 p-6">
-          <h2 className="font-display text-3xl text-ink">{t("assembly")}</h2>
-          <ol className="mt-5 list-decimal space-y-3 pl-5 text-sm text-muted">
-            {pattern.content.assembly.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
+          {pattern.content.assembly.length > 0 && (
+            <section className="soft-card mt-12 p-6">
+              <h2 className="font-display text-3xl text-ink">{t("assembly")}</h2>
+              <ol className="mt-5 list-decimal space-y-3 pl-5 text-sm text-muted">
+                {pattern.content.assembly.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </>
+      ) : (
+        <section className="soft-card mt-16 p-8 text-center">
+          <h2 className="font-display text-3xl text-ink">{t("lockedTitle")}</h2>
+          <p className="mx-auto mt-3 max-w-md text-muted">{t("lockedBody")}</p>
+          <div className="mt-6 flex justify-center">
+            <BuyPatternButton
+              slug={pattern.slug}
+              locale={locale}
+              priceCents={pattern.priceCents}
+              currency={pattern.currency}
+              label={t("buy")}
+            />
+          </div>
         </section>
       )}
 
@@ -261,6 +326,26 @@ export default async function PatternDetailPage({
             ))}
           </div>
         </section>
+      )}
+
+      {!unlocked && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur-md sm:px-6">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate font-display text-lg text-ink">{title}</p>
+              <p className="text-sm text-muted">
+                {formatPrice(pattern.priceCents, pattern.currency)}
+              </p>
+            </div>
+            <BuyPatternButton
+              slug={pattern.slug}
+              locale={locale}
+              priceCents={pattern.priceCents}
+              currency={pattern.currency}
+              label={t("buy")}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

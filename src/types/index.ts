@@ -33,6 +33,9 @@ export interface DesignSpec {
   hook_mm?: string;
   estimated_time?: string;
   notes?: string;
+  suggested_category_slug?: string;
+  suggested_category_name?: string;
+  suggested_category_description?: string;
 }
 
 export type StitchOpType =
@@ -129,7 +132,46 @@ export interface CrochetPattern {
   status: PatternStatus;
   featured: boolean;
   free: boolean;
+  priceCents: number;
+  currency: string;
+  stripePriceId?: string;
   categoryIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+}
+
+export type PageKey =
+  | "home"
+  | "patterns"
+  | "categories"
+  | "about"
+  | "contact"
+  | "blog"
+  | "privacy"
+  | "terms";
+
+export interface PageSeo {
+  seoTitle: LocalizedString;
+  seoDescription: LocalizedString;
+  ogImage?: string;
+}
+
+export interface PageCopy {
+  heroTitle?: LocalizedString;
+  heroSubtitle?: LocalizedString;
+  body?: LocalizedString;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: LocalizedString;
+  excerpt: LocalizedString;
+  body: LocalizedString;
+  seoTitle: LocalizedString;
+  seoDescription: LocalizedString;
+  status: "draft" | "published";
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -138,10 +180,23 @@ export interface CrochetPattern {
 export interface SiteContent {
   categories: Category[];
   patterns: CrochetPattern[];
+  blogPosts: BlogPost[];
+  pages: Partial<Record<PageKey, PageCopy & PageSeo>>;
   settings: {
     siteName: string;
     tagline: LocalizedString;
   };
+}
+
+export interface PurchaseRecord {
+  id: string;
+  patternId: string;
+  patternSlug: string;
+  sessionId: string;
+  email?: string;
+  amountCents: number;
+  currency: string;
+  unlockedAt: string;
 }
 
 export function emptyLocalized(value = ""): LocalizedString {
@@ -154,4 +209,15 @@ export function pickLocalized(
 ): string {
   if (!value) return "";
   return value[locale] || value.en || "";
+}
+
+export function formatPrice(cents: number, currency = "eur"): string {
+  try {
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(cents / 100);
+  } catch {
+    return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+  }
 }

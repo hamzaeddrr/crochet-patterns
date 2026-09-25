@@ -1,19 +1,37 @@
 import { randomUUID } from "crypto";
-import { generateDesignSpec, confidenceFromSpec } from "./design-spec";
+import {
+  generateDesignSpec,
+  confidenceFromSpec,
+  inventCreativeSubject,
+} from "./design-spec";
 import { generatePatternContent } from "./generate-pattern";
 import { generatePatternImage } from "./generate-image";
 import { translatePatternContent } from "./translate";
 import { validatePatternComponents } from "@/lib/crochet/validator";
 import { buildPatternPdf } from "@/lib/pdf/build-pattern-pdf";
-import { upsertPattern, readSiteContent } from "@/lib/data/store";
+import {
+  readSiteContent,
+  saveSiteContent,
+  upsertPattern,
+} from "@/lib/data/store";
+import { readAdminSettings } from "@/lib/admin/settings-store";
 import { slugify } from "@/lib/utils";
-import type { CrochetPattern } from "@/types";
+import {
+  emptyLocalized,
+  type Category,
+  type CrochetPattern,
+  type DesignSpec,
+} from "@/types";
 
 export interface GenerateFullPatternInput {
-  prompt: string;
+  prompt?: string;
+  creative?: boolean;
   categoryIds?: string[];
+  allowNewCategory?: boolean;
   featured?: boolean;
   free?: boolean;
+  priceCents?: number;
+  currency?: string;
   translate?: boolean;
   generateImage?: boolean;
   generatePdf?: boolean;
@@ -23,10 +41,14 @@ export interface GenerateFullPatternInput {
 export async function generateFullPattern(
   input: GenerateFullPatternInput
 ): Promise<CrochetPattern> {
-  const prompt = input.prompt.trim();
-  if (!prompt) throw new Error("Prompt is required");
+  let prompt = (input.prompt || "").trim();
+  if (!prompt || input.creative) {
+    const invented = await inventCreativeSubject();
+    prompt = prompt ? `${prompt}. ${invented}` : invented;
+  }
 
   const id = randomUUID();
+  const settings = await readAdminSettings();
   const designSpec = await generateDesignSpec(prompt);
   const { content, suggestedSlug } = await generatePatternContent(
     prompt,
@@ -54,6 +76,25 @@ export async function generateFullPattern(
   }
 
   const site = await readSiteContent();
+  let categoryIds = input.categoryIds?.length ? [...input.categoryIds] : [];
+
+  if (input.allowNewCategory !== false) {
+    const created = await ensureCategoryFromSpec(designSpec, site.categories);
+    if (created) {
+      site.categories = created.categories;
+      await saveSiteContent(site);
+      if (!categoryIds.includes(created.id)) categoryIds.push(created.id);
+    }
+  }
+
+  if (!categoryIds.length) {
+    categoryIds = guessCategoryIds(
+      designSpec.construction,
+      designSpec.object,
+      site.categories.map((c) => c.id)
+    );
+  }
+
   let slug = suggestedSlug || slugify(designSpec.object);
   const taken = new Set(site.patterns.map((p) => p.slug));
   if (taken.has(slug)) slug = `${slug}-${id.slice(0, 6)}`;
@@ -71,10 +112,13 @@ export async function generateFullPattern(
     confidence,
     status: "draft",
     featured: input.featured === true,
-    free: input.free !== false,
-    categoryIds: input.categoryIds?.length
-      ? input.categoryIds
-      : guessCategoryIds(designSpec.construction, designSpec.object, site.categories.map((c) => c.id)),
+    free: input.free === true,
+    priceCents:
+      typeof input.priceCents === "number"
+        ? input.priceCents
+        : settings.defaultPriceCents,
+    currency: input.currency || settings.defaultCurrency || "eur",
+    categoryIds,
     createdAt: now,
     updatedAt: now,
   };
@@ -92,6 +136,47 @@ export async function generateFullPattern(
   }
 
   return pattern;
+}
+
+async function ensureCategoryFromSpec(
+  spec: DesignSpec,
+  existing: Category[]
+): Promise<{ id: string; categories: Category[] } | null> {
+  const slug = slugify(
+    spec.suggested_category_slug ||
+      spec.suggested_category_name ||
+      spec.construction ||
+      ""
+  );
+  if (!slug) return null;
+  const found = existing.find((c) => c.slug === slug || c.id === slug);
+  if (found) return { id: found.id, categories: existing };
+
+  const nameEn =
+    spec.suggested_category_name ||
+    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const descEn =
+    spec.suggested_category_description ||
+    `Crochet patterns in the ${nameEn} category.`;
+
+  const category: Category = {
+    id: slug,
+    slug,
+    name: emptyLocalized(nameEn),
+    description: emptyLocalized(descEn),
+    icon: "🧶",
+  };
+
+  // Best-effort translate category labels
+  try {
+    const { translateLocalizedField } = await import("./translate");
+    category.name = await translateLocalizedField(nameEn);
+    category.description = await translateLocalizedField(descEn);
+  } catch {
+    /* keep EN */
+  }
+
+  return { id: category.id, categories: [...existing, category] };
 }
 
 function guessCategoryIds(
@@ -112,5 +197,7 @@ function guessCategoryIds(
   if (/christmas|halloween|easter|valentine/.test(text)) {
     if (available.includes("seasonal")) return ["seasonal"];
   }
-  return available.includes("amigurumi") ? ["amigurumi"] : available.slice(0, 1);
+  return available.includes("amigurumi")
+    ? ["amigurumi"]
+    : available.slice(0, 1);
 }

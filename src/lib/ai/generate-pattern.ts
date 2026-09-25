@@ -7,26 +7,26 @@ export async function generatePatternContent(
   prompt: string,
   spec: DesignSpec
 ): Promise<{ content: PatternContent; suggestedSlug: string }> {
-  const openai = getOpenAI();
+  const openai = await getOpenAI();
   const completion = await openai.chat.completions.create({
-    model: contentModel(),
-    temperature: 0.3,
+    model: await contentModel(),
+    temperature: 0.25,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
-        content: `You are an expert US-term crochet pattern writer.
-Return ONLY JSON with this shape:
+        content: `You are an expert US-term crochet pattern writer for a premium paid pattern shop.
+Return ONLY JSON:
 {
   "title_en": "string",
-  "summary_en": "string",
-  "seo_title_en": "string",
-  "seo_description_en": "string",
-  "abbreviations": [{"abbr":"sc","meaning":"single crochet"}, ...],
+  "summary_en": "2-3 sentence shop summary",
+  "seo_title_en": "SEO title under 60 chars",
+  "seo_description_en": "SEO meta under 155 chars",
+  "abbreviations": [{"abbr":"sc","meaning":"single crochet"}],
   "materials": {
-    "yarn": ["..."],
+    "yarn": ["brand/weight/color with yardage estimate"],
     "hook": "3.5 mm",
-    "notions": ["yarn needle","stuffing"],
+    "notions": ["yarn needle","stuffing","stitch marker"],
     "gauge": "optional"
   },
   "components": [
@@ -47,21 +47,21 @@ Return ONLY JSON with this shape:
     }
   ],
   "assembly": ["step..."],
-  "finishing": ["step..."]
+  "finishing": ["weave ends", "..."]
 }
 
 Rules:
-- Use US crochet terms.
-- Every round MUST include instructions, operations array, and accurate result stitch count.
-- Stitch math must be consistent round to round.
-- Include all components from the design specification.
-- Prefer clear beginner-friendly wording when difficulty is beginner/easy.
-- operations.type allowed: magic_ring, chain, sc, hdc, dc, slst, inc, dec, repeat, skip, join, fasten_off, blo, flo, turn, text
-- For (sc, inc) x 6 use operations: [{"type":"repeat","repeat":6,"of":[{"type":"sc","stitches":1},{"type":"inc","repeat":1}]}]`,
+- US crochet terms only in instructions.
+- Every round MUST include instructions, operations[], and accurate numeric result.
+- Stitch math must be consistent. Prefer clear beginner wording when difficulty is beginner/easy.
+- Include ALL components from the design specification with enough rounds to form the shape.
+- operations.type: magic_ring, chain, sc, hdc, dc, slst, inc, dec, repeat, skip, join, fasten_off, blo, flo, turn, text
+- For (sc, inc) x 6 use: [{"type":"repeat","repeat":6,"of":[{"type":"sc","stitches":1},{"type":"inc","repeat":1}]}]
+- Assembly and finishing must be concrete shop-quality steps.`,
       },
       {
         role: "user",
-        content: `Original prompt:\n${prompt}\n\nDesign specification JSON:\n${JSON.stringify(spec, null, 2)}\n\nWrite the full crochet pattern.`,
+        content: `Original prompt:\n${prompt}\n\nDesign specification JSON:\n${JSON.stringify(spec, null, 2)}\n\nWrite the full professional crochet pattern.`,
       },
     ],
   });
@@ -83,11 +83,11 @@ Rules:
     title: emptyLocalized(titleEn),
     summary: emptyLocalized(raw.summary_en || prompt),
     seoTitle: emptyLocalized(
-      raw.seo_title_en || `${titleEn} Free Crochet Pattern`
+      raw.seo_title_en || `${titleEn} Crochet Pattern`
     ),
     seoDescription: emptyLocalized(
       raw.seo_description_en ||
-        `Crochet pattern for ${titleEn}. ${spec.difficulty} level.`
+        `Premium crochet pattern for ${titleEn}. ${spec.difficulty} level.`
     ),
     abbreviations: raw.abbreviations?.length
       ? raw.abbreviations
@@ -101,7 +101,9 @@ Rules:
           { abbr: "FO", meaning: "fasten off" },
         ],
     materials: raw.materials || {
-      yarn: [`${spec.yarn_weight || "worsted"} yarn in ${spec.colors.join(", ")}`],
+      yarn: [
+        `${spec.yarn_weight || "worsted"} yarn in ${spec.colors.join(", ")}`,
+      ],
       hook: `${spec.hook_mm || "4.0"} mm`,
       notions: ["yarn needle", "scissors", "stitch marker"],
     },

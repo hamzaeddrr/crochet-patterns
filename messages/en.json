@@ -35,6 +35,8 @@
     "empty": "No patterns published yet. Check back soon.",
     "difficulty": "Difficulty",
     "free": "Free",
+    "paid": "Paid",
+    "buy": "Buy pattern",
     "download": "Download PDF",
     "materials": "Materials",
     "abbreviations": "Abbreviations",
@@ -45,7 +47,10 @@
     "confidenceNote": "AI-assisted studio draft. Always verify stitch counts while you crochet.",
     "related": "More patterns",
     "all": "All patterns",
-    "filterAll": "All"
+    "filterAll": "All",
+    "lockedTitle": "Full pattern unlocked after purchase",
+    "lockedBody": "You can see the project photo, summary, and a materials teaser. Buy once to unlock every round, assembly steps, and the printable PDF.",
+    "lockedTeaser": "…full yarn list after unlock"
   },
   "categories": {
     "title": "Categories",

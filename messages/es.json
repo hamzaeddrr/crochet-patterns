@@ -35,6 +35,8 @@
     "empty": "Aún no hay patrones publicados.",
     "difficulty": "Dificultad",
     "free": "Gratis",
+    "paid": "De pago",
+    "buy": "Comprar patrón",
     "download": "Descargar PDF",
     "materials": "Materiales",
     "abbreviations": "Abreviaturas",
@@ -45,7 +47,10 @@
     "confidenceNote": "Borrador asistido por IA. Verifica siempre los conteos mientras tejes.",
     "related": "Más patrones",
     "all": "Todos los patrones",
-    "filterAll": "Todos"
+    "filterAll": "Todos",
+    "lockedTitle": "Patrón completo tras la compra",
+    "lockedBody": "Ves la foto, el resumen y un adelanto de materiales. Compra una vez para desbloquear rondas, ensamblaje y PDF.",
+    "lockedTeaser": "…lista completa tras desbloquear"
   },
   "categories": {
     "title": "Categorías",

@@ -14,6 +14,11 @@ export default function AdminPatternDetailPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [summaryEn, setSummaryEn] = useState("");
+  const [seoTitleEn, setSeoTitleEn] = useState("");
+  const [seoDescEn, setSeoDescEn] = useState("");
+  const [priceCents, setPriceCents] = useState("499");
 
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
@@ -21,6 +26,11 @@ export default function AdminPatternDetailPage() {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Not found");
         setPattern(data.pattern);
+        setTitleEn(data.pattern.content.title.en);
+        setSummaryEn(data.pattern.content.summary.en);
+        setSeoTitleEn(data.pattern.content.seoTitle.en);
+        setSeoDescEn(data.pattern.content.seoDescription.en);
+        setPriceCents(String(data.pattern.priceCents ?? 499));
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -41,6 +51,20 @@ export default function AdminPatternDetailPage() {
     }
     setPattern(data.pattern);
     setMessage("Saved");
+  }
+
+  async function saveCopy() {
+    if (!pattern) return;
+    await patch({
+      priceCents: Number(priceCents) || 0,
+      content: {
+        ...pattern.content,
+        title: { ...pattern.content.title, en: titleEn },
+        summary: { ...pattern.content.summary, en: summaryEn },
+        seoTitle: { ...pattern.content.seoTitle, en: seoTitleEn },
+        seoDescription: { ...pattern.content.seoDescription, en: seoDescEn },
+      },
+    });
   }
 
   async function rebuildPdf() {
@@ -73,6 +97,19 @@ export default function AdminPatternDetailPage() {
         ? "Validation OK"
         : `${data.pattern.validation.issues.length} issues`
     );
+  }
+
+  async function retranslate() {
+    setSaving(true);
+    await patch({ action: "retranslate" });
+    setSaving(false);
+  }
+
+  async function regenImage() {
+    setSaving(true);
+    setMessage("Regenerating image…");
+    await patch({ action: "regenerateImage" });
+    setSaving(false);
   }
 
   async function remove() {
@@ -163,7 +200,24 @@ export default function AdminPatternDetailPage() {
             />
             Free download
           </label>
+          <label className="block text-sm text-slate-400">
+            Price (cents)
+            <input
+              type="number"
+              value={priceCents}
+              onChange={(e) => setPriceCents(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+            />
+          </label>
           <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={saveCopy}
+              className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-bold text-white"
+            >
+              Save copy & price
+            </button>
             <button
               type="button"
               disabled={saving}
@@ -171,6 +225,22 @@ export default function AdminPatternDetailPage() {
               className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
             >
               Re-run stitch validation
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={retranslate}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+            >
+              Re-translate FR/ES
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={regenImage}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900"
+            >
+              Regenerate image
             </button>
             <button
               type="button"
@@ -184,9 +254,9 @@ export default function AdminPatternDetailPage() {
               <a
                 href={pattern.pdfPath}
                 target="_blank"
-                className="rounded-lg bg-rose-500 px-3 py-2 text-center text-sm font-bold text-white"
+                className="rounded-lg bg-slate-800 px-3 py-2 text-center text-sm font-bold text-white"
               >
-                Open PDF
+                Open PDF (admin)
               </a>
             )}
             {pattern.status === "published" && (
@@ -209,6 +279,40 @@ export default function AdminPatternDetailPage() {
         </div>
 
         <div className="space-y-6">
+          <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h2 className="font-semibold text-white">Copy & SEO (EN)</h2>
+            <input
+              value={titleEn}
+              onChange={(e) => setTitleEn(e.target.value)}
+              placeholder="Title"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+            />
+            <textarea
+              value={summaryEn}
+              onChange={(e) => setSummaryEn(e.target.value)}
+              rows={3}
+              placeholder="Summary"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+            />
+            <input
+              value={seoTitleEn}
+              onChange={(e) => setSeoTitleEn(e.target.value)}
+              placeholder="SEO title"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+            />
+            <textarea
+              value={seoDescEn}
+              onChange={(e) => setSeoDescEn(e.target.value)}
+              rows={2}
+              placeholder="SEO description"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+            />
+            <p className="text-xs text-slate-500">
+              FR: {pattern.content.title.fr || "—"} · ES:{" "}
+              {pattern.content.title.es || "—"}
+            </p>
+          </section>
+
           <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <h2 className="font-semibold text-white">Design spec</h2>
             <pre className="mt-3 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-300">

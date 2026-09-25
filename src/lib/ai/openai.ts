@@ -1,25 +1,23 @@
 import OpenAI from "openai";
+import {
+  resolveContentModel,
+  resolveOpenAiApiKey,
+} from "@/lib/admin/settings-store";
 
-export function getOpenAI(): OpenAI {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
-    throw new Error("OPENAI_API_KEY is not set");
-  }
-  return new OpenAI({ apiKey: key });
+export async function getOpenAI(): Promise<OpenAI> {
+  const apiKey = await resolveOpenAiApiKey();
+  return new OpenAI({ apiKey });
 }
 
-export function contentModel(): string {
-  return process.env.OPENAI_CONTENT_MODEL || "gpt-4o-mini";
+export async function contentModel(): Promise<string> {
+  return resolveContentModel();
 }
 
-export function imageModel(): string {
-  return process.env.OPENAI_IMAGE_MODEL || "gpt-image-1-mini";
+/** @deprecated use async contentModel() */
+export function contentModelSync(): string {
+  return process.env.OPENAI_CONTENT_MODEL || "gpt-5-mini";
 }
 
-export function imageSize(): string {
-  return process.env.OPENAI_IMAGE_SIZE || "1024x1024";
-}
-
-export function imageQuality(): string {
-  return process.env.OPENAI_IMAGE_QUALITY || "high";
+export function imageModelSync(): string {
+  return process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare";
 }

@@ -1,14 +1,23 @@
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
-import { getOpenAI, imageModel, imageQuality, imageSize } from "./openai";
+import { getOpenAI } from "./openai";
 import { designSpecToImagePrompt } from "./design-spec";
+import {
+  resolveImageModel,
+  resolveImageQuality,
+  resolveImageSize,
+} from "@/lib/admin/settings-store";
+import { isFlareModel } from "./flare-types";
 import type { DesignSpec } from "@/types";
 
 export interface GeneratedImagePaths {
   imagePath: string;
   thumbnailPath: string;
   promptUsed: string;
+  model: string;
+  quality: string;
+  size: string;
 }
 
 export async function generatePatternImage(
@@ -16,15 +25,25 @@ export async function generatePatternImage(
   spec: DesignSpec,
   customPrompt?: string
 ): Promise<GeneratedImagePaths> {
-  const openai = getOpenAI();
+  const openai = await getOpenAI();
   const promptUsed = customPrompt?.trim() || designSpecToImagePrompt(spec);
+  const model = await resolveImageModel();
+  const quality = await resolveImageQuality();
+  const size = isFlareModel(model)
+    ? (await resolveImageSize()) || "auto"
+    : (await resolveImageSize()) === "auto"
+      ? "1024x1024"
+      : await resolveImageSize();
 
-  const result = await openai.images.generate({
-    model: imageModel(),
+  const result = (await openai.images.generate({
+    model,
     prompt: promptUsed,
-    size: imageSize() as "1024x1024",
-    quality: imageQuality() as "high",
-  });
+    size: size as "1024x1024" | "auto",
+    quality: quality as "high" | "auto",
+    n: 1,
+  } as Parameters<typeof openai.images.generate>[0])) as {
+    data?: Array<{ b64_json?: string | null; url?: string | null }>;
+  };
 
   const b64 = result.data?.[0]?.b64_json;
   const url = result.data?.[0]?.url;
@@ -57,5 +76,12 @@ export async function generatePatternImage(
       path.join(process.cwd(), "public", thumbnailPath.replace(/^\//, ""))
     );
 
-  return { imagePath, thumbnailPath, promptUsed };
+  return {
+    imagePath,
+    thumbnailPath,
+    promptUsed,
+    model,
+    quality,
+    size,
+  };
 }

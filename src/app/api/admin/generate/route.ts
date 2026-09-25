@@ -8,11 +8,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const pattern = await generateFullPattern({
       prompt: String(body.prompt || ""),
+      creative: body.creative === true,
       categoryIds: Array.isArray(body.categoryIds)
         ? body.categoryIds.map(String)
         : undefined,
+      allowNewCategory: body.allowNewCategory !== false,
       featured: body.featured === true,
-      free: body.free !== false,
+      free: body.free === true,
+      priceCents:
+        typeof body.priceCents === "number" ? body.priceCents : undefined,
+      currency: typeof body.currency === "string" ? body.currency : undefined,
       translate: body.translate !== false,
       generateImage: body.generateImage !== false,
       generatePdf: body.generatePdf !== false,

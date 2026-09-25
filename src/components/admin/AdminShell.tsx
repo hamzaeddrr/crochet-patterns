@@ -10,6 +10,9 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  FileText,
+  Languages,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +21,9 @@ const nav = [
   { href: "/admin/generate", label: "AI Generate", icon: Sparkles },
   { href: "/admin/patterns", label: "Pattern library", icon: Library },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
+  { href: "/admin/pages", label: "Pages & SEO", icon: FileText },
+  { href: "/admin/translations", label: "Translations", icon: Languages },
+  { href: "/admin/purchases", label: "Purchases", icon: ShoppingBag },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

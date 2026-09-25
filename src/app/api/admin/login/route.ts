@@ -8,7 +8,7 @@ import {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const password = String(body.password || "");
-  if (!checkAdminPassword(password)) {
+  if (!(await checkAdminPassword(password))) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
   const token = createAdminSessionToken();

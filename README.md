@@ -1,64 +1,48 @@
 # Loopcraft — Crochet Patterns
 
-Public crochet pattern website with an **admin-only** AI studio.
-
-Visitors browse and download patterns. Only you generate content from `/admin`.
+Public crochet pattern website with an **admin-only** AI studio and Stripe unlock for paid patterns.
 
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript + Tailwind
 - next-intl: **English** (default), French, Spanish
-- OpenAI: design spec + pattern JSON + product images + translations
-- Stitch-count validator
-- PDF export (pdf-lib)
-- JSON file store in `data/site-content.json` (easy local start)
+- OpenAI: `gpt-5-mini` (text) + `gpt-image-2.5-flare` (images) — overridable in Admin → Settings
+- Stripe Checkout (one pattern → unlock cookie + PDF)
+- Stitch-count validator + PDF export
+- JSON stores in `data/` (`site-content.json`, `admin-settings.json`, `purchases.json`)
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env.local
-# edit ADMIN_PASSWORD, ADMIN_SECRET, OPENAI_API_KEY, NEXT_PUBLIC_SITE_URL
+# ADMIN_PASSWORD, ADMIN_SECRET, OPENAI_API_KEY, NEXT_PUBLIC_SITE_URL
+# Stripe: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 npm run dev
 ```
 
 - Site: [http://localhost:3000](http://localhost:3000)
 - Admin: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-- FR: `/fr` · ES: `/es`
+
+### Stripe webhooks (local)
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+Checkout success hits `/api/checkout/confirm` which sets the unlock cookie; the webhook also records the purchase for audit.
 
 ## Admin workflow
 
 1. Sign in at `/admin/login`
-2. **AI Generate** — prompt → design spec → pattern → image → validate → PDF
-3. Open the draft in **Pattern library**
-4. Fix issues if validation warns
-5. Set status to **published**
-6. Pattern appears on the public site with SEO + PDF download
+2. **Settings** — models, keys, default price, Stripe
+3. **AI Generate** — optional subject or creative mode → one-shot pattern + image + FR/ES + PDF
+4. Review in **Pattern library** — price, free flag, status, re-translate, regenerate image
+5. Publish → public teaser; buyers unlock full rounds + PDF
 
-## SEO included
-
-- Per-page metadata + Open Graph
-- `hreflang` alternates (en / fr / es)
-- JSON-LD on pattern pages
-- `sitemap.xml` + `robots.txt`
-- Canonical URLs via `NEXT_PUBLIC_SITE_URL`
-
-## Project layout
-
-```
-src/app/[locale]/     # public pages
-src/app/admin/         # studio (not for clients)
-src/app/api/admin/     # generate, patterns, auth
-src/lib/ai/            # design spec, pattern, image, translate
-src/lib/crochet/       # stitch validator
-src/lib/pdf/           # PDF builder
-messages/              # en, fr, es UI strings
-data/                  # site-content.json
-public/patterns/       # images + PDFs
-```
+Also: **Categories**, **Pages & SEO**, **Translations**, **Purchases**.
 
 ## Notes
 
-- AI patterns start as **drafts**. Mark **tested** after you crochet them.
-- Clients never get AI generate access — only the public catalog.
-- Brand: **Loopcraft** (independent look from FillAndColor).
+- Paid access is cookie-based (no user accounts). JSON on Vercel is ephemeral — use Blob/DB for production persistence later.
+- Brand: **Loopcraft**

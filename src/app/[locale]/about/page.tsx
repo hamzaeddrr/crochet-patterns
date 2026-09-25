@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { siteUrl } from "@/lib/utils";
+import { readSiteContent } from "@/lib/data/store";
+import { pickLocalized } from "@/types";
+import { pageSeoMetadata } from "@/lib/seo/page-meta";
 
 export async function generateMetadata({
   params,
@@ -10,12 +12,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "about" });
-  const prefix = locale === "en" ? "" : `/${locale}`;
-  return {
+  return pageSeoMetadata("about", locale, "/about", {
     title: t("title"),
     description: t("body"),
-    alternates: { canonical: `${siteUrl()}${prefix}/about` },
-  };
+  });
 }
 
 export default async function AboutPage({
@@ -23,19 +23,31 @@ export default async function AboutPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale as Locale);
+  const { locale: localeParam } = await params;
+  const locale = localeParam as Locale;
+  setRequestLocale(locale);
   const t = await getTranslations("about");
+  const { pages } = await readSiteContent();
+  const page = pages.about;
+  const title = page?.heroTitle
+    ? pickLocalized(page.heroTitle, locale) || t("title")
+    : t("title");
+  const body = page?.body
+    ? pickLocalized(page.body, locale) || t("body")
+    : t("body");
+
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-32 sm:px-6">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold">
         Our story
       </p>
       <h1 className="mt-3 font-display text-5xl text-ink sm:text-6xl">
-        {t("title")}
+        {title}
       </h1>
       <div className="soft-card mt-8 p-8">
-        <p className="text-lg leading-relaxed text-muted">{t("body")}</p>
+        <p className="text-lg leading-relaxed text-muted whitespace-pre-wrap">
+          {body}
+        </p>
       </div>
     </div>
   );

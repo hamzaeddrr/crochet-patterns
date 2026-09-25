@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { siteUrl } from "@/lib/utils";
+import { readSiteContent } from "@/lib/data/store";
+import { pickLocalized } from "@/types";
+import { pageSeoMetadata } from "@/lib/seo/page-meta";
 
 export async function generateMetadata({
   params,
@@ -10,12 +12,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "contact" });
-  const prefix = locale === "en" ? "" : `/${locale}`;
-  return {
+  return pageSeoMetadata("contact", locale, "/contact", {
     title: t("title"),
     description: t("subtitle"),
-    alternates: { canonical: `${siteUrl()}${prefix}/contact` },
-  };
+  });
 }
 
 export default async function ContactPage({
@@ -23,13 +23,23 @@ export default async function ContactPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale as Locale);
+  const { locale: localeParam } = await params;
+  const locale = localeParam as Locale;
+  setRequestLocale(locale);
   const t = await getTranslations("contact");
+  const { pages } = await readSiteContent();
+  const page = pages.contact;
+  const title = page?.heroTitle
+    ? pickLocalized(page.heroTitle, locale) || t("title")
+    : t("title");
+  const subtitle = page?.body
+    ? pickLocalized(page.body, locale) || t("subtitle")
+    : t("subtitle");
+
   return (
     <div className="mx-auto max-w-xl px-4 pb-20 pt-32 sm:px-6">
-      <h1 className="font-display text-5xl text-ink">{t("title")}</h1>
-      <p className="mt-4 text-lg text-muted">{t("subtitle")}</p>
+      <h1 className="font-display text-5xl text-ink">{title}</h1>
+      <p className="mt-4 text-lg text-muted">{subtitle}</p>
       <form
         className="soft-card mt-8 space-y-5 p-6"
         action="mailto:hello@loopcraft.patterns"
