@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
+import { savePublicAsset } from "@/lib/storage/assets";
 
 export const runtime = "nodejs";
 
@@ -37,12 +36,10 @@ export async function POST(request: NextRequest) {
           : file.type === "image/gif"
             ? "gif"
             : "jpg";
-    const name = `hero-${randomUUID().slice(0, 8)}.${ext}`;
-    const dir = path.join(process.cwd(), "public", "site");
-    await fs.mkdir(dir, { recursive: true });
+    const name = `site/hero-${randomUUID().slice(0, 8)}.${ext}`;
     const buf = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(path.join(dir, name), buf);
-    return NextResponse.json({ ok: true, path: `/site/${name}` });
+    const stored = await savePublicAsset(name, buf, file.type);
+    return NextResponse.json({ ok: true, path: stored });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(

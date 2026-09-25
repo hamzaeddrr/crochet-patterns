@@ -1,5 +1,3 @@
-import { promises as fs } from "fs";
-import path from "path";
 import sharp from "sharp";
 import { getOpenAI } from "./openai";
 import { designSpecToImagePrompt } from "./design-spec";
@@ -13,6 +11,7 @@ import {
   isFlareModel,
   type FlareGenerateQuality,
 } from "./flare-types";
+import { savePublicAsset } from "@/lib/storage/assets";
 import type { DesignSpec } from "@/types";
 
 export interface GeneratedImagePaths {
@@ -44,18 +43,16 @@ function resolveSafeImageParams(
   if (!STANDARD_SIZES.has(size)) {
     size = flare ? "auto" : "1024x1024";
   }
-  // Non-flare gpt-image models: prefer explicit square if "auto" unsupported
   if (!flare && size === "auto") {
     size = "1024x1024";
   }
 
-  let quality = (rawQuality || (flare ? "high" : "high")).toLowerCase();
+  let quality = (rawQuality || "high").toLowerCase();
   if (flare) {
     if (!isFlareGenerateQuality(quality)) {
       quality = "high" satisfies FlareGenerateQuality;
     }
   } else if (!GPT_IMAGE_QUALITIES.has(quality)) {
-    // Map flare-only values down for classic gpt-image
     if (quality === "xhigh" || quality === "max") quality = "high";
     else quality = "high";
   }
@@ -94,7 +91,6 @@ export async function generatePatternImage(
       body as unknown as Parameters<typeof openai.images.generate>[0]
     )) as typeof result;
   } catch (err) {
-    // Retry with safest known-good params if model rejects quality/size/etc.
     const message = err instanceof Error ? err.message : String(err);
     console.warn("Image generate retry after:", message);
     const fallback: Record<string, unknown> = {
@@ -122,23 +118,26 @@ export async function generatePatternImage(
     throw new Error("Image generation returned no data");
   }
 
-  const dir = path.join(process.cwd(), "public", "patterns", patternId);
-  await fs.mkdir(dir, { recursive: true });
-
-  const imagePath = `/patterns/${patternId}/hero.webp`;
-  const thumbnailPath = `/patterns/${patternId}/thumb.webp`;
-
-  await sharp(buffer)
+  const heroBuf = await sharp(buffer)
     .resize(1200, 1200, { fit: "cover" })
     .webp({ quality: 88 })
-    .toFile(path.join(process.cwd(), "public", imagePath.replace(/^\//, "")));
+    .toBuffer();
 
-  await sharp(buffer)
+  const thumbBuf = await sharp(buffer)
     .resize(480, 480, { fit: "cover" })
     .webp({ quality: 80 })
-    .toFile(
-      path.join(process.cwd(), "public", thumbnailPath.replace(/^\//, ""))
-    );
+    .toBuffer();
+
+  const imagePath = await savePublicAsset(
+    `patterns/${patternId}/hero.webp`,
+    heroBuf,
+    "image/webp"
+  );
+  const thumbnailPath = await savePublicAsset(
+    `patterns/${patternId}/thumb.webp`,
+    thumbBuf,
+    "image/webp"
+  );
 
   return {
     imagePath,

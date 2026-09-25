@@ -1,7 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { promises as fs } from "fs";
-import path from "path";
 import type { CrochetPattern } from "@/types";
+import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
 
 function wrapText(
   text: string,
@@ -73,14 +72,13 @@ export async function buildPatternPdf(
 
     if (pattern.imagePath) {
       try {
-        const imgBytes = await fs.readFile(
-          path.join(process.cwd(), "public", pattern.imagePath.replace(/^\//, ""))
-        );
-        const isJpg = pattern.imagePath.endsWith(".jpg") || pattern.imagePath.endsWith(".jpeg");
+        const imgBytes = await readPublicAsset(pattern.imagePath);
+        const isJpg =
+          /\.jpe?g($|\?)/i.test(pattern.imagePath) ||
+          pattern.imagePath.includes("image/jpeg");
         const image = isJpg
           ? await pdf.embedJpg(imgBytes)
           : await pdf.embedPng(
-              // pdf-lib needs png/jpg; convert via sharp if webp
               await (
                 await import("sharp")
               )
@@ -221,12 +219,9 @@ export async function buildPatternPdf(
   });
 
   const bytes = await pdf.save();
-  const dir = path.join(process.cwd(), "public", "patterns", pattern.id);
-  await fs.mkdir(dir, { recursive: true });
-  const rel = `/patterns/${pattern.id}/pattern.pdf`;
-  await fs.writeFile(
-    path.join(process.cwd(), "public", rel.replace(/^\//, "")),
-    bytes
+  return savePublicAsset(
+    `patterns/${pattern.id}/pattern.pdf`,
+    Buffer.from(bytes),
+    "application/pdf"
   );
-  return rel;
 }

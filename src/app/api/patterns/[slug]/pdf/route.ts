@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { cookies } from "next/headers";
 import { getPatternBySlug } from "@/lib/data/store";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
+import { readPublicAsset } from "@/lib/storage/assets";
 
 export async function GET(
   _request: NextRequest,
@@ -26,10 +25,9 @@ export async function GET(
     }
   }
 
-  const abs = path.join(process.cwd(), "public", pattern.pdfPath);
   try {
-    const bytes = await fs.readFile(abs);
-    return new NextResponse(bytes, {
+    const bytes = await readPublicAsset(pattern.pdfPath);
+    return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${pattern.slug}.pdf"`,

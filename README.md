@@ -18,11 +18,22 @@ npm install
 cp .env.example .env.local
 # ADMIN_PASSWORD, ADMIN_SECRET, OPENAI_API_KEY, NEXT_PUBLIC_SITE_URL
 # Stripe: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+# Vercel deploy: BLOB_READ_WRITE_TOKEN (Storage → Blob) — required for images/PDFs
 npm run dev
 ```
 
 - Site: [http://localhost:3000](http://localhost:3000)
 - Admin: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
+### Vercel Blob (production assets)
+
+On Vercel the filesystem is read-only. Pattern images, PDFs, and hero uploads go to **Vercel Blob**.
+
+1. Vercel dashboard → Project → **Storage** → create a **Blob** store  
+2. Copy `BLOB_READ_WRITE_TOKEN` into Environment Variables (Production + Preview)  
+3. Redeploy
+
+Locally, assets still write under `public/` when the token is unset.
 
 ### Stripe webhooks (local)
 
