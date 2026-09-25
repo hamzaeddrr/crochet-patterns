@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,20 @@ import {
   type CrochetPattern,
   type PatternStatus,
 } from "@/types";
+
+const IMAGE_PROGRESS_HINTS = [
+  "Reading pattern steps…",
+  "Building multi-step collage prompt…",
+  "Calling image model (this can take 30–90s)…",
+  "Still generating — almost there…",
+  "Saving new image to storage…",
+];
+
+function withCacheBust(url: string | undefined, version: string | number) {
+  if (!url) return "";
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(String(version))}`;
+}
 
 export default function AdminPatternDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +41,11 @@ export default function AdminPatternDetailPage() {
   const [featured, setFeatured] = useState(false);
   const [free, setFree] = useState(false);
   const [status, setStatus] = useState<PatternStatus>("draft");
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageElapsed, setImageElapsed] = useState(0);
+  const [imageHint, setImageHint] = useState(IMAGE_PROGRESS_HINTS[0]);
+  const [imageVersion, setImageVersion] = useState(0);
+  const imageElapsedRef = useRef(0);
 
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
@@ -43,9 +62,34 @@ export default function AdminPatternDetailPage() {
         setFeatured(Boolean(p.featured));
         setFree(Boolean(p.free));
         setStatus(p.status);
+        setImageVersion(Date.parse(p.updatedAt) || Date.now());
       })
       .catch((e) => setError(e.message));
   }, [id]);
+
+  useEffect(() => {
+    if (!imageBusy) return;
+    setImageElapsed(0);
+    imageElapsedRef.current = 0;
+    setImageHint(IMAGE_PROGRESS_HINTS[0]);
+    const tick = window.setInterval(() => {
+      imageElapsedRef.current += 1;
+      setImageElapsed(imageElapsedRef.current);
+    }, 1000);
+    const hints = window.setInterval(() => {
+      setImageHint(
+        IMAGE_PROGRESS_HINTS[
+          Math.floor(Date.now() / 8000) % IMAGE_PROGRESS_HINTS.length
+        ]
+      );
+    }, 8000);
+    return () => {
+      window.clearInterval(tick);
+      window.clearInterval(hints);
+    };
+  }, [imageBusy]);
+
+  const busy = saving || imageBusy;
 
   async function patch(body: Record<string, unknown>) {
     setSaving(true);
@@ -94,7 +138,9 @@ export default function AdminPatternDetailPage() {
       },
     });
     if (saved && featured && saved.status !== "published") {
-      setMessage("Saved — set status to published for Featured to appear on the homepage");
+      setMessage(
+        "Saved — set status to published for Featured to appear on the homepage"
+      );
     }
   }
 
@@ -179,8 +225,48 @@ export default function AdminPatternDetailPage() {
   }
 
   async function regenImage() {
-    setMessage("Regenerating image…");
-    await patch({ action: "regenerateImage" });
+    setImageBusy(true);
+    setMessage("");
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerateImage" }),
+      });
+      let data: {
+        pattern?: CrochetPattern;
+        image?: { model?: string; size?: string };
+        error?: string;
+      } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Invalid response from server"
+            : `Image generation failed (${res.status}). The request may have timed out — try again.`
+        );
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Image generation failed (${res.status})`);
+      }
+      if (!data.pattern?.imagePath) {
+        throw new Error("Server returned no image path");
+      }
+      setPattern(data.pattern);
+      setImageVersion(Date.now());
+      const secs = imageElapsedRef.current;
+      const model = data.image?.model ? ` · ${data.image.model}` : "";
+      setMessage(`Image regenerated successfully in ${secs}s${model}`);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Image generation failed — try again"
+      );
+      setMessage("");
+    } finally {
+      setImageBusy(false);
+    }
   }
 
   async function remove() {
@@ -205,6 +291,8 @@ export default function AdminPatternDetailPage() {
     );
   }
 
+  const previewSrc = withCacheBust(pattern.imagePath, imageVersion);
+
   return (
     <AdminShell title={pattern.content.title.en}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -214,7 +302,7 @@ export default function AdminPatternDetailPage() {
         <button
           type="button"
           onClick={saveAll}
-          disabled={saving}
+          disabled={busy}
           className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save changes"}
@@ -223,20 +311,45 @@ export default function AdminPatternDetailPage() {
         {error && <span className="text-sm text-rose-400">{error}</span>}
       </div>
 
+      {imageBusy && (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p className="font-semibold">Regenerating image… {imageElapsed}s</p>
+          <p className="mt-1 text-amber-100/80">{imageHint}</p>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full animate-pulse rounded-full bg-amber-400"
+              style={{
+                width: `${Math.min(92, 12 + imageElapsed * 1.2)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <div className="space-y-4">
           <div className="relative aspect-square overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-            {pattern.imagePath ? (
+            {previewSrc ? (
               <Image
-                src={pattern.imagePath}
+                key={previewSrc}
+                src={previewSrc}
                 alt=""
                 fill
-                unoptimized={/^https?:\/\//i.test(pattern.imagePath)}
-                className="object-cover"
+                unoptimized
+                className="object-contain p-2"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-slate-600">
                 No image
+              </div>
+            )}
+            {imageBusy && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/75 px-4 text-center backdrop-blur-[2px]">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+                <p className="text-sm font-semibold text-amber-100">
+                  Generating… {imageElapsed}s
+                </p>
+                <p className="text-xs text-slate-300">{imageHint}</p>
               </div>
             )}
           </div>
@@ -245,7 +358,7 @@ export default function AdminPatternDetailPage() {
             <select
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               value={status}
-              disabled={saving}
+              disabled={busy}
               onChange={(e) => setStatus(e.target.value as PatternStatus)}
             >
               {(
@@ -267,7 +380,7 @@ export default function AdminPatternDetailPage() {
             <input
               type="checkbox"
               checked={featured}
-              disabled={saving}
+              disabled={busy}
               onChange={(e) => setFeatured(e.target.checked)}
             />
             Featured on homepage
@@ -281,7 +394,7 @@ export default function AdminPatternDetailPage() {
             <input
               type="checkbox"
               checked={free}
-              disabled={saving}
+              disabled={busy}
               onChange={(e) => setFree(e.target.checked)}
             />
             Free download
@@ -293,7 +406,7 @@ export default function AdminPatternDetailPage() {
               min="0"
               step="0.01"
               value={priceUsd}
-              disabled={saving}
+              disabled={busy}
               onChange={(e) => setPriceUsd(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             />
@@ -301,7 +414,7 @@ export default function AdminPatternDetailPage() {
           <div className="flex flex-col gap-2">
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={saveAll}
               className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -309,7 +422,7 @@ export default function AdminPatternDetailPage() {
             </button>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={revalidate}
               className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
@@ -317,7 +430,7 @@ export default function AdminPatternDetailPage() {
             </button>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={autoFixStitches}
               className="rounded-lg border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
             >
@@ -325,7 +438,7 @@ export default function AdminPatternDetailPage() {
             </button>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={retranslate}
               className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >
@@ -333,15 +446,17 @@ export default function AdminPatternDetailPage() {
             </button>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={regenImage}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
+              className="rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
             >
-              Regenerate image
+              {imageBusy
+                ? `Generating image… ${imageElapsed}s`
+                : "Regenerate image"}
             </button>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={rebuildPdf}
               className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
             >

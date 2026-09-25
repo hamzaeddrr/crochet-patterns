@@ -159,13 +159,14 @@ export async function generatePatternImage(
     .webp({ quality: 80 })
     .toBuffer();
 
+  const stamp = Date.now();
   const imagePath = await savePublicAsset(
-    `patterns/${patternId}/hero.webp`,
+    `patterns/${patternId}/hero-${stamp}.webp`,
     heroBuf,
     "image/webp"
   );
   const thumbnailPath = await savePublicAsset(
-    `patterns/${patternId}/thumb.webp`,
+    `patterns/${patternId}/thumb-${stamp}.webp`,
     thumbBuf,
     "image/webp"
   );

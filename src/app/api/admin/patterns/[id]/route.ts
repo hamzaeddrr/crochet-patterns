@@ -8,6 +8,9 @@ import { translatePatternContent } from "@/lib/ai/translate";
 import { generatePatternImage } from "@/lib/ai/generate-image";
 import type { PatternStatus } from "@/types";
 
+/** Image regen + translate can exceed default serverless limits. */
+export const maxDuration = 300;
+
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -39,16 +42,30 @@ export async function PATCH(
   }
 
   if (body.action === "regenerateImage") {
-    const img = await generatePatternImage(
-      next.id,
-      next.designSpec,
-      undefined,
-      next.content
-    );
-    next.imagePath = img.imagePath;
-    next.thumbnailPath = img.thumbnailPath;
-    const saved = await upsertPattern(next);
-    return NextResponse.json({ pattern: saved });
+    try {
+      const img = await generatePatternImage(
+        next.id,
+        next.designSpec,
+        undefined,
+        next.content
+      );
+      next.imagePath = img.imagePath;
+      next.thumbnailPath = img.thumbnailPath;
+      const saved = await upsertPattern(next);
+      return NextResponse.json({
+        pattern: saved,
+        image: {
+          model: img.model,
+          quality: img.quality,
+          size: img.size,
+        },
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Image generation failed";
+      console.error("regenerateImage failed:", err);
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
   }
 
   if (typeof body.status === "string") {
