@@ -1,4 +1,3 @@
-import { emptyLocalized } from "@/types";
 import type { Technique, TechniqueStep } from "@/types/techniques";
 
 /**
@@ -2346,15 +2345,16 @@ export function catalogToTechnique(c: CatalogTechnique, now: string): Technique 
     slug: c.slug,
     key: c.key,
     sortOrder: c.sortOrder,
-    published: true,
+    published: false,
     title: c.title,
     tip: c.tip,
+    referenceText: "",
     youtubeUrl: "",
     sheetCols: c.sheetCols,
     sheetRows: c.sheetRows,
-    steps: c.steps.length
-      ? c.steps
-      : [{ caption: emptyLocalized("Step 1"), body: emptyLocalized("") }],
+    // Steps are authored from pasted reference text (or added manually) — catalog is topics only.
+    steps: [],
+    bonusImages: [],
     updatedAt: now,
   };
 }
@@ -2364,7 +2364,10 @@ export function buildDefaultTechniques(): Technique[] {
   return TECHNIQUE_CATALOG.map((c) => catalogToTechnique(c, now));
 }
 
-/** Add missing catalog techniques and enrich shorter step lists (keeps existing art). */
+/**
+ * Add any catalog techniques missing from a stored doc.
+ * Does not overwrite existing steps, images, or live/draft status.
+ */
 export function mergeCatalogIntoTechniques(
   existing: Technique[]
 ): Technique[] {
@@ -2374,39 +2377,10 @@ export function mergeCatalogIntoTechniques(
   const merged = [...existing];
 
   for (const c of TECHNIQUE_CATALOG) {
-    const prev = byKey.get(c.key) || byId.get(c.id);
-    if (!prev) {
-      const next = catalogToTechnique(c, now);
-      merged.push(next);
-      byKey.set(next.key, next);
-      continue;
-    }
-
-    // Sync step count/text from catalog (grow or shrink); keep imagePath by index.
-    if (c.steps.length !== prev.steps.length) {
-      const steps = c.steps.map((catalogStep, i) => {
-        const old = prev.steps[i];
-        return {
-          caption: catalogStep.caption,
-          body: catalogStep.body,
-          imagePath: old?.imagePath,
-        };
-      });
-      const idx = merged.findIndex((t) => t.id === prev.id || t.key === prev.key);
-      if (idx >= 0) {
-        merged[idx] = {
-          ...prev,
-          title: c.title,
-          tip: c.tip,
-          sortOrder: c.sortOrder,
-          sheetCols: c.sheetCols,
-          sheetRows: c.sheetRows,
-          steps,
-          updatedAt: now,
-        };
-        byKey.set(prev.key, merged[idx]);
-      }
-    }
+    if (byKey.has(c.key) || byId.has(c.id)) continue;
+    const next = catalogToTechnique(c, now);
+    merged.push(next);
+    byKey.set(next.key, next);
   }
 
   return merged.sort((a, b) => a.sortOrder - b.sortOrder);

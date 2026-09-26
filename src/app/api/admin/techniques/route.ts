@@ -82,9 +82,10 @@ export async function POST(request: NextRequest) {
       slug: body.slug,
       key: body.key,
       sortOrder: body.sortOrder,
-      published: body.published,
+      published: body.published ?? false,
       title: body.title || emptyLocalized(body.slug || "Technique"),
       tip: body.tip || emptyLocalized(""),
+      referenceText: body.referenceText || "",
       youtubeUrl: body.youtubeUrl || "",
       youtubeStartSeconds:
         typeof body.youtubeStartSeconds === "number"
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
       sheetCols: body.sheetCols ?? 2,
       sheetRows: body.sheetRows ?? 2,
       steps: body.steps as TechniqueStep[] | undefined,
+      bonusImages: body.bonusImages,
     });
     return NextResponse.json({ technique: created });
   } catch (error) {

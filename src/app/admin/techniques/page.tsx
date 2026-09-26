@@ -33,16 +33,14 @@ function emptyTechnique(): Technique {
     published: false,
     title: emptyLocalized(""),
     tip: emptyLocalized(""),
+    referenceText: "",
     youtubeUrl: "",
     youtubeStartSeconds: undefined,
     youtubeEndSeconds: undefined,
     sheetCols: 2,
     sheetRows: 2,
-    steps: [
-      { caption: emptyLocalized("Step 1"), body: emptyLocalized("") },
-      { caption: emptyLocalized("Step 2"), body: emptyLocalized("") },
-      { caption: emptyLocalized("Step 3"), body: emptyLocalized("") },
-    ],
+    steps: [],
+    bonusImages: [],
     updatedAt: "",
   };
 }
@@ -123,12 +121,14 @@ export default function AdminTechniquesPage() {
                 published: form.published,
                 title: form.title,
                 tip: form.tip,
+                referenceText: form.referenceText || "",
                 youtubeUrl: form.youtubeUrl,
                 youtubeStartSeconds: form.youtubeStartSeconds,
                 youtubeEndSeconds: form.youtubeEndSeconds,
                 sheetCols: form.sheetCols,
                 sheetRows: form.sheetRows,
                 steps: form.steps,
+                bonusImages: form.bonusImages || [],
               }
             : form
         ),
@@ -139,6 +139,57 @@ export default function AdminTechniquesPage() {
       setMsg("Saved");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function generateStepsFromReference() {
+    if (!form.id) {
+      setMsg("Save the technique first");
+      return;
+    }
+    const referenceText = (form.referenceText || "").trim();
+    if (!referenceText) {
+      setMsg("Paste or write reference text first");
+      return;
+    }
+    setBusy("gen-steps");
+    setMsg("Generating steps from your reference…");
+    try {
+      // Persist reference text first so it survives regeneration
+      await fetch("/api/admin/techniques", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: form.id,
+          referenceText,
+          published: form.published,
+        }),
+      });
+      const res = await fetch("/api/admin/techniques/generate-steps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          techniqueId: form.id,
+          referenceText,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { error?: string }).error ||
+            `Generate failed (${res.status})`
+        );
+      }
+      if (!data.technique) throw new Error("No technique returned");
+      applyTechnique(data.technique);
+      setMsg(
+        data.message ||
+          `Generated ${data.stepCount || data.technique.steps.length} steps (still draft)`
+      );
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not generate steps");
     } finally {
       setBusy(null);
     }
@@ -535,10 +586,10 @@ export default function AdminTechniquesPage() {
   return (
     <AdminShell title="Technique tutorials">
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
-        Build a stitch library like a brand guide. Use{" "}
-        <span className="text-slate-300">Batch illustrate</span> to fill many
-        techniques from only 1–3 AI images (much cheaper), or create art for one
-        technique at a time below.
+        All techniques start as <span className="text-amber-200">draft</span>.
+        Paste reference text → generate steps → upload photos → switch to{" "}
+        <span className="text-emerald-300">Live</span> when ready. Only live
+        techniques appear on /learn and in Pattern Studio.
       </p>
 
       <section className="mb-6 space-y-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-4">
@@ -641,11 +692,13 @@ export default function AdminTechniquesPage() {
                 </span>
                 <span className="text-[11px] text-slate-500">
                   {t.key} · {t.published ? "live" : "draft"}
-                  {t.professionallyReady || t.technicallyApproved
-                    ? " · ready"
+                  {t.published
+                    ? ""
                     : t.steps.some((s) => s.imagePath)
-                      ? " · has art"
-                      : ""}
+                      ? " · has photos"
+                      : t.steps.length
+                        ? ` · ${t.steps.length} steps`
+                        : " · no steps yet"}
                 </span>
               </span>
             </button>
@@ -772,15 +825,38 @@ export default function AdminTechniquesPage() {
               Official YouTube embed only. Start/end skip bumpers — do not
               re-upload trimmed copies of other creators&apos; videos.
             </p>
-            <label className="flex items-center gap-2 text-sm text-slate-300">
-              <input
-                type="checkbox"
-                checked={form.published}
-                onChange={(e) =>
-                  setForm({ ...form, published: e.target.checked })
-                }
-              />
-              Published on /learn + studio
+            <label className="block text-sm text-slate-400 sm:col-span-2">
+              Status
+              <div className="mt-1 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, published: false })}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium",
+                    !form.published
+                      ? "bg-amber-600 text-white"
+                      : "border border-slate-700 text-slate-300 hover:bg-slate-800"
+                  )}
+                >
+                  Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, published: true })}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium",
+                    form.published
+                      ? "bg-emerald-600 text-white"
+                      : "border border-slate-700 text-slate-300 hover:bg-slate-800"
+                  )}
+                >
+                  Live
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Draft stays off /learn and studio. Switch to Live when photos +
+                steps are ready.
+              </p>
             </label>
             <label className="block text-sm text-slate-400">
               Sort order
@@ -797,6 +873,42 @@ export default function AdminTechniquesPage() {
               />
             </label>
           </div>
+
+          <section className="space-y-3 rounded-lg border border-sky-900/40 bg-sky-950/20 p-4">
+            <h3 className="text-sm font-medium text-sky-100">
+              Reference text → AI steps
+            </h3>
+            <p className="text-xs text-slate-400">
+              Paste notes (from any guide you studied, your own wording, or a
+              rough outline). AI turns them into clear EN/FR/ES step captions —
+              then upload photos per step. Does not copy third-party images.
+            </p>
+            <textarea
+              value={form.referenceText || ""}
+              onChange={(e) =>
+                setForm({ ...form, referenceText: e.target.value })
+              }
+              rows={8}
+              placeholder="Paste or write how this technique works, step by step…"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-600"
+            />
+            <button
+              type="button"
+              disabled={!!busy || !form.id}
+              onClick={generateStepsFromReference}
+              className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              <Wand2 className="h-4 w-4" />
+              {busy === "gen-steps"
+                ? "Generating steps…"
+                : "Generate steps from text"}
+            </button>
+            {!form.id ? (
+              <p className="text-xs text-amber-200/80">
+                Save the technique once before generating steps.
+              </p>
+            ) : null}
+          </section>
 
           <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-4">
             <h3 className="text-sm font-medium text-slate-200">
@@ -975,6 +1087,12 @@ export default function AdminTechniquesPage() {
                 + Add step
               </button>
             </div>
+            {form.steps.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-slate-700 px-3 py-6 text-center text-sm text-slate-500">
+                No steps yet — paste reference text above and generate, or add
+                steps manually.
+              </p>
+            ) : null}
             {form.steps.map((step, i) => (
               <div
                 key={i}

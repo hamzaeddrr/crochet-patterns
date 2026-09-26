@@ -12,32 +12,72 @@ import type {
 } from "@/types/techniques";
 
 const DOC = "techniques";
+const CURRENT_VERSION = 2 as const;
 
 function emptyDoc(): TechniquesDocument {
-  return { version: 1, techniques: buildDefaultTechniques() };
+  return { version: CURRENT_VERSION, techniques: buildDefaultTechniques() };
+}
+
+/**
+ * v2: wipe steps/images and force draft so techniques can be rebuilt
+ * from pasted reference text + manual photos.
+ */
+function migrateToCurrent(doc: TechniquesDocument): {
+  doc: TechniquesDocument;
+  changed: boolean;
+} {
+  const version = doc.version ?? 1;
+  if (version >= CURRENT_VERSION) {
+    return { doc: { ...doc, version: CURRENT_VERSION }, changed: false };
+  }
+
+  const now = new Date().toISOString();
+  return {
+    changed: true,
+    doc: {
+      version: CURRENT_VERSION,
+      techniques: (doc.techniques || []).map((t) => ({
+        ...t,
+        published: false,
+        professionallyReady: false,
+        technicallyApproved: false,
+        referenceText: t.referenceText || "",
+        sheetPath: undefined,
+        steps: [],
+        bonusImages: [],
+        updatedAt: now,
+      })),
+    },
+  };
 }
 
 export async function readTechniquesDoc(): Promise<TechniquesDocument> {
-  const doc = await readJsonDocument<TechniquesDocument>(DOC, emptyDoc());
-  if (!doc.techniques?.length) return emptyDoc();
-  const merged = mergeCatalogIntoTechniques(doc.techniques);
-  // Persist merge when new catalog entries appear
-  if (merged.length !== doc.techniques.length) {
-    const next = { ...doc, techniques: merged };
+  const raw = await readJsonDocument<TechniquesDocument>(DOC, emptyDoc());
+  if (!raw.techniques?.length) return emptyDoc();
+
+  const { doc: migrated, changed: migratedChanged } = migrateToCurrent(raw);
+  const merged = mergeCatalogIntoTechniques(migrated.techniques);
+  const lengthChanged = merged.length !== migrated.techniques.length;
+  const next: TechniquesDocument = {
+    version: CURRENT_VERSION,
+    techniques: merged,
+  };
+
+  if (migratedChanged || lengthChanged) {
     try {
       await writeJsonDocument(DOC, next);
     } catch (err) {
-      console.warn("techniques catalog merge persist skipped:", err);
+      console.warn("techniques migrate/merge persist skipped:", err);
     }
-    return next;
   }
-  return { ...doc, techniques: merged };
+
+  return next;
 }
 
 export async function saveTechniquesDoc(
   doc: TechniquesDocument
 ): Promise<void> {
-  await writeJsonDocument(DOC, doc);
+  await writeJsonDocument(DOC, { ...doc, version: CURRENT_VERSION });
 }
 
 export async function listTechniques(): Promise<Technique[]> {
@@ -118,6 +158,10 @@ export async function upsertTechnique(
         input.bonusImages !== undefined
           ? input.bonusImages
           : prev.bonusImages,
+      referenceText:
+        input.referenceText !== undefined
+          ? input.referenceText
+          : prev.referenceText,
       updatedAt: now,
     };
     doc.techniques[existingIdx] = next;
@@ -134,18 +178,13 @@ export async function upsertTechnique(
     published: input.published ?? false,
     title: input.title || emptyLocalized("New technique"),
     tip: input.tip || emptyLocalized(""),
+    referenceText: input.referenceText || "",
     youtubeUrl: input.youtubeUrl || "",
     sheetPath: input.sheetPath,
     sheetCols: Math.max(1, input.sheetCols ?? 2),
     sheetRows: Math.max(1, input.sheetRows ?? 2),
-    steps: input.steps?.length
-      ? input.steps
-      : [
-          {
-            caption: emptyLocalized("Step 1"),
-            body: emptyLocalized(""),
-          },
-        ],
+    steps: input.steps?.length ? input.steps : [],
+    bonusImages: input.bonusImages || [],
     updatedAt: now,
   };
   doc.techniques.push(created);
