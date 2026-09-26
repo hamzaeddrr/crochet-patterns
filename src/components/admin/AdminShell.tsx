@@ -14,6 +14,7 @@ import {
   Languages,
   ShoppingBag,
   CircleDollarSign,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,11 @@ const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/generate", label: "AI Generate", icon: Sparkles },
   { href: "/admin/patterns", label: "Pattern library", icon: Library },
+  {
+    href: "/admin/techniques",
+    label: "Technique tutorials",
+    icon: GraduationCap,
+  },
   { href: "/admin/usage", label: "AI usage & costs", icon: CircleDollarSign },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/pages", label: "Pages & SEO", icon: FileText },

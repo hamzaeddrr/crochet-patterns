@@ -24,13 +24,13 @@ import {
   isCrochetedComponent,
 } from "@/lib/crochet/construction";
 import { deriveTechniques } from "@/lib/crochet/techniques";
+import { getPublishedTechniques } from "@/lib/data/techniques-store";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 import { Reveal } from "@/components/site/Reveal";
 import { SavePatternButton } from "@/components/site/SavePatternButton";
 import { TrackRecentView } from "@/components/site/TrackRecentView";
 import { PatternStudioWorkspace } from "@/components/site/PatternStudioWorkspace";
-import { Pattern3DAssemblyLazy } from "@/components/site/Pattern3DAssemblyLazy";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +100,7 @@ export default async function PatternDetailPage({
   const t = await getTranslations("patterns");
   const tc = await getTranslations("common");
   const { categories } = await readSiteContent();
+  const techniqueLibrary = await getPublishedTechniques();
   const title = pickLocalized(pattern.content.title, locale);
   const summary = pickLocalized(pattern.content.summary, locale);
   const related = (await getPublishedPatterns())
@@ -307,25 +308,6 @@ export default async function PatternDetailPage({
         />
       </Reveal>
 
-      <Reveal className="mt-6 sm:mt-8" delay={40}>
-        <Pattern3DAssemblyLazy
-          components={pattern.content.components}
-          colors={pattern.designSpec.colors || []}
-          objectLabel={pattern.designSpec.object.replace(/_/g, " ")}
-          labels={{
-            title: t("assembly3dTitle"),
-            subtitle: t("assembly3dSubtitle"),
-            stepOf: String(t.raw("assembly3dStepOf")),
-            finalResult: t("assembly3dFinal"),
-            play: t("assembly3dPlay"),
-            pause: t("assembly3dPause"),
-            reset: t("assembly3dReset"),
-            dragHint: t("assembly3dDrag"),
-            loading: t("assembly3dLoading"),
-          }}
-        />
-      </Reveal>
-
       <div className="mt-6 grid gap-5 lg:mt-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
         <Reveal delay={60}>
           <PatternPartsDiagram
@@ -445,6 +427,7 @@ export default async function PatternDetailPage({
           <PatternStudioWorkspace
             patternId={pattern.id}
             components={pattern.content.components}
+            techniqueLibrary={techniqueLibrary}
             labels={{
               instructions: t("instructions"),
               jumpToRound: t("jumpToRound"),

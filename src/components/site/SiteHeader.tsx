@@ -43,6 +43,7 @@ export function SiteHeader({ locale }: { locale: string }) {
 
   const links = [
     { href: "/patterns" as const, label: t("patterns") },
+    { href: "/learn" as const, label: t("learn") },
     { href: "/library" as const, label: t("library") },
     { href: "/categories" as const, label: t("categories") },
     { href: "/blog" as const, label: t("blog") },

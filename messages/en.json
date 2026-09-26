@@ -11,7 +11,20 @@
     "about": "About",
     "contact": "Contact",
     "browse": "Browse patterns",
-    "library": "My library"
+    "library": "My library",
+    "learn": "Learn"
+  },
+  "learn": {
+    "eyebrow": "Stitch library",
+    "title": "Learn the stitches",
+    "subtitle": "Clear step-by-step guides for the techniques you meet in our patterns — illustrations, written steps, and optional video.",
+    "empty": "No techniques published yet. Check back soon.",
+    "steps": "steps",
+    "step": "Step",
+    "hasVideo": "Video",
+    "back": "All techniques",
+    "more": "More techniques",
+    "videoCredit": "Video embedded from YouTube. Opens in the player above."
   },
   "home": {
     "eyebrow": "Crochet patterns made to make",
@@ -62,15 +75,6 @@
     "finishedPiece": "Finished",
     "colorPalette": "Suggested colors",
     "colorPaletteNote": "Colors shown are suggestions — use any yarn colors you prefer.",
-    "assembly3dTitle": "Crochet build preview",
-    "assembly3dSubtitle": "See each piece as crocheted yarn stitches — step through the make, then explore the finished shape in 3D.",
-    "assembly3dStepOf": "Step {current} of {total} · {part}",
-    "assembly3dFinal": "Final result",
-    "assembly3dPlay": "Play",
-    "assembly3dPause": "Pause",
-    "assembly3dReset": "Reset",
-    "assembly3dDrag": "Drag to rotate · scroll to zoom",
-    "assembly3dLoading": "Loading 3D studio…",
     "stitchChart": "Stitch count by round",
     "stitchChartRows": "Stitch count by row",
     "stepGuide": "Visual steps",
@@ -156,5 +160,87 @@
     "intermediate": "Intermediate",
     "advanced": "Advanced",
     "language": "Language"
+  },
+  "techniques": {
+    "beginnerTips": "Beginner tips",
+    "howTo": "How to:",
+    "showTips": "Show tips",
+    "hideTips": "Hide tips",
+    "fullLibrary": "Stitch library",
+    "openGuide": "Open full guide →",
+    "mr": {
+      "title": "Magic ring",
+      "tip": "A tight center for amigurumi — no hole in the middle.",
+      "frames": [
+        "Make a loop with the yarn",
+        "Insert hook into the ring",
+        "Work stitches into the ring",
+        "Pull the tail to close the ring"
+      ],
+      "steps": [
+        "Wrap yarn around your fingers to form a ring, keeping a short tail.",
+        "Insert the hook into the ring, yarn over, and pull up a loop.",
+        "Work the stitches listed in the round into the ring.",
+        "Pull the yarn tail to close the center snug."
+      ]
+    },
+    "sc": {
+      "title": "Single crochet",
+      "tip": "The basic stitch for most amigurumi rounds.",
+      "frames": [
+        "Insert hook under both loops",
+        "Yarn over and pull up a loop",
+        "Yarn over and pull through both loops"
+      ],
+      "steps": [
+        "Insert the hook under both top loops of the next stitch.",
+        "Yarn over and pull up a loop (2 loops on hook).",
+        "Yarn over again and pull through both loops — one sc made."
+      ]
+    },
+    "inc": {
+      "title": "Increase",
+      "tip": "Two stitches in the same place — the fabric grows.",
+      "frames": [
+        "Start in one stitch",
+        "Work the first sc",
+        "Work a second sc in the same stitch",
+        "Two stitches from one — that is an increase"
+      ],
+      "steps": [
+        "Find the stitch where the increase goes.",
+        "Work one single crochet into that stitch.",
+        "Work a second single crochet into the exact same stitch.",
+        "You now have two stitches from one — count them before the next round."
+      ]
+    },
+    "dec": {
+      "title": "Decrease",
+      "tip": "Two stitches become one — the fabric narrows.",
+      "frames": [
+        "Two stitches side by side",
+        "Pull up a loop from each stitch",
+        "Yarn over and pull through all loops"
+      ],
+      "steps": [
+        "Insert the hook into the next stitch and pull up a loop.",
+        "Insert into the following stitch and pull up another loop (3 loops on hook).",
+        "Yarn over and pull through all three loops — one stitch remains."
+      ]
+    },
+    "fo": {
+      "title": "Fasten off",
+      "tip": "Secure the last stitch so the work does not unravel.",
+      "frames": [
+        "Cut yarn, leaving a tail",
+        "Yarn over and pull the tail through",
+        "Tighten — then weave in the end"
+      ],
+      "steps": [
+        "Cut the yarn, leaving a tail long enough to weave in (or sew pieces).",
+        "Yarn over and pull the tail all the way through the last loop.",
+        "Pull tight, then weave the end into the wrong side of the work."
+      ]
+    }
   }
 }

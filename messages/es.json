@@ -11,7 +11,20 @@
     "about": "Acerca de",
     "contact": "Contacto",
     "browse": "Ver patrones",
-    "library": "Mi biblioteca"
+    "library": "Mi biblioteca",
+    "learn": "Aprender"
+  },
+  "learn": {
+    "eyebrow": "Biblioteca de puntos",
+    "title": "Aprende los puntos",
+    "subtitle": "Guías paso a paso de las técnicas de nuestros patrones — ilustraciones, texto y vídeo opcional.",
+    "empty": "Aún no hay técnicas publicadas.",
+    "steps": "pasos",
+    "step": "Paso",
+    "hasVideo": "Vídeo",
+    "back": "Todas las técnicas",
+    "more": "Más técnicas",
+    "videoCredit": "Vídeo incrustado desde YouTube."
   },
   "home": {
     "eyebrow": "Patrones de crochet para crear",
@@ -62,15 +75,6 @@
     "finishedPiece": "Listo",
     "colorPalette": "Colores sugeridos",
     "colorPaletteNote": "Los colores mostrados son sugerencias — usa los que prefieras.",
-    "assembly3dTitle": "Vista previa a crochet",
-    "assembly3dSubtitle": "Cada pieza se ve con puntos de crochet — avanza paso a paso y explora el resultado final en 3D.",
-    "assembly3dStepOf": "Paso {current} de {total} · {part}",
-    "assembly3dFinal": "Resultado final",
-    "assembly3dPlay": "Reproducir",
-    "assembly3dPause": "Pausa",
-    "assembly3dReset": "Reiniciar",
-    "assembly3dDrag": "Arrastra para girar · rueda para zoom",
-    "assembly3dLoading": "Cargando estudio 3D…",
     "stitchChart": "Puntos por ronda",
     "stitchChartRows": "Puntos por fila",
     "stepGuide": "Pasos visuales",
@@ -156,5 +160,87 @@
     "intermediate": "Intermedio",
     "advanced": "Avanzado",
     "language": "Idioma"
+  },
+  "techniques": {
+    "beginnerTips": "Consejos para principiantes",
+    "howTo": "Cómo:",
+    "showTips": "Mostrar",
+    "hideTips": "Ocultar",
+    "fullLibrary": "Biblioteca",
+    "openGuide": "Guía completa →",
+    "mr": {
+      "title": "Anillo mágico",
+      "tip": "Un centro cerrado para amigurumi — sin agujero en medio.",
+      "frames": [
+        "Haz un lazo con el hilo",
+        "Introduce el ganchillo en el anillo",
+        "Teje los puntos dentro del anillo",
+        "Tira de la cola para cerrar el anillo"
+      ],
+      "steps": [
+        "Enrolla el hilo en los dedos para formar un anillo, dejando una cola corta.",
+        "Introduce el ganchillo en el anillo, haz hebra y saca un bucle.",
+        "Teje los puntos indicados de la vuelta dentro del anillo.",
+        "Tira de la cola del hilo para cerrar el centro bien apretado."
+      ]
+    },
+    "sc": {
+      "title": "Punto bajo",
+      "tip": "El punto básico de la mayoría de vueltas de amigurumi.",
+      "frames": [
+        "Introduce el ganchillo bajo ambos bucles",
+        "Haz hebra y saca un bucle",
+        "Haz hebra y pasa por ambos bucles"
+      ],
+      "steps": [
+        "Introduce el ganchillo bajo los dos bucles del siguiente punto.",
+        "Haz hebra y saca un bucle (2 bucles en el ganchillo).",
+        "Haz hebra de nuevo y pasa por ambos bucles — un punto bajo hecho."
+      ]
+    },
+    "inc": {
+      "title": "Aumento",
+      "tip": "Dos puntos en el mismo sitio — la tela crece.",
+      "frames": [
+        "Empieza en un punto",
+        "Teje el primer punto bajo",
+        "Teje un segundo punto bajo en el mismo sitio",
+        "Dos puntos de uno — eso es un aumento"
+      ],
+      "steps": [
+        "Localiza el punto donde va el aumento.",
+        "Teje un punto bajo en ese punto.",
+        "Teje un segundo punto bajo en el mismo punto exacto.",
+        "Ahora tienes dos puntos de uno — cuéntalos antes de la siguiente vuelta."
+      ]
+    },
+    "dec": {
+      "title": "Disminución",
+      "tip": "Dos puntos se convierten en uno — la tela se estrecha.",
+      "frames": [
+        "Dos puntos uno al lado del otro",
+        "Saca un bucle de cada punto",
+        "Haz hebra y pasa por todos los bucles"
+      ],
+      "steps": [
+        "Introduce el ganchillo en el siguiente punto y saca un bucle.",
+        "Introduce en el siguiente y saca otro bucle (3 bucles en el ganchillo).",
+        "Haz hebra y pasa por los tres bucles — queda un punto."
+      ]
+    },
+    "fo": {
+      "title": "Cerrar / cortar hilo",
+      "tip": "Asegura el último punto para que no se deshaga.",
+      "frames": [
+        "Corta el hilo dejando una cola",
+        "Haz hebra y tira de la cola",
+        "Aprieta — luego esconde el extremo"
+      ],
+      "steps": [
+        "Corta el hilo dejando cola suficiente para esconder (o coser).",
+        "Haz hebra y pasa la cola del todo por el último bucle.",
+        "Aprieta y esconde el extremo por el revés del trabajo."
+      ]
+    }
   }
 }

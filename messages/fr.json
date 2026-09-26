@@ -11,7 +11,20 @@
     "about": "À propos",
     "contact": "Contact",
     "browse": "Voir les modèles",
-    "library": "Ma bibliothèque"
+    "library": "Ma bibliothèque",
+    "learn": "Apprendre"
+  },
+  "learn": {
+    "eyebrow": "Bibliothèque de points",
+    "title": "Apprenez les points",
+    "subtitle": "Guides étape par étape pour les techniques de nos modèles — illustrations, texte et vidéo optionnelle.",
+    "empty": "Aucune technique publiée pour le moment.",
+    "steps": "étapes",
+    "step": "Étape",
+    "hasVideo": "Vidéo",
+    "back": "Toutes les techniques",
+    "more": "Autres techniques",
+    "videoCredit": "Vidéo intégrée depuis YouTube."
   },
   "home": {
     "eyebrow": "Des modèles au crochet à réaliser",
@@ -62,15 +75,6 @@
     "finishedPiece": "Fini",
     "colorPalette": "Couleurs suggérées",
     "colorPaletteNote": "Les couleurs indiquées sont des suggestions — choisissez celles que vous préférez.",
-    "assembly3dTitle": "Aperçu crocheté 3D",
-    "assembly3dSubtitle": "Chaque pièce apparaît en mailles crochetées — avancez étape par étape, puis explorez le projet fini.",
-    "assembly3dStepOf": "Étape {current} sur {total} · {part}",
-    "assembly3dFinal": "Résultat final",
-    "assembly3dPlay": "Lecture",
-    "assembly3dPause": "Pause",
-    "assembly3dReset": "Recommencer",
-    "assembly3dDrag": "Glissez pour tourner · molette pour zoomer",
-    "assembly3dLoading": "Chargement du studio 3D…",
     "stitchChart": "Nombre de mailles par tour",
     "stitchChartRows": "Nombre de mailles par rang",
     "stepGuide": "Étapes visuelles",
@@ -156,5 +160,87 @@
     "intermediate": "Intermédiaire",
     "advanced": "Avancé",
     "language": "Langue"
+  },
+  "techniques": {
+    "beginnerTips": "Astuces débutant",
+    "howTo": "Comment :",
+    "showTips": "Afficher",
+    "hideTips": "Masquer",
+    "fullLibrary": "Bibliothèque",
+    "openGuide": "Guide complet →",
+    "mr": {
+      "title": "Anneau magique",
+      "tip": "Un centre bien fermé pour l’amigurumi — sans trou au milieu.",
+      "frames": [
+        "Formez une boucle avec le fil",
+        "Passez le crochet dans l’anneau",
+        "Travaillez les mailles dans l’anneau",
+        "Tirez le bout pour fermer l’anneau"
+      ],
+      "steps": [
+        "Enroulez le fil autour des doigts pour former un anneau, en gardant une courte queue.",
+        "Passez le crochet dans l’anneau, faites un jeté et tirez une boucle.",
+        "Travaillez les mailles indiquées dans le tour à l’intérieur de l’anneau.",
+        "Tirez la queue du fil pour fermer le centre bien serré."
+      ]
+    },
+    "sc": {
+      "title": "Maille serrée",
+      "tip": "La maille de base de la plupart des tours d’amigurumi.",
+      "frames": [
+        "Piquez sous les deux brins",
+        "Faites un jeté et tirez une boucle",
+        "Faites un jeté et passez les deux boucles"
+      ],
+      "steps": [
+        "Piquez le crochet sous les deux brins de la maille suivante.",
+        "Faites un jeté et tirez une boucle (2 boucles sur le crochet).",
+        "Faites un jeté et passez les deux boucles — une maille serrée est faite."
+      ]
+    },
+    "inc": {
+      "title": "Augmentation",
+      "tip": "Deux mailles au même endroit — l’ouvrage s’élargit.",
+      "frames": [
+        "Commencez dans une maille",
+        "Faites la première maille serrée",
+        "Faites une 2e maille serrée dans la même maille",
+        "Deux mailles pour une — c’est une augmentation"
+      ],
+      "steps": [
+        "Repérez la maille où l’augmentation doit se faire.",
+        "Faites une maille serrée dans cette maille.",
+        "Faites une deuxième maille serrée exactement au même endroit.",
+        "Vous avez deux mailles à partir d’une — comptez avant le tour suivant."
+      ]
+    },
+    "dec": {
+      "title": "Diminution",
+      "tip": "Deux mailles deviennent une — l’ouvrage se rétrécit.",
+      "frames": [
+        "Deux mailles côte à côte",
+        "Tirez une boucle dans chaque maille",
+        "Faites un jeté et passez toutes les boucles"
+      ],
+      "steps": [
+        "Piquez dans la maille suivante et tirez une boucle.",
+        "Piquez dans la maille d’après et tirez une autre boucle (3 boucles sur le crochet).",
+        "Faites un jeté et passez les trois boucles — il reste une maille."
+      ]
+    },
+    "fo": {
+      "title": "Arrêt du fil",
+      "tip": "Fixez la dernière maille pour que le travail ne se défasse pas.",
+      "frames": [
+        "Coupez le fil en gardant une queue",
+        "Faites un jeté et tirez la queue",
+        "Serrez — puis rentrez le fil"
+      ],
+      "steps": [
+        "Coupez le fil en laissant une queue assez longue pour rentrer (ou coudre).",
+        "Faites un jeté et tirez la queue entièrement à travers la dernière boucle.",
+        "Serrez, puis rentrez le fil sur l’envers de l’ouvrage."
+      ]
+    }
   }
 }

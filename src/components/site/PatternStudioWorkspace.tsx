@@ -32,6 +32,8 @@ import {
   List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TechniqueTutor } from "@/components/site/TechniqueTutor";
+import type { TechniquePublic } from "@/types/techniques";
 
 export type StudioLabels = {
   instructions: string;
@@ -255,6 +257,7 @@ function InstructionCard({
   onPrev,
   onNext,
   compact,
+  techniqueLibrary,
 }: {
   current: Step;
   stepLabel: string;
@@ -266,6 +269,7 @@ function InstructionCard({
   onPrev: () => void;
   onNext: () => void;
   compact?: boolean;
+  techniqueLibrary?: TechniquePublic[];
 }) {
   const done = !current.fo && doneSet.has(current.round.round);
   return (
@@ -317,6 +321,7 @@ function InstructionCard({
       >
         {current.round.instructions}
       </p>
+      <TechniqueTutor round={current.round} library={techniqueLibrary} />
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {!current.fo &&
         typeof current.round.result === "number" &&
@@ -412,6 +417,7 @@ function StudioPieceBlock({
   viewMode,
   initialFocus,
   onActivate,
+  techniqueLibrary,
 }: {
   patternId: string;
   piece: PatternComponent;
@@ -420,6 +426,7 @@ function StudioPieceBlock({
   viewMode: StudioViewMode;
   initialFocus?: number;
   onActivate?: () => void;
+  techniqueLibrary?: TechniquePublic[];
 }) {
   const mode = detectConstructionMode(piece);
   const stepLabel = stepLabelForMode(mode);
@@ -677,6 +684,7 @@ function StudioPieceBlock({
                 onToggle={() => toggleDone(current.round.round)}
                 onPrev={() => go(-1)}
                 onNext={() => go(1)}
+                techniqueLibrary={techniqueLibrary}
               />
             </div>
           ) : null}
@@ -752,6 +760,7 @@ function StudioPieceBlock({
                   onPrev={() => go(-1)}
                   onNext={() => go(1)}
                   compact
+                  techniqueLibrary={techniqueLibrary}
                 />
               ) : null}
 
@@ -871,10 +880,12 @@ export function PatternStudioWorkspace({
   patternId,
   components,
   labels,
+  techniqueLibrary,
 }: {
   patternId: string;
   components: PatternComponent[];
   labels: StudioLabels;
+  techniqueLibrary?: TechniquePublic[];
 }) {
   const pieces = useMemo(
     () => components.filter((c) => !isRedundantNoteComponent(c)),
@@ -968,6 +979,7 @@ export function PatternStudioWorkspace({
             pieceIndex={i}
             labels={labels}
             viewMode={viewMode}
+            techniqueLibrary={techniqueLibrary}
             initialFocus={
               hashFocus?.pieceId === piece.id
                 ? hashFocus.stepIndex

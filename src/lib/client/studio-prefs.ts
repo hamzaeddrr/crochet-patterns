@@ -5,10 +5,12 @@ const EVENT = "loopcraft:studio-prefs";
 
 export type StudioPrefs = {
   viewMode: StudioViewMode;
+  beginnerTips: boolean;
 };
 
 const DEFAULTS: StudioPrefs = {
   viewMode: "dashboard",
+  beginnerTips: true,
 };
 
 function readPrefs(): StudioPrefs {
@@ -23,6 +25,10 @@ function readPrefs(): StudioPrefs {
         mode === "dashboard" || mode === "focus" || mode === "list"
           ? mode
           : DEFAULTS.viewMode,
+      beginnerTips:
+        typeof parsed.beginnerTips === "boolean"
+          ? parsed.beginnerTips
+          : DEFAULTS.beginnerTips,
     };
   } catch {
     return { ...DEFAULTS };
@@ -45,6 +51,14 @@ export function getStudioViewMode(): StudioViewMode {
 
 export function setStudioViewMode(viewMode: StudioViewMode) {
   writePrefs({ ...readPrefs(), viewMode });
+}
+
+export function getBeginnerTipsEnabled(): boolean {
+  return readPrefs().beginnerTips;
+}
+
+export function setBeginnerTipsEnabled(beginnerTips: boolean) {
+  writePrefs({ ...readPrefs(), beginnerTips });
 }
 
 export function subscribeStudioPrefs(onChange: () => void) {
