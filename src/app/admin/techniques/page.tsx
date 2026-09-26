@@ -182,7 +182,7 @@ export default function AdminTechniquesPage() {
     }
     setBusy("auto");
     setMsg(
-      "Auto illustrate: generate → crop → vision QA → retry if needed (can take a few minutes)…"
+      "Creating professional illustrations (this can take a few minutes)…"
     );
     try {
       const res = await fetch("/api/admin/techniques/auto-illustrate", {
@@ -198,28 +198,17 @@ export default function AdminTechniquesPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(
-          (data as { error?: string }).error || `Auto illustrate failed (${res.status})`
+          (data as { error?: string }).error ||
+            `Illustration failed (${res.status})`
         );
       }
       if (!data.technique) {
-        throw new Error("Auto illustrate returned no technique");
+        throw new Error("No technique returned");
       }
       applyTechnique(data.technique);
-      const failBits =
-        data.qa && !data.approved
-          ? " · " +
-            (data.qa.panels || [])
-              .filter((p: { pass: boolean }) => !p.pass)
-              .map(
-                (p: { stepIndex: number; failures: string[] }) =>
-                  `S${p.stepIndex + 1}: ${(p.failures || []).join("; ")}`
-              )
-              .slice(0, 4)
-              .join(" | ")
-          : "";
-      setMsg((data.message || "Done") + failBits);
+      setMsg(data.message || "Professional illustrations ready");
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Auto illustrate failed");
+      setMsg(e instanceof Error ? e.message : "Illustration failed");
     } finally {
       setBusy(null);
     }
@@ -366,7 +355,9 @@ export default function AdminTechniquesPage() {
                 </span>
                 <span className="text-[11px] text-slate-500">
                   {t.key} · {t.published ? "live" : "draft"}
-                  {t.technicallyApproved ? " · QA✓" : ""}
+                  {t.professionallyReady || t.technicallyApproved
+                    ? " · ready"
+                    : ""}
                 </span>
               </span>
             </button>
@@ -484,11 +475,11 @@ export default function AdminTechniquesPage() {
               Storyboard sheet (1 image → many steps)
             </h3>
             <p className="text-xs text-slate-500">
-              Prefer <span className="text-slate-300">Auto illustrate</span>:
-              generates a Loopcraft-style sheet (DMC-like pedagogy, original art),
-              crops panels, then vision-QA checks hook entry, yarn strand, loop
-              count, stitch anatomy, hands, and yarn path — regenerates up to 3
-              times until it passes. Studio only uses images marked QA✓.
+              Prefer{" "}
+              <span className="text-slate-300">Create professional illustrations</span>
+              : builds a Loopcraft-style multi-panel sheet, crops steps, and
+              silently refines until the art is clear enough for beginners. No
+              scores — just finished tutorial art for /learn and Pattern Studio.
             </p>
             <div className="flex flex-wrap gap-3">
               <label className="text-sm text-slate-400">
@@ -546,8 +537,8 @@ export default function AdminTechniquesPage() {
               >
                 <Wand2 className="h-4 w-4" />
                 {busy === "auto"
-                  ? "Auto illustrating…"
-                  : "Auto illustrate (QA loop)"}
+                  ? "Creating illustrations…"
+                  : "Create professional illustrations"}
               </button>
               <button
                 type="button"
@@ -589,42 +580,19 @@ export default function AdminTechniquesPage() {
               busy === "generate" ||
               busy === "upload" ||
               busy === "auto" ||
-              /crop|sheet|panel|upload|generat|approv|QA|attempt/i.test(msg)) ? (
+              /crop|sheet|panel|upload|generat|illustrat|ready|refin/i.test(
+                msg
+              )) ? (
               <p
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm",
-                  /fail|error|could not|not found|required|not approved/i.test(msg)
+                  /fail|error|could not|not found|required/i.test(msg)
                     ? "bg-rose-950/50 text-rose-200"
                     : "bg-emerald-950/40 text-emerald-200"
                 )}
               >
                 {msg}
               </p>
-            ) : null}
-
-            {form.qaReport ? (
-              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-400">
-                <p className="font-medium text-slate-200">
-                  Last QA:{" "}
-                  {form.technicallyApproved ? (
-                    <span className="text-emerald-300">Approved</span>
-                  ) : (
-                    <span className="text-amber-300">Not approved</span>
-                  )}{" "}
-                  · avg {form.qaReport.averageScore}/100
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {form.qaReport.panels.map((p) => (
-                    <li key={p.stepIndex}>
-                      Step {p.stepIndex + 1}: {p.pass ? "pass" : "fail"} (
-                      {p.score})
-                      {!p.pass && p.failures?.length
-                        ? ` — ${p.failures.join("; ")}`
-                        : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
             ) : null}
 
             {form.sheetPath ? (

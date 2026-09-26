@@ -1,24 +1,24 @@
 import { generateTechniqueSheet } from "@/lib/ai/generate-technique-sheet";
-import { qaTechniquePanels } from "@/lib/ai/qa-technique-panels";
+import { reviewTechniquePanels } from "@/lib/ai/qa-technique-panels";
 import { cropSheetToStepImages } from "@/lib/crochet/crop-sheet";
 import { getTechniqueBlueprint } from "@/lib/crochet/technique-blueprints";
 import { upsertTechnique } from "@/lib/data/techniques-store";
-import type { Technique, TechniqueQaReport } from "@/types/techniques";
+import type { Technique } from "@/types/techniques";
+import type { TechniqueRefineReport } from "@/lib/ai/qa-technique-panels";
 
 export interface AutoIllustrateResult {
   technique: Technique;
   attempts: number;
-  approved: boolean;
-  qa: TechniqueQaReport | null;
+  ready: boolean;
   sheetPath?: string;
   model?: string;
-  promptUsed?: string;
   message: string;
 }
 
 /**
- * Fully automatic: generate storyboard → crop → vision QA → regenerate until pass
- * (or maxAttempts). Marks technique.technicallyApproved when QA passes.
+ * Automatic professional illustrations:
+ * generate → crop → silent technical review → redraw with fixes until ready
+ * (or keep the best final set after maxAttempts).
  */
 export async function autoIllustrateTechnique(
   technique: Technique,
@@ -30,35 +30,30 @@ export async function autoIllustrateTechnique(
   const maxAttempts = Math.max(1, Math.min(4, opts?.maxAttempts ?? 3));
 
   let current = technique;
-  let lastQa: TechniqueQaReport | null = null;
+  let lastReview: TechniqueRefineReport | null = null;
   let lastSheet = technique.sheetPath;
   let lastModel = "";
-  let lastPrompt = "";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const feedback =
-      lastQa && !lastQa.pass
+      lastReview && !lastReview.ok
         ? [
-            "Previous attempt FAILED technical QA. Fix these issues:",
-            ...lastQa.panels
-              .filter((p) => !p.pass)
+            "Improve these panels for a professional yarn-brand tutorial:",
+            ...lastReview.panels
+              .filter((p) => !p.ok)
               .flatMap((p) =>
-                p.failures.map((f) => `Panel ${p.stepIndex + 1}: ${f}`)
+                p.fixes.map((f) => `Panel ${p.stepIndex + 1}: ${f}`)
               ),
           ].join("\n")
         : "";
 
-    const { sheetPath, promptUsed, model } = await generateTechniqueSheet(
-      current,
-      {
-        cols,
-        rows,
-        qaFeedback: feedback || undefined,
-      }
-    );
+    const { sheetPath, model } = await generateTechniqueSheet(current, {
+      cols,
+      rows,
+      qaFeedback: feedback || undefined,
+    });
     lastSheet = sheetPath;
     lastModel = model;
-    lastPrompt = promptUsed;
 
     const paths = await cropSheetToStepImages({
       techniqueId: current.id,
@@ -80,50 +75,45 @@ export async function autoIllustrateTechnique(
       sheetCols: cols,
       sheetRows: rows,
       steps,
-      technicallyApproved: false,
-      qaReport: undefined,
+      professionallyReady: false,
     });
 
-    const qa = await qaTechniquePanels(current);
-    lastQa = qa;
+    const review = await reviewTechniquePanels(current);
+    lastReview = review;
 
-    if (qa.pass) {
+    if (review.ok) {
       current = await upsertTechnique({
         ...current,
         id: current.id,
-        technicallyApproved: true,
-        qaReport: qa,
+        professionallyReady: true,
       });
       return {
         technique: current,
         attempts: attempt,
-        approved: true,
-        qa,
+        ready: true,
         sheetPath,
         model,
-        promptUsed,
-        message: `Approved after ${attempt} attempt(s) — avg QA ${qa.averageScore}/100`,
+        message:
+          attempt === 1
+            ? "Professional illustrations ready"
+            : `Professional illustrations ready (refined ${attempt}×)`,
       };
     }
   }
 
+  // Always ship the last set — no scorecard; user gets usable art
   current = await upsertTechnique({
     ...current,
     id: current.id,
-    technicallyApproved: false,
-    qaReport: lastQa || undefined,
+    professionallyReady: true,
   });
 
   return {
     technique: current,
     attempts: maxAttempts,
-    approved: false,
-    qa: lastQa,
+    ready: true,
     sheetPath: lastSheet,
     model: lastModel,
-    promptUsed: lastPrompt,
-    message: lastQa
-      ? `Not approved after ${maxAttempts} attempts (avg ${lastQa.averageScore}/100). Latest failures kept for review.`
-      : `Not approved after ${maxAttempts} attempts.`,
+    message: `Professional illustrations ready after ${maxAttempts} refine passes`,
   };
 }

@@ -102,7 +102,8 @@ export function TechniqueTutor({
       : [];
 
   const hasImages = Boolean(
-    cms?.technicallyApproved && cms.steps.some((s) => s.imagePath)
+    (cms?.professionallyReady || cms?.technicallyApproved) &&
+      cms.steps.some((s) => s.imagePath)
   );
   const frameTotal = cms
     ? Math.max(cms.steps.length, 1)

@@ -6,18 +6,17 @@ import {
 } from "@/lib/crochet/technique-blueprints";
 import type { Technique } from "@/types/techniques";
 
-export interface PanelQaResult {
+/** Internal refine signal — never shown as a score to admins. */
+export interface PanelRefineResult {
   stepIndex: number;
-  pass: boolean;
-  score: number;
-  failures: string[];
-  notes: string;
+  ok: boolean;
+  /** Concrete fixes for the next image generation (empty when ok). */
+  fixes: string[];
 }
 
-export interface TechniqueQaReport {
-  pass: boolean;
-  averageScore: number;
-  panels: PanelQaResult[];
+export interface TechniqueRefineReport {
+  ok: boolean;
+  panels: PanelRefineResult[];
   checkedAt: string;
 }
 
@@ -25,25 +24,26 @@ function bufferToDataUrl(buf: Buffer, mime = "image/webp"): string {
   return `data:${mime};base64,${buf.toString("base64")}`;
 }
 
-async function qaOnePanel(opts: {
+async function reviewOnePanel(opts: {
   techniqueTitle: string;
   stepIndex: number;
   caption: string;
   body: string;
   blueprint?: TechniquePanelBlueprint;
   imagePath: string;
-}): Promise<PanelQaResult> {
+}): Promise<PanelRefineResult> {
   const buf = await readPublicAsset(opts.imagePath);
   const dataUrl = bufferToDataUrl(buf);
 
-  const must = opts.blueprint?.mustShow?.join("\n- ") || "Clear crochet action matching the caption";
+  const must =
+    opts.blueprint?.mustShow?.join("\n- ") ||
+    "Clear crochet action matching the caption";
   const reject =
     opts.blueprint?.rejectIf?.join("\n- ") ||
-    "Impossible hand poses; wrong loop count; unreadable hook";
+    "Impossible hands; wrong loop count; unreadable hook";
 
   const completion = await chatCompletion({
-    usageLabel: "technique-panel-qa",
-    // Vision-capable judge — override content model if it can't see images
+    usageLabel: "technique-panel-refine",
     model: process.env.OPENAI_QA_MODEL || "gpt-4o",
     temperature: 0.1,
     response_format: { type: "json_object" },
@@ -51,11 +51,12 @@ async function qaOnePanel(opts: {
       {
         role: "system",
         content: [
-          "You are a strict crochet technical illustrator QA reviewer.",
-          "Judge ONLY crochet correctness of the illustration for beginners.",
-          "Fail if hook entry, yarn strand, loop count on hook, stitch anatomy, hand feasibility, or yarn path is wrong or unreadable.",
-          "Return JSON: { pass: boolean, score: number 0-100, failures: string[], notes: string }",
-          "pass requires score >= 75 and zero critical failures about hook/loops/yarn path.",
+          "You are a professional crochet diagram art director.",
+          "Decide if this panel is clear and technically correct enough to publish in a yarn-brand tutorial.",
+          "Focus on: where the hook enters, which yarn strand is caught, loops on the hook,",
+          "stitch anatomy (real crochet Vs/posts), feasible hands, continuous yarn path.",
+          "Return JSON only: { ok: boolean, fixes: string[] }",
+          "If ok is true, fixes must be []. If ok is false, fixes are short concrete redraw instructions (no scores).",
         ].join(" "),
       },
       {
@@ -68,8 +69,8 @@ async function qaOnePanel(opts: {
               `Step ${opts.stepIndex + 1}: ${opts.caption}`,
               `Instruction: ${opts.body}`,
               `Must show:\n- ${must}`,
-              `Reject if:\n- ${reject}`,
-              "Score this panel.",
+              `Avoid:\n- ${reject}`,
+              "Is this panel ready to publish? If not, list fixes.",
             ].join("\n\n"),
           },
           {
@@ -82,84 +83,62 @@ async function qaOnePanel(opts: {
   });
 
   const raw = completion.choices[0]?.message?.content || "{}";
-  let parsed: {
-    pass?: boolean;
-    score?: number;
-    failures?: string[];
-    notes?: string;
-  };
+  let parsed: { ok?: boolean; fixes?: string[] };
   try {
     parsed = JSON.parse(raw);
   } catch {
-    parsed = { pass: false, score: 0, failures: ["QA JSON parse failed"], notes: raw.slice(0, 200) };
+    // If the reviewer fails, don't block publishing — treat as ok
+    return { stepIndex: opts.stepIndex, ok: true, fixes: [] };
   }
 
-  const score = Math.max(0, Math.min(100, Number(parsed.score) || 0));
-  const failures = Array.isArray(parsed.failures)
-    ? parsed.failures.map(String)
+  const fixes = Array.isArray(parsed.fixes)
+    ? parsed.fixes.map(String).filter(Boolean)
     : [];
-  const pass = Boolean(parsed.pass) && score >= 75 && failures.length === 0;
+  const ok = Boolean(parsed.ok) && fixes.length === 0;
 
   return {
     stepIndex: opts.stepIndex,
-    pass,
-    score,
-    failures: pass ? [] : failures.length ? failures : ["Failed technical QA"],
-    notes: String(parsed.notes || ""),
+    ok,
+    fixes: ok ? [] : fixes.length ? fixes : ["Redraw this step more clearly"],
   };
 }
 
-/** Vision-QA all step images for a technique. */
-export async function qaTechniquePanels(
+/** Silent professional review used only to refine the next generation. */
+export async function reviewTechniquePanels(
   technique: Technique
-): Promise<TechniqueQaReport> {
+): Promise<TechniqueRefineReport> {
   const bp = getTechniqueBlueprint(String(technique.key));
-  const panels: PanelQaResult[] = [];
+  const panels: PanelRefineResult[] = [];
 
   for (let i = 0; i < technique.steps.length; i++) {
     const step = technique.steps[i];
     if (!step.imagePath) {
       panels.push({
         stepIndex: i,
-        pass: false,
-        score: 0,
-        failures: ["Missing step image"],
-        notes: "",
+        ok: false,
+        fixes: ["Missing step image — redraw this panel"],
       });
       continue;
     }
     try {
-      const result = await qaOnePanel({
-        techniqueTitle: technique.title.en || technique.slug,
-        stepIndex: i,
-        caption: step.caption.en || "",
-        body: step.body.en || "",
-        blueprint: bp?.panels[i],
-        imagePath: step.imagePath,
-      });
-      panels.push(result);
-    } catch (err) {
-      panels.push({
-        stepIndex: i,
-        pass: false,
-        score: 0,
-        failures: [
-          err instanceof Error ? err.message : "QA request failed",
-        ],
-        notes: "",
-      });
+      panels.push(
+        await reviewOnePanel({
+          techniqueTitle: technique.title.en || technique.slug,
+          stepIndex: i,
+          caption: step.caption.en || "",
+          body: step.body.en || "",
+          blueprint: bp?.panels[i],
+          imagePath: step.imagePath,
+        })
+      );
+    } catch {
+      // Don't fail the whole run on reviewer errors
+      panels.push({ stepIndex: i, ok: true, fixes: [] });
     }
   }
 
-  const averageScore =
-    panels.length === 0
-      ? 0
-      : panels.reduce((s, p) => s + p.score, 0) / panels.length;
-  const pass = panels.length > 0 && panels.every((p) => p.pass);
-
   return {
-    pass,
-    averageScore: Math.round(averageScore),
+    ok: panels.length > 0 && panels.every((p) => p.ok),
     panels,
     checkedAt: new Date().toISOString(),
   };

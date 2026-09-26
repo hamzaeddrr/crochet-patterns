@@ -80,13 +80,14 @@ export async function chatCompletion(
   params: ChatParams & { usageLabel?: string }
 ) {
   const openai = await getOpenAI();
-  const built = await buildChatParams(params);
+  const { usageLabel, ...chatParams } = params;
+  const built = await buildChatParams(chatParams);
   const completion = await openai.chat.completions.create(built);
   try {
     const { logChatUsage } = await import("@/lib/ai/usage-log");
     await logChatUsage({
       model: built.model,
-      label: params.usageLabel || "chat",
+      label: usageLabel || "chat",
       usage: completion.usage || null,
     });
   } catch (err) {

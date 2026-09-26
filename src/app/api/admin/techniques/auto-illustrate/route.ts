@@ -31,15 +31,22 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      ok: result.approved,
-      ...result,
+      ok: true,
+      ready: result.ready,
+      attempts: result.attempts,
+      message: result.message,
+      sheetPath: result.sheetPath,
+      model: result.model,
+      technique: result.technique,
     });
   } catch (error) {
     console.error("auto-illustrate:", error);
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Auto illustrate failed",
+          error instanceof Error
+            ? error.message
+            : "Illustration generation failed",
       },
       { status: 500 }
     );
