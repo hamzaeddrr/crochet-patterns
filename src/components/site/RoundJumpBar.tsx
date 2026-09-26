@@ -1,30 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   getCompletedRounds,
   toggleRoundComplete,
 } from "@/lib/client/pattern-progress";
+import type { JumpChip } from "@/lib/crochet/jump-chips";
 
-export type JumpChip = {
-  componentId: string;
-  round: number;
-  label: string;
-  anchor: string;
-  fo?: boolean;
-};
+export type { JumpChip };
 
 export function RoundJumpBar({
   chips,
   patternId,
   title,
-  progressLabel,
+  progressTemplate,
 }: {
   chips: JumpChip[];
   patternId: string;
   title: string;
-  progressLabel: (done: number, total: number) => string;
+  /** Template with {done} and {total}, e.g. "{done} / {total} rounds done" */
+  progressTemplate: string;
 }) {
   const [done, setDone] = useState(0);
   const [active, setActive] = useState(chips[0]?.anchor || "");
@@ -67,15 +63,17 @@ export function RoundJumpBar({
 
   if (!chips.length) return null;
 
+  const progressText = progressTemplate
+    .replace("{done}", String(done))
+    .replace("{total}", String(total));
+
   return (
     <div className="sticky top-[4.75rem] z-30 -mx-4 mb-6 border-b border-line bg-bg/95 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-[1.25rem] sm:border sm:px-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
           {title}
         </p>
-        <p className="text-xs font-semibold text-muted">
-          {progressLabel(done, total)}
-        </p>
+        <p className="text-xs font-semibold text-muted">{progressText}</p>
       </div>
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {chips.map((chip) => (
@@ -114,8 +112,7 @@ export function RoundDoneButton({
 
   useEffect(() => {
     setDone(isRoundDone(patternId, componentId, round));
-    const sync = () =>
-      setDone(isRoundDone(patternId, componentId, round));
+    const sync = () => setDone(isRoundDone(patternId, componentId, round));
     window.addEventListener("loopcraft:progress", sync);
     return () => window.removeEventListener("loopcraft:progress", sync);
   }, [patternId, componentId, round]);
@@ -146,46 +143,4 @@ function isRoundDone(
   round: number
 ): boolean {
   return getCompletedRounds(patternId, componentId).includes(round);
-}
-
-export function buildJumpChips(
-  items: {
-    componentId: string;
-    rounds: { round: number; fo?: boolean }[];
-    stepLabel: string;
-  }[]
-): JumpChip[] {
-  const chips: JumpChip[] = [];
-  for (const item of items) {
-    for (const r of item.rounds) {
-      chips.push({
-        componentId: item.componentId,
-        round: r.round,
-        fo: r.fo,
-        label: r.fo ? "FO" : `${item.stepLabel}${r.round}`,
-        anchor: roundAnchor(item.componentId, r.round, r.fo),
-      });
-    }
-  }
-  return chips;
-}
-
-export function roundAnchor(
-  componentId: string,
-  round: number,
-  fo?: boolean
-): string {
-  return fo ? `r-${componentId}-fo` : `r-${componentId}-${round}`;
-}
-
-/** Hook-friendly list of completed round keys for styling rows. */
-export function useCompletedMap(patternId: string, componentId: string) {
-  const [rounds, setRounds] = useState<number[]>([]);
-  useEffect(() => {
-    const sync = () => setRounds(getCompletedRounds(patternId, componentId));
-    sync();
-    window.addEventListener("loopcraft:progress", sync);
-    return () => window.removeEventListener("loopcraft:progress", sync);
-  }, [patternId, componentId]);
-  return useMemo(() => new Set(rounds), [rounds]);
 }

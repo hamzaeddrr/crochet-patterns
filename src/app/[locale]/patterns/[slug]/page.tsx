@@ -38,9 +38,8 @@ import { TrackRecentView } from "@/components/site/TrackRecentView";
 import {
   RoundDoneButton,
   RoundJumpBar,
-  buildJumpChips,
-  roundAnchor,
 } from "@/components/site/RoundJumpBar";
+import { buildJumpChips, roundAnchor } from "@/lib/crochet/jump-chips";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -452,9 +451,7 @@ export default async function PatternDetailPage({
                 chips={jumpChips}
                 patternId={pattern.id}
                 title={t("jumpToRound")}
-                progressLabel={(done, total) =>
-                  t("progressSummary", { done, total })
-                }
+                progressTemplate={String(t.raw("progressSummary"))}
               />
             </div>
             <div className="mt-2 space-y-6">
