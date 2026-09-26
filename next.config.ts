@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Ensure PDF fonts are available in serverless bundles
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./src/lib/pdf/fonts/**/*"],
+    "/*": ["./src/lib/pdf/fonts/**/*"],
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

@@ -1,0 +1,6 @@
+These fonts are licensed under the SIL Open Font License (OFL), Version 1.1.
+
+- Fraunces (display) — https://github.com/googlefonts/fraunces
+- Source Sans 3 (body) — https://github.com/adobe-fonts/source-sans
+
+You can obtain a copy of the license at: https://openfontlicense.org

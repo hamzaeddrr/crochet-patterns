@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import type { CrochetPattern, PatternComponent } from "@/types";
 import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
 import {
@@ -7,28 +7,29 @@ import {
   isAccessoryOrNoteRound,
   stepLabelForMode,
 } from "@/lib/crochet/construction";
-
-function wrapText(
-  text: string,
-  font: PDFFont,
-  size: number,
-  maxWidth: number
-): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const next = current ? `${current} ${word}` : word;
-    if (font.widthOfTextAtSize(next, size) > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = next;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.length ? lines : [""];
-}
+import { embedPdfFonts } from "./fonts";
+import {
+  drawChip,
+  drawComponentBanner,
+  drawContentHeader,
+  drawNumberedStep,
+  drawParagraph,
+  drawSectionHeading,
+  drawSpacer,
+  drawTableHeader,
+  drawTableRow,
+  ensureSpace,
+  stampFooters,
+  truncateToWidth,
+  wrapText,
+  type LayoutCtx,
+} from "./layout";
+import {
+  PDF_PAGE,
+  PDF_THEME,
+  colorFromName,
+  contentWidth,
+} from "./theme";
 
 function capitalize(s: string): string {
   if (!s) return s;
@@ -41,14 +42,12 @@ function cleanInstructions(instructions: string, result?: number): string {
   if (typeof result === "number") {
     const re = new RegExp(`\\s*\\(${result}\\)\\s*$`);
     text = text.replace(re, "").trim();
-    // Also strip a second duplicate count if present: "(12) (12)"
     text = text.replace(re, "").trim();
   }
   text = text.replace(/\s*\((\d+)\)\s*\(\1\)\s*$/g, " ($1)").trim();
   return text;
 }
 
-/** Normalize "1. Step" / "1. 1. Step" → "Step" before we number. */
 function cleanStep(step: string): string {
   return step.replace(/^\s*(\d+\.\s*)+/g, "").trim();
 }
@@ -59,274 +58,483 @@ function formatSizeCm(size?: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`;
 }
 
-function whatYouMakeLines(pattern: CrochetPattern): string[] {
-  const lines: string[] = [];
-  for (const c of pattern.content.components) {
-    const make = c.make && c.make > 1 ? c.make : 1;
-    const label = c.name.trim();
-    if (!label) continue;
-    lines.push(make > 1 ? `${make} × ${label}` : `1 × ${label}`);
+async function embedPatternImage(
+  pdf: Awaited<ReturnType<typeof PDFDocument.create>>,
+  imagePath: string
+) {
+  const imgBytes = await readPublicAsset(imagePath);
+  const isJpg =
+    /\.jpe?g($|\?)/i.test(imagePath) || imagePath.includes("image/jpeg");
+  if (isJpg) return pdf.embedJpg(imgBytes);
+  const png = await (await import("sharp")).default(imgBytes).png().toBuffer();
+  return pdf.embedPng(png);
+}
+
+async function drawCover(
+  pdf: Awaited<ReturnType<typeof PDFDocument.create>>,
+  fonts: Awaited<ReturnType<typeof embedPdfFonts>>,
+  pattern: CrochetPattern
+): Promise<void> {
+  const page = pdf.addPage([PDF_PAGE.width, PDF_PAGE.height]);
+  const { width, height, margin } = PDF_PAGE;
+  const title = pattern.content.title.en;
+  const difficulty = capitalize(pattern.designSpec.difficulty);
+  const sizeLabel = formatSizeCm(pattern.designSpec.size_cm);
+  const timeLabel = pattern.designSpec.estimated_time || "—";
+
+  // Soft bone base
+  page.drawRectangle({
+    x: 0,
+    y: 0,
+    width,
+    height,
+    color: PDF_THEME.boneDeep,
+  });
+
+  // Decorative celadon wash top
+  page.drawRectangle({
+    x: 0,
+    y: height - 160,
+    width,
+    height: 160,
+    color: PDF_THEME.celadon,
+    opacity: 0.18,
+  });
+
+  let imageDrawn = false;
+  if (pattern.imagePath) {
+    try {
+      const image = await embedPatternImage(pdf, pattern.imagePath);
+      // Full-bleed-ish hero: edge to edge with small side margin
+      const maxW = width;
+      const maxH = height * 0.62;
+      const scale = Math.max(maxW / image.width, maxH / image.height);
+      const w = image.width * scale;
+      const h = image.height * scale;
+      const x = (width - w) / 2;
+      const y = height - h;
+      page.drawImage(image, { x, y, width: w, height: h });
+      imageDrawn = true;
+
+      // Gradient-like overlay slab at bottom of image
+      page.drawRectangle({
+        x: 0,
+        y: 0,
+        width,
+        height: Math.min(h * 0.42, 280),
+        color: PDF_THEME.coverOverlay,
+        opacity: 0.72,
+      });
+    } catch {
+      imageDrawn = false;
+    }
   }
-  if (!lines.length) {
-    lines.push(`1 × ${pattern.content.title.en}`);
+
+  if (!imageDrawn) {
+    page.drawRectangle({
+      x: 0,
+      y: height * 0.35,
+      width,
+      height: height * 0.65,
+      color: PDF_THEME.elevated,
+    });
+    page.drawRectangle({
+      x: 0,
+      y: 0,
+      width,
+      height: height * 0.42,
+      color: PDF_THEME.coverOverlay,
+      opacity: 0.85,
+    });
   }
-  return lines;
+
+  // Brand
+  page.drawText("LOOPCRAFT", {
+    x: margin,
+    y: height - 36,
+    size: 11,
+    font: fonts.bodyBold,
+    color: imageDrawn ? PDF_THEME.white : PDF_THEME.apricot,
+  });
+  page.drawText("Studio crochet pattern", {
+    x: margin,
+    y: height - 52,
+    size: 9,
+    font: fonts.body,
+    color: imageDrawn ? PDF_THEME.bone : PDF_THEME.muted,
+  });
+
+  // Badge free/paid
+  const badge = pattern.free ? "Free pattern" : "Premium pattern";
+  drawChip(
+    page,
+    fonts,
+    badge,
+    width - margin - fonts.bodyBold.widthOfTextAtSize(badge, 9) - 16,
+    height - 44,
+    PDF_THEME.apricot,
+    PDF_THEME.white
+  );
+
+  // Title slab
+  const titleSize = 26;
+  const titleLines = wrapText(title, fonts.display, titleSize, contentWidth());
+  let ty = 148;
+  for (const line of titleLines.slice(0, 3)) {
+    page.drawText(line, {
+      x: margin,
+      y: ty,
+      size: titleSize,
+      font: fonts.display,
+      color: PDF_THEME.white,
+    });
+    ty -= 32;
+  }
+
+  // Meta chips
+  let cx = margin;
+  const chipY = 78;
+  const chips = [
+    difficulty,
+    `${sizeLabel} cm`,
+    timeLabel,
+  ];
+  for (const chip of chips) {
+    cx += drawChip(
+      page,
+      fonts,
+      chip,
+      cx,
+      chipY,
+      PDF_THEME.apricotDeep,
+      PDF_THEME.white
+    );
+  }
+
+  page.drawText("loopcraft · printable PDF", {
+    x: margin,
+    y: 36,
+    size: 8,
+    font: fonts.body,
+    color: PDF_THEME.softMuted,
+  });
+}
+
+function startContentPage(
+  pdf: Awaited<ReturnType<typeof PDFDocument.create>>,
+  fonts: Awaited<ReturnType<typeof embedPdfFonts>>,
+  patternTitle: string
+): LayoutCtx {
+  const page = pdf.addPage([PDF_PAGE.width, PDF_PAGE.height]);
+  page.drawRectangle({
+    x: 0,
+    y: 0,
+    width: PDF_PAGE.width,
+    height: PDF_PAGE.height,
+    color: PDF_THEME.bone,
+  });
+  const y = drawContentHeader(page, fonts, patternTitle);
+  return { pdf, fonts, patternTitle, page, y };
+}
+
+function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
+  const mode = detectConstructionMode(component);
+  const step = stepLabelForMode(mode);
+  const { title } = cleanComponentDisplayName(component.name, component.make);
+
+  drawComponentBanner(ctx, title, component.make);
+  if (component.notes?.trim()) {
+    drawParagraph(ctx, component.notes.trim(), {
+      size: 9.5,
+      color: PDF_THEME.muted,
+    });
+    drawSpacer(ctx, 6);
+  }
+
+  const stepW = 58;
+  const countW = 48;
+  drawTableHeader(ctx, [
+    {
+      label: step.toUpperCase(),
+      x: PDF_PAGE.margin + 6,
+      width: stepW,
+    },
+    {
+      label: "INSTRUCTIONS",
+      x: PDF_PAGE.margin + stepW,
+      width: contentWidth() - stepW - countW,
+    },
+    {
+      label: "COUNT",
+      x: PDF_PAGE.margin + contentWidth() - countW + 4,
+      width: countW,
+    },
+  ]);
+
+  component.rounds.forEach((r, i) => {
+    const accessory = isAccessoryOrNoteRound(r) || mode === "note";
+    const instr = cleanInstructions(
+      r.instructions,
+      accessory ? undefined : r.result
+    );
+    const count =
+      !accessory && typeof r.result === "number" && r.result > 0
+        ? String(r.result)
+        : "—";
+    const stepLabel =
+      mode === "note" ? String(r.round) : `${step} ${r.round}`;
+    drawTableRow(ctx, {
+      index: i,
+      stepLabel,
+      instructions: instr,
+      count,
+      stepW,
+      countW,
+    });
+  });
+
+  drawSpacer(ctx, 14);
 }
 
 export async function buildPatternPdf(
   pattern: CrochetPattern
 ): Promise<string> {
   const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.setTitle(pattern.content.title.en);
+  pdf.setAuthor("Loopcraft");
+  pdf.setSubject("Crochet pattern");
+  pdf.setCreator("Loopcraft Studio");
 
-  const rose = rgb(0.78, 0.28, 0.45);
-  const ink = rgb(0.15, 0.18, 0.2);
-  const muted = rgb(0.4, 0.42, 0.45);
-  const pageW = 595.28;
-  const pageH = 841.89;
-  const margin = 48;
-  const contentW = pageW - margin * 2;
+  const fonts = await embedPdfFonts(pdf);
+  const title = pattern.content.title.en;
   const difficulty = capitalize(pattern.designSpec.difficulty);
   const sizeLabel = formatSizeCm(pattern.designSpec.size_cm);
   const timeLabel = pattern.designSpec.estimated_time || "—";
-  const title = pattern.content.title.en;
 
-  // —— Cover ——
-  {
-    const page = pdf.addPage([pageW, pageH]);
-    page.drawRectangle({
-      x: 0,
-      y: 0,
-      width: pageW,
-      height: pageH,
-      color: rgb(0.96, 0.95, 0.93),
-    });
-    page.drawRectangle({
-      x: 0,
-      y: pageH - 100,
-      width: pageW,
-      height: 100,
-      color: rose,
-    });
-    page.drawText("LOOPCRAFT", {
-      x: margin,
-      y: pageH - 48,
-      size: 14,
-      font: fontBold,
-      color: rgb(1, 1, 1),
-    });
-    page.drawText("Crochet Pattern", {
-      x: margin,
-      y: pageH - 72,
-      size: 11,
-      font,
-      color: rgb(1, 0.92, 0.94),
-    });
+  await drawCover(pdf, fonts, pattern);
 
-    let imageBottom = pageH - 130;
-    if (pattern.imagePath) {
-      try {
-        const imgBytes = await readPublicAsset(pattern.imagePath);
-        const isJpg =
-          /\.jpe?g($|\?)/i.test(pattern.imagePath) ||
-          pattern.imagePath.includes("image/jpeg");
-        const image = isJpg
-          ? await pdf.embedJpg(imgBytes)
-          : await pdf.embedPng(
-              await (await import("sharp")).default(imgBytes).png().toBuffer()
-            );
-        const maxW = contentW;
-        const maxH = 380;
-        const scale = Math.min(maxW / image.width, maxH / image.height);
-        const w = image.width * scale;
-        const h = image.height * scale;
-        const y = pageH - 130 - h;
-        page.drawImage(image, {
-          x: (pageW - w) / 2,
-          y,
-          width: w,
-          height: h,
-        });
-        imageBottom = y - 24;
-      } catch {
-        imageBottom = pageH - 280;
-      }
-    } else {
-      imageBottom = pageH - 280;
-    }
+  const ctx = startContentPage(pdf, fonts, title);
 
-    const titleY = Math.min(imageBottom, 200);
-    const titleLines = wrapText(title, fontBold, 22, contentW);
-    let ty = titleY;
-    for (const line of titleLines.slice(0, 3)) {
-      page.drawText(line, {
-        x: margin,
-        y: ty,
-        size: 22,
-        font: fontBold,
-        color: ink,
-      });
-      ty -= 28;
-    }
-    page.drawText(
-      `Difficulty: ${difficulty}  ·  Finished size: ${sizeLabel} cm  ·  Estimated time: ${timeLabel}`,
-      {
-        x: margin,
-        y: Math.max(ty - 8, 56),
-        size: 11,
-        font,
-        color: muted,
-      }
-    );
-  }
-
-  // Streaming multi-section layout (denser pages)
-  let page: PDFPage = pdf.addPage([pageW, pageH]);
-  let y = pageH - margin;
-
-  const ensureSpace = (needed: number) => {
-    if (y - needed < margin + 36) {
-      page = pdf.addPage([pageW, pageH]);
-      y = pageH - margin;
-    }
-  };
-
-  const drawHeading = (heading: string) => {
-    ensureSpace(40);
-    page.drawText(heading, {
-      x: margin,
-      y,
-      size: 16,
-      font: fontBold,
-      color: rose,
-    });
-    y -= 22;
-  };
-
-  const drawParagraph = (text: string, size = 11, bold = false) => {
-    const f = bold ? fontBold : font;
-    const lines = wrapText(text, f, size, contentW);
-    for (const line of lines) {
-      ensureSpace(16);
-      page.drawText(line, { x: margin, y, size, font: f, color: ink });
-      y -= 15;
-    }
-  };
-
-  const drawSpacer = (px = 10) => {
-    y -= px;
-  };
-
-  // —— What You'll Make ——
-  drawHeading("What You'll Make");
-  drawParagraph(title, 13, true);
-  drawSpacer(6);
-  drawParagraph(`Finished size: ${sizeLabel} cm`);
-  drawParagraph(`Difficulty: ${difficulty}`);
-  drawParagraph(`Estimated time: ${timeLabel}`);
-  drawSpacer(8);
-  drawParagraph("This pattern includes:", 11, true);
-  drawSpacer(4);
-  for (const item of whatYouMakeLines(pattern)) {
-    drawParagraph(`•  ${item}`);
-  }
-  drawSpacer(6);
+  // —— Overview ——
+  drawSectionHeading(ctx, "Overview");
   if (pattern.content.summary.en?.trim()) {
-    drawParagraph(pattern.content.summary.en.trim());
+    drawParagraph(ctx, pattern.content.summary.en.trim(), { size: 11 });
+    drawSpacer(ctx, 10);
   }
-  drawSpacer(16);
+
+  ensureSpace(ctx, 70);
+  ctx.page.drawRectangle({
+    x: PDF_PAGE.margin,
+    y: ctx.y - 52,
+    width: contentWidth(),
+    height: 58,
+    color: PDF_THEME.elevated,
+  });
+  const metaBits = [
+    `Difficulty  ${difficulty}`,
+    `Size  ${sizeLabel} cm`,
+    `Time  ${timeLabel}`,
+  ];
+  let mx = PDF_PAGE.margin + 14;
+  for (const bit of metaBits) {
+    ctx.page.drawText(bit, {
+      x: mx,
+      y: ctx.y - 22,
+      size: 10,
+      font: fonts.bodyBold,
+      color: PDF_THEME.ink,
+    });
+    mx += contentWidth() / 3;
+  }
+  ctx.y -= 70;
+
+  drawParagraph(ctx, "What you’ll make", { size: 12, bold: true });
+  drawSpacer(ctx, 4);
+  pattern.content.components.forEach((c, i) => {
+    const { title: name } = cleanComponentDisplayName(c.name, c.make);
+    const make = c.make && c.make > 1 ? c.make : 1;
+    drawParagraph(ctx, `${i + 1}.  ${make} × ${name}`, { size: 10.5 });
+  });
+  drawSpacer(ctx, 16);
 
   // —— Materials ——
-  drawHeading("Materials");
-  drawParagraph(`Yarn: ${pattern.content.materials.yarn.join("; ")}`);
-  drawParagraph(`Hook: ${pattern.content.materials.hook}`);
-  drawParagraph(`Notions: ${pattern.content.materials.notions.join(", ")}`);
-  if (pattern.content.materials.gauge) {
-    drawParagraph(`Gauge: ${pattern.content.materials.gauge}`);
+  drawSectionHeading(ctx, "Materials");
+
+  const colors = pattern.designSpec.colors || [];
+  if (colors.length) {
+    drawParagraph(ctx, "Color palette", { size: 10, bold: true });
+    drawSpacer(ctx, 4);
+    ensureSpace(ctx, 28);
+    let sx = PDF_PAGE.margin;
+    for (const c of colors.slice(0, 10)) {
+      const fill = colorFromName(c);
+      ctx.page.drawCircle({
+        x: sx + 7,
+        y: ctx.y + 2,
+        size: 7,
+        color: fill,
+        borderColor: PDF_THEME.line,
+        borderWidth: 0.6,
+      });
+      const label = truncateToWidth(c.replace(/_/g, " "), fonts.body, 8, 70);
+      ctx.page.drawText(label, {
+        x: sx + 18,
+        y: ctx.y,
+        size: 8,
+        font: fonts.body,
+        color: PDF_THEME.muted,
+      });
+      sx += 96;
+      if (sx > PDF_PAGE.width - PDF_PAGE.margin - 80) {
+        sx = PDF_PAGE.margin;
+        ctx.y -= 22;
+        ensureSpace(ctx, 22);
+      }
+    }
+    ctx.y -= 24;
   }
-  drawSpacer(16);
+
+  drawParagraph(ctx, "Yarn", { size: 10, bold: true });
+  for (const y of pattern.content.materials.yarn) {
+    drawParagraph(ctx, `•  ${y}`, { size: 10.5 });
+  }
+  drawSpacer(ctx, 8);
+
+  ensureSpace(ctx, 56);
+  ctx.page.drawRectangle({
+    x: PDF_PAGE.margin,
+    y: ctx.y - 48,
+    width: contentWidth(),
+    height: 54,
+    color: PDF_THEME.elevated,
+  });
+  ctx.page.drawText("Hook", {
+    x: PDF_PAGE.margin + 12,
+    y: ctx.y - 14,
+    size: 8,
+    font: fonts.bodyBold,
+    color: PDF_THEME.muted,
+  });
+  ctx.page.drawText(pattern.content.materials.hook, {
+    x: PDF_PAGE.margin + 12,
+    y: ctx.y - 28,
+    size: 11,
+    font: fonts.bodyBold,
+    color: PDF_THEME.ink,
+  });
+  const notions = pattern.content.materials.notions.join(", ");
+  ctx.page.drawText("Notions", {
+    x: PDF_PAGE.margin + contentWidth() * 0.35,
+    y: ctx.y - 14,
+    size: 8,
+    font: fonts.bodyBold,
+    color: PDF_THEME.muted,
+  });
+  const notionLines = wrapText(
+    notions,
+    fonts.body,
+    10,
+    contentWidth() * 0.6 - 16
+  );
+  let ny = ctx.y - 28;
+  for (const line of notionLines.slice(0, 2)) {
+    ctx.page.drawText(line, {
+      x: PDF_PAGE.margin + contentWidth() * 0.35,
+      y: ny,
+      size: 10,
+      font: fonts.body,
+      color: PDF_THEME.ink,
+    });
+    ny -= 12;
+  }
+  ctx.y -= 66;
+
+  if (pattern.content.materials.gauge) {
+    drawParagraph(ctx, `Gauge: ${pattern.content.materials.gauge}`, {
+      size: 10,
+      color: PDF_THEME.muted,
+    });
+  }
+  drawSpacer(ctx, 14);
 
   // —— Abbreviations ——
-  drawHeading("Abbreviations (US)");
-  for (const a of pattern.content.abbreviations) {
-    drawParagraph(`${a.abbr} — ${a.meaning}`);
+  drawSectionHeading(ctx, "Abbreviations (US)");
+  const abbrs = pattern.content.abbreviations;
+  const colW = contentWidth() / 2;
+  for (let i = 0; i < abbrs.length; i += 2) {
+    ensureSpace(ctx, 16);
+    const left = abbrs[i];
+    const right = abbrs[i + 1];
+    ctx.page.drawText(left.abbr, {
+      x: PDF_PAGE.margin,
+      y: ctx.y,
+      size: 10,
+      font: fonts.bodyBold,
+      color: PDF_THEME.apricot,
+    });
+    const leftMean = truncateToWidth(
+      left.meaning,
+      fonts.body,
+      9.5,
+      colW - 48
+    );
+    ctx.page.drawText(leftMean, {
+      x: PDF_PAGE.margin + 36,
+      y: ctx.y,
+      size: 9.5,
+      font: fonts.body,
+      color: PDF_THEME.ink,
+    });
+    if (right) {
+      ctx.page.drawText(right.abbr, {
+        x: PDF_PAGE.margin + colW,
+        y: ctx.y,
+        size: 10,
+        font: fonts.bodyBold,
+        color: PDF_THEME.apricot,
+      });
+      const rightMean = truncateToWidth(
+        right.meaning,
+        fonts.body,
+        9.5,
+        colW - 48
+      );
+      ctx.page.drawText(rightMean, {
+        x: PDF_PAGE.margin + colW + 36,
+        y: ctx.y,
+        size: 9.5,
+        font: fonts.body,
+        color: PDF_THEME.ink,
+      });
+    }
+    ctx.y -= 15;
   }
-  drawSpacer(16);
+  drawSpacer(ctx, 16);
 
   // —— Components ——
-  const writeComponent = (component: PatternComponent) => {
-    const mode = detectConstructionMode(component);
-    const step = stepLabelForMode(mode);
-    const { title } = cleanComponentDisplayName(
-      component.name,
-      component.make
-    );
-    drawHeading(title);
-    if (component.make && component.make > 1) {
-      drawParagraph(`Make ${component.make}.`, 11, true);
-    }
-    if (component.notes?.trim()) {
-      drawParagraph(component.notes.trim());
-      drawSpacer(4);
-    }
-    for (const r of component.rounds) {
-      const accessory = isAccessoryOrNoteRound(r) || mode === "note";
-      const instr = cleanInstructions(
-        r.instructions,
-        accessory ? undefined : r.result
-      );
-      const count =
-        !accessory && typeof r.result === "number" && r.result > 0
-          ? ` (${r.result})`
-          : "";
-      const prefix =
-        mode === "note"
-          ? `Step ${r.round}`
-          : `${step} ${r.round}`;
-      // If instructions already start with Rnd/Row, don't double-prefix awkwardly
-      const body = /^(rnd|row|round|step)\s*\d+/i.test(instr)
-        ? `${instr}${count}`
-        : `${prefix}: ${instr}${count}`;
-      drawParagraph(body);
-    }
-    drawSpacer(12);
-  };
-
+  drawSectionHeading(ctx, "Instructions");
   for (const component of pattern.content.components) {
-    writeComponent(component);
+    writeComponent(ctx, component);
   }
 
   // —— Assembly ——
   if (pattern.content.assembly.length) {
-    drawHeading("Assembly");
+    drawSectionHeading(ctx, "Assembly");
     pattern.content.assembly.forEach((step, i) => {
-      drawParagraph(`${i + 1}. ${cleanStep(step)}`);
-      drawSpacer(4);
+      drawNumberedStep(ctx, i + 1, cleanStep(step));
     });
-    drawSpacer(8);
+    drawSpacer(ctx, 8);
   }
 
   // —— Finishing ——
   if (pattern.content.finishing.length) {
-    drawHeading("Finishing");
+    drawSectionHeading(ctx, "Finishing");
     pattern.content.finishing.forEach((step, i) => {
-      drawParagraph(`${i + 1}. ${cleanStep(step)}`);
-      drawSpacer(4);
+      drawNumberedStep(ctx, i + 1, cleanStep(step));
     });
   }
 
-  // Page numbers
-  const pages = pdf.getPages();
-  pages.forEach((p, i) => {
-    p.drawText(`${i + 1} / ${pages.length}`, {
-      x: pageW - margin - 40,
-      y: 24,
-      size: 9,
-      font,
-      color: muted,
-    });
-  });
+  stampFooters(pdf, fonts, true);
 
   const bytes = await pdf.save();
   return savePublicAsset(
