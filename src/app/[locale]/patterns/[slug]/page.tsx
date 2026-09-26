@@ -23,6 +23,9 @@ import { CrochetStitchDiagram } from "@/components/site/CrochetStitchDiagram";
 import {
   cleanComponentDisplayName,
   detectConstructionMode,
+  isFastenOffRound,
+  isRedundantNoteComponent,
+  partitionComponentRounds,
   stepLabelForMode,
 } from "@/lib/crochet/construction";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
@@ -343,6 +346,8 @@ export default async function PatternDetailPage({
             <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
             <div className="mt-6 space-y-6">
               {pattern.content.components.map((component) => {
+                if (isRedundantNoteComponent(component)) return null;
+
                 const mode = detectConstructionMode(component);
                 const stepLabel = stepLabelForMode(mode);
                 const { title, makeSuffix } = cleanComponentDisplayName(
@@ -350,6 +355,9 @@ export default async function PatternDetailPage({
                   component.make
                 );
                 const showCharts = mode !== "note";
+                const { main, accessories } = partitionComponentRounds(
+                  component.rounds || []
+                );
                 return (
                 <div
                   key={component.id}
@@ -392,40 +400,73 @@ export default async function PatternDetailPage({
                       />
                     </>
                   ) : null}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-elevated text-muted">
-                        <tr>
-                          <th className="px-5 py-3 font-semibold">
-                            {stepLabel}
-                          </th>
-                          <th className="px-5 py-3 font-semibold">
-                            Instructions
-                          </th>
-                          {showCharts ? (
-                            <th className="px-5 py-3 font-semibold">Count</th>
-                          ) : null}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {component.rounds.map((r) => (
-                          <tr key={r.round} className="border-t border-line">
-                            <td className="px-5 py-3 font-display text-lg text-gold">
-                              {r.round}
-                            </td>
-                            <td className="px-5 py-3">{r.instructions}</td>
-                            {showCharts ? (
-                              <td className="px-5 py-3 font-bold">
-                                {typeof r.result === "number" && r.result > 0
-                                  ? r.result
-                                  : "—"}
-                              </td>
-                            ) : null}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  {mode === "note" ? (
+                    <div className="space-y-3 px-5 py-4 text-sm text-ink">
+                      {(component.rounds || []).map((r) => (
+                        <p key={r.round}>{r.instructions}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-elevated text-muted">
+                            <tr>
+                              <th className="px-5 py-3 font-semibold">
+                                {stepLabel}
+                              </th>
+                              <th className="px-5 py-3 font-semibold">
+                                Instructions
+                              </th>
+                              <th className="px-5 py-3 font-semibold">Count</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {main.map((r, idx) => {
+                              const fo = isFastenOffRound(r);
+                              return (
+                                <tr
+                                  key={`main-${r.round}-${idx}`}
+                                  className="border-t border-line"
+                                >
+                                  <td className="px-5 py-3 font-display text-lg text-gold">
+                                    {fo ? "FO" : r.round}
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    {r.instructions}
+                                  </td>
+                                  <td className="px-5 py-3 font-bold">
+                                    {!fo &&
+                                    typeof r.result === "number" &&
+                                    r.result > 0
+                                      ? r.result
+                                      : "—"}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {accessories.map((acc) => (
+                        <div
+                          key={acc.title}
+                          className="border-t border-line px-5 py-4"
+                        >
+                          <h4 className="font-display text-lg text-ink">
+                            {acc.title}
+                          </h4>
+                          <ul className="mt-2 space-y-2 text-sm text-muted">
+                            {acc.steps.map((s, i) => (
+                              <li key={`${acc.title}-${i}`}>
+                                {s.instructions}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
                 );
               })}

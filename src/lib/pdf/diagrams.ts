@@ -15,6 +15,7 @@ import {
   stitchBearingRounds,
   stepLabelForMode,
   cleanComponentDisplayName,
+  chartAxisLastRound,
 } from "@/lib/crochet/construction";
 import {
   ensureSpace,
@@ -220,7 +221,11 @@ export function drawStitchCountChart(
   const minY = Math.min(...points.map((p) => p.y));
   const maxY = Math.max(...points.map((p) => p.y));
   const minX = points[0].x;
-  const maxX = points[points.length - 1].x;
+  // Axis end includes FO round (e.g. R15) even when FO isn't a stitch datapoint
+  const maxX = Math.max(
+    points[points.length - 1].x,
+    chartAxisLastRound(component.rounds || [])
+  );
   const isEven = minY === maxY;
   const yPad = isEven
     ? Math.max(4, Math.round(minY * 0.25))

@@ -5,6 +5,7 @@ import {
   stitchBearingRounds,
   stepLabelForMode,
   detectConstructionMode,
+  chartAxisLastRound,
 } from "@/lib/crochet/construction";
 
 const ACCENTS = [
@@ -396,7 +397,10 @@ export function StitchCountChart({
   const minY = Math.min(...points.map((p) => p.y));
   const maxY = Math.max(...points.map((p) => p.y));
   const minX = points[0].x;
-  const maxX = points[points.length - 1].x;
+  const maxX = Math.max(
+    points[points.length - 1].x,
+    chartAxisLastRound(component.rounds || [])
+  );
   const isEven = minY === maxY;
   // Pad Y domain so an even line sits mid-chart (not stuck to the bottom)
   const yPad = isEven ? Math.max(4, Math.round(minY * 0.25)) : Math.max(2, Math.round((maxY - minY) * 0.2));

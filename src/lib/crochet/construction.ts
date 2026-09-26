@@ -4,7 +4,7 @@ import { operationsHaveChartableSymbols } from "@/lib/crochet/stitch-symbols";
 export type ConstructionMode = "round" | "row" | "note";
 
 const ACCESSORY_RE =
-  /\b(drawstring|hanging loop|hang(ing)?\s*loop|embroider|embroidery|safety eyes?|assemble|assembly|finishing|weave (in )?ends|cut (cotton|fabric)|pompom|tassel|insert|snap|lining)\b/i;
+  /\b(drawstring|hanging loop|hang(ing)?\s*loop|embroider|embroidery|safety eyes?|pompom|tassel|cut (cotton|fabric)|lining)\b/i;
 
 const NON_STITCH_COMPONENT_RE =
   /\b(eye|embroider|assembl|finish|lining|fabric|pompom|tassel|note)\b/i;
@@ -34,9 +34,16 @@ export function isAccessoryOrNoteRound(round: PatternRound): boolean {
   const instr = (round.instructions || "").trim();
   if (!instr) return round.result === 0;
   if (ACCESSORY_RE.test(instr)) return true;
+  // Assembly-only note rounds (not crochet)
+  if (
+    round.result === 0 &&
+    /\bassembl(e|y)|sew together|closing pieces\b/i.test(instr)
+  ) {
+    return true;
+  }
   if (round.result === 0 && /fasten\s*off|leave (a )?long tail|weave/i.test(instr)) {
     // pure FO closing — not a stitch-count datapoint, but still a step
-    return false; // keep as FO step, handled separately
+    return false;
   }
   // Chain-only "for drawstring/loop" counted as inflated result
   if (
@@ -46,6 +53,126 @@ export function isAccessoryOrNoteRound(round: PatternRound): boolean {
     return true;
   }
   return false;
+}
+
+/** Title for a split-out accessory block (drawstring, hanging loop, etc.). */
+export function accessorySectionTitle(instructions: string): string {
+  const t = instructions.toLowerCase();
+  if (/drawstring/.test(t)) return "Drawstring";
+  if (/hanging\s*loop|hang\s*loop|for (the )?loop/.test(t)) return "Hanging loop";
+  if (/embroider|safety eyes?/.test(t)) return "Details";
+  if (/pompom|tassel/.test(t)) return "Finishing piece";
+  return "Accessory";
+}
+
+/** Clean accessory instruction text for display (no fake stitch counts). */
+export function formatAccessoryInstruction(instructions: string): string {
+  let text = (instructions || "").trim();
+  text = text.replace(/\s*\(\d+\)\s*$/g, "").trim();
+  // Prefer a short lead for chain accessories
+  const ch = text.match(/^ch(?:ain)?\s+(\d+)(?:\s+for\s+[^.,;]+)?/i);
+  if (ch) {
+    const rest = text.replace(/^ch(?:ain)?\s+\d+(?:\s+for\s+[^.,;]+)?[.,;]?\s*/i, "").trim();
+    const lead = `Ch ${ch[1]}`;
+    return rest ? `${lead}. ${rest}` : lead;
+  }
+  return text;
+}
+
+export type RoundPartition = {
+  /** Stitch-bearing rounds + piece FO (before accessories). */
+  main: PatternRound[];
+  /** Split accessory blocks (drawstring, hanging loop, …). */
+  accessories: { title: string; steps: PatternRound[] }[];
+};
+
+/**
+ * Split a component's rounds into the crocheted piece vs accessory operations
+ * (drawstring / hanging loop), so accessories are never shown as stitch-count rounds.
+ */
+export function partitionComponentRounds(
+  rounds: PatternRound[]
+): RoundPartition {
+  const main: PatternRound[] = [];
+  const accessories: { title: string; steps: PatternRound[] }[] = [];
+  let currentAcc: { title: string; steps: PatternRound[] } | null = null;
+  let sawStitch = false;
+
+  for (const round of rounds) {
+    if (isAccessoryOrNoteRound(round)) {
+      // Close main with a synthetic FO if the piece had stitches but no FO yet
+      if (
+        sawStitch &&
+        main.length &&
+        !isFastenOffRound(main[main.length - 1]) &&
+        !currentAcc
+      ) {
+        main.push({
+          round: main[main.length - 1].round,
+          instructions: "fasten off",
+          result: 0,
+          operations: [{ type: "fasten_off" }],
+        });
+      }
+      const title = accessorySectionTitle(round.instructions || "");
+      if (!currentAcc || currentAcc.title !== title) {
+        currentAcc = { title, steps: [] };
+        accessories.push(currentAcc);
+      }
+      currentAcc.steps.push({
+        ...round,
+        result: 0,
+        instructions: formatAccessoryInstruction(round.instructions || ""),
+      });
+      continue;
+    }
+
+    // FO / weave that follows an accessory stays with that accessory
+    if (
+      currentAcc &&
+      (isFastenOffRound(round) ||
+        /\bweave\b|\bknot\b|\bsecure\b/i.test(round.instructions || ""))
+    ) {
+      currentAcc.steps.push({
+        ...round,
+        result: 0,
+        instructions: formatAccessoryInstruction(round.instructions || ""),
+      });
+      continue;
+    }
+
+    currentAcc = null;
+    if (
+      typeof round.result === "number" &&
+      round.result > 0 &&
+      !isFastenOffRound(round)
+    ) {
+      sawStitch = true;
+    }
+    main.push(round);
+  }
+
+  return { main, accessories };
+}
+
+/** Last round/row number for chart axis (includes FO, excludes accessories). */
+export function chartAxisLastRound(rounds: PatternRound[]): number {
+  const { main } = partitionComponentRounds(rounds);
+  if (main.length) return main[main.length - 1].round;
+  const bearing = stitchBearingRounds(rounds);
+  return bearing[bearing.length - 1]?.round ?? rounds[rounds.length - 1]?.round ?? 1;
+}
+
+/** True when a component is only assembly/embroidery notes (skip in PDF instructions). */
+export function isRedundantNoteComponent(component: PatternComponent): boolean {
+  const mode = detectConstructionMode(component);
+  if (mode !== "note") return false;
+  const name = (component.name || "").toLowerCase();
+  if (/\b(assembl|closing|finish)\b/.test(name)) return true;
+  const onlyAssemble = (component.rounds || []).every((r) =>
+    /\bassembl|sew together|closing\b/i.test(r.instructions || "")
+  );
+  return onlyAssemble;
 }
 
 export function isFastenOffRound(round: PatternRound): boolean {

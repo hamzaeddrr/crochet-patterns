@@ -1,10 +1,13 @@
 import { PDFDocument } from "pdf-lib";
-import type { CrochetPattern, PatternComponent } from "@/types";
+import type { CrochetPattern, PatternComponent, PatternRound } from "@/types";
 import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
 import {
   cleanComponentDisplayName,
   detectConstructionMode,
   isAccessoryOrNoteRound,
+  isFastenOffRound,
+  isRedundantNoteComponent,
+  partitionComponentRounds,
   stepLabelForMode,
 } from "@/lib/crochet/construction";
 import { embedPdfFonts } from "./fonts";
@@ -244,23 +247,12 @@ function startContentPage(
   return { pdf, fonts, patternTitle, page, y };
 }
 
-function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
-  const mode = detectConstructionMode(component);
-  const step = stepLabelForMode(mode);
-  const { title } = cleanComponentDisplayName(component.name, component.make);
-
-  drawComponentBanner(ctx, title, component.make);
-  if (component.notes?.trim()) {
-    drawParagraph(ctx, component.notes.trim(), {
-      size: 9.5,
-      color: PDF_THEME.muted,
-    });
-    drawSpacer(ctx, 6);
-  }
-
-  // Visual stitch chart + diagrams before the written table
-  drawComponentVisuals(ctx, component);
-
+function writeRoundTable(
+  ctx: LayoutCtx,
+  rounds: PatternRound[],
+  step: "Rnd" | "Row" | "Step"
+): void {
+  if (!rounds.length) return;
   const stepW = 58;
   const countW = 48;
   drawTableHeader(ctx, [
@@ -281,29 +273,108 @@ function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
     },
   ]);
 
-  component.rounds.forEach((r, i) => {
-    const accessory = isAccessoryOrNoteRound(r) || mode === "note";
+  rounds.forEach((r, i) => {
+    const accessory = isAccessoryOrNoteRound(r);
+    const fo = isFastenOffRound(r);
     const instr = cleanInstructions(
       r.instructions,
-      accessory ? undefined : r.result
-    );
+      accessory || fo ? undefined : r.result
+    ).replace(/\s*\(\d+\)\s*$/g, "");
     const count =
-      !accessory && typeof r.result === "number" && r.result > 0
+      !accessory && !fo && typeof r.result === "number" && r.result > 0
         ? String(r.result)
         : "—";
-    const stepLabel =
-      mode === "note" ? String(r.round) : `${step} ${r.round}`;
+    const stepLabel = fo
+      ? "FO"
+      : accessory
+        ? "—"
+        : `${step} ${r.round}`;
     drawTableRow(ctx, {
       index: i,
       stepLabel,
-      instructions: instr,
+      instructions: instr || r.instructions,
       count,
       stepW,
       countW,
     });
   });
+}
 
-  drawSpacer(ctx, 14);
+function writeAccessoryBlock(
+  ctx: LayoutCtx,
+  title: string,
+  steps: PatternRound[]
+): void {
+  ensureSpace(ctx, 28);
+  ctx.page.drawText(title, {
+    x: PDF_PAGE.margin,
+    y: ctx.y,
+    size: 12,
+    font: ctx.fonts.display,
+    color: PDF_THEME.ink,
+  });
+  ctx.y -= 6;
+  ctx.page.drawRectangle({
+    x: PDF_PAGE.margin,
+    y: ctx.y,
+    width: 28,
+    height: 2,
+    color: PDF_THEME.celadon,
+  });
+  ctx.y -= 14;
+
+  for (const step of steps) {
+    const fo = isFastenOffRound(step);
+    const text = fo
+      ? step.instructions.replace(/\s*\(\d+\)\s*$/g, "").trim() || "Fasten off"
+      : step.instructions;
+    // Bullet lines instead of a false Rnd/Row table
+    drawParagraph(ctx, `•  ${text}`, { size: 10.5 });
+  }
+  drawSpacer(ctx, 8);
+}
+
+function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
+  if (isRedundantNoteComponent(component)) return;
+
+  const mode = detectConstructionMode(component);
+  if (mode === "note") {
+    // Eye details / embroidery notes — short prose, no fake Rnd table
+    const { title } = cleanComponentDisplayName(component.name, component.make);
+    drawComponentBanner(ctx, title, component.make);
+    for (const r of component.rounds || []) {
+      drawParagraph(ctx, r.instructions, { size: 10.5 });
+    }
+    drawSpacer(ctx, 12);
+    return;
+  }
+
+  const step = stepLabelForMode(mode);
+  const { title } = cleanComponentDisplayName(component.name, component.make);
+  const { main, accessories } = partitionComponentRounds(
+    component.rounds || []
+  );
+
+  drawComponentBanner(ctx, title, component.make);
+  if (component.notes?.trim()) {
+    drawParagraph(ctx, component.notes.trim(), {
+      size: 9.5,
+      color: PDF_THEME.muted,
+    });
+    drawSpacer(ctx, 6);
+  }
+
+  // Visuals use original component (helpers already exclude accessories)
+  drawComponentVisuals(ctx, component);
+
+  writeRoundTable(ctx, main, step);
+  drawSpacer(ctx, 8);
+
+  for (const acc of accessories) {
+    writeAccessoryBlock(ctx, acc.title, acc.steps);
+  }
+
+  drawSpacer(ctx, 10);
 }
 
 export async function buildPatternPdf(
