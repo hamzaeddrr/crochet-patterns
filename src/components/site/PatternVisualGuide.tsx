@@ -3,6 +3,7 @@ import {
   cleanComponentDisplayName,
   isCrochetedComponent,
   isDetailComponent,
+  isFastenOffRound,
   stitchBearingRounds,
   stepLabelForMode,
   detectConstructionMode,
@@ -202,8 +203,9 @@ export function PatternPartsDiagram({
   const parts = components.filter(isCrochetedComponent);
   const n = Math.max(parts.length, 1);
   const cx = 200;
-  const cy = 168;
-  const r = 78;
+  const cy = 200;
+  const orbit = 118;
+  const labelR = 168;
 
   return (
     <section className="overflow-hidden rounded-[1.75rem] border border-line bg-[#fffdf9]">
@@ -211,10 +213,12 @@ export function PatternPartsDiagram({
         <h2 className="font-display text-2xl text-ink sm:text-3xl">{title}</h2>
         <p className="mt-1 text-sm text-muted">{subtitle}</p>
       </div>
-      <div className="grid gap-4 p-4 sm:grid-cols-[1.2fr_0.8fr] sm:p-6">
-        <div className="relative overflow-hidden rounded-[1.35rem] bg-[radial-gradient(ellipse_at_50%_40%,rgba(217,107,82,0.1),transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(143,165,139,0.16),transparent_50%),#f3ebe0]">
+
+      {/* Diagram full-width so it stays readable */}
+      <div className="border-b border-line bg-[radial-gradient(ellipse_at_50%_40%,rgba(217,107,82,0.12),transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(143,165,139,0.18),transparent_50%),#f3ebe0] px-3 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto w-full max-w-lg">
           <svg
-            viewBox="0 0 400 320"
+            viewBox="0 0 400 400"
             className="h-auto w-full"
             role="img"
             aria-label={title}
@@ -222,132 +226,133 @@ export function PatternPartsDiagram({
             <circle
               cx={cx}
               cy={cy}
-              r={62}
+              r={72}
               fill="#faf7f2"
               stroke="#d96b52"
-              strokeWidth="2.5"
+              strokeWidth="3"
             />
             <text
               x={cx}
-              y={cy - 4}
+              y={cy - 6}
               textAnchor="middle"
               className="fill-ink"
-              style={{ fontSize: 13, fontWeight: 700 }}
+              style={{ fontSize: 15, fontWeight: 700 }}
             >
               {finishedLabel}
             </text>
             <text
               x={cx}
-              y={cy + 14}
+              y={cy + 16}
               textAnchor="middle"
-              style={{ fontSize: 11, fill: "#6e655e" }}
+              style={{ fontSize: 12, fill: "#6e655e" }}
             >
-              {objectLabel.length > 22
-                ? `${objectLabel.slice(0, 20)}…`
+              {objectLabel.length > 24
+                ? `${objectLabel.slice(0, 22)}…`
                 : objectLabel}
             </text>
 
             {parts.map((part, i) => {
               const angle = -Math.PI / 2 + (i / n) * Math.PI * 2;
-              const px = cx + Math.cos(angle) * r;
-              const py = cy + Math.sin(angle) * r;
-              const lx = cx + Math.cos(angle) * 128;
-              const ly = cy + Math.sin(angle) * 118;
+              const px = cx + Math.cos(angle) * orbit;
+              const py = cy + Math.sin(angle) * orbit;
+              const lx = cx + Math.cos(angle) * labelR;
+              const ly = cy + Math.sin(angle) * labelR;
               const color = ACCENTS[i % ACCENTS.length];
+              const { title: partTitle } = cleanComponentDisplayName(
+                part.name,
+                part.make
+              );
+              const short =
+                partTitle.length > 16
+                  ? `${partTitle.slice(0, 14)}…`
+                  : partTitle;
               return (
                 <g key={part.id}>
                   <line
-                    x1={cx + Math.cos(angle) * 62}
-                    y1={cy + Math.sin(angle) * 62}
+                    x1={cx + Math.cos(angle) * 72}
+                    y1={cy + Math.sin(angle) * 72}
                     x2={px}
                     y2={py}
                     stroke={color}
-                    strokeWidth="1.5"
-                    strokeDasharray="4 3"
-                    opacity="0.7"
+                    strokeWidth="2"
+                    strokeDasharray="5 4"
+                    opacity="0.75"
                   />
-                  <circle cx={px} cy={py} r="18" fill={color} opacity="0.95" />
+                  <circle cx={px} cy={py} r="22" fill={color} opacity="0.95" />
                   <text
                     x={px}
-                    y={py + 4}
+                    y={py + 5}
                     textAnchor="middle"
                     fill="#fffaf7"
-                    style={{ fontSize: 11, fontWeight: 700 }}
+                    style={{ fontSize: 13, fontWeight: 700 }}
                   >
                     {i + 1}
                   </text>
                   <text
                     x={lx}
-                    y={ly}
+                    y={ly + 4}
                     textAnchor="middle"
-                    style={{ fontSize: 11, fontWeight: 600, fill: "#2b2522" }}
+                    style={{ fontSize: 12, fontWeight: 600, fill: "#2b2522" }}
                   >
-                    {(() => {
-                      const { title } = cleanComponentDisplayName(
-                        part.name,
-                        part.make
-                      );
-                      return title.length > 14
-                        ? `${title.slice(0, 12)}…`
-                        : title;
-                    })()}
+                    {short}
                   </text>
                 </g>
               );
             })}
           </svg>
         </div>
-
-        <ul className="flex flex-col justify-center gap-2">
-          {parts.map((part, i) => {
-            const color = ACCENTS[i % ACCENTS.length];
-            const { title, makeSuffix } = cleanComponentDisplayName(
-              part.name,
-              part.make
-            );
-            const mode = detectConstructionMode(part);
-            const step = stepLabelForMode(mode);
-            const rounds = part.rounds.length;
-            const content = (
-              <>
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-bone"
-                  style={{ background: color }}
-                >
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold text-ink">
-                    {title}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {rounds > 0
-                      ? `${rounds} ${step === "Row" ? "rows" : "rnds"}`
-                      : part.construction}
-                    {makeSuffix}
-                  </span>
-                </span>
-              </>
-            );
-            return (
-              <li key={part.id}>
-                {interactive ? (
-                  <a
-                    href={`#part-${part.id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5 transition hover:border-apricot/40 hover:bg-elevated"
-                  >
-                    {content}
-                  </a>
-                ) : (
-                  <div className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5">
-                    {content}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
       </div>
+
+      <ul className="grid gap-2 p-4 sm:grid-cols-2 sm:p-5">
+        {parts.map((part, i) => {
+          const color = ACCENTS[i % ACCENTS.length];
+          const { title: partTitle, makeSuffix } = cleanComponentDisplayName(
+            part.name,
+            part.make
+          );
+          const mode = detectConstructionMode(part);
+          const step = stepLabelForMode(mode);
+          const { main } = partitionComponentRounds(part.rounds || []);
+          const stitchRounds = main.filter((r) => !isFastenOffRound(r)).length;
+          const content = (
+            <>
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-bone"
+                style={{ background: color }}
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold text-ink">
+                  {partTitle}
+                </span>
+                <span className="text-xs text-muted">
+                  {stitchRounds > 0
+                    ? `${stitchRounds} ${step === "Row" ? "rows" : "rnds"}`
+                    : part.construction}
+                  {makeSuffix}
+                </span>
+              </span>
+            </>
+          );
+          return (
+            <li key={part.id}>
+              {interactive ? (
+                <a
+                  href={`#part-${part.id}`}
+                  className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5 transition hover:border-apricot/40 hover:bg-elevated"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div className="flex items-center gap-3 rounded-2xl border border-line/80 bg-bg/60 px-3 py-2.5">
+                  {content}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
