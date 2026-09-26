@@ -426,9 +426,11 @@ function guessCssColor(name: string): string {
 export function StitchCountChart({
   component,
   title,
+  highlightRound,
 }: {
   component: PatternComponent;
   title: string;
+  highlightRound?: number;
 }) {
   const mode = detectConstructionMode(component);
   if (mode === "note") return null;
@@ -504,17 +506,42 @@ export function StitchCountChart({
           strokeLinecap="round"
         />
         {coords.map((c, i) => {
+          const on = highlightRound === c.x;
           const labelEvery =
-            points.length <= 8 || i === 0 || i === points.length - 1 || i % 4 === 0;
+            points.length <= 8 ||
+            i === 0 ||
+            i === points.length - 1 ||
+            i % 4 === 0 ||
+            on;
           return (
             <g key={c.x}>
-              <circle cx={c.px} cy={c.py} r="3.2" fill="#c4573f" />
+              {on ? (
+                <circle
+                  cx={c.px}
+                  cy={c.py}
+                  r="9"
+                  fill="none"
+                  stroke="#d96b52"
+                  strokeWidth="1.5"
+                  opacity="0.4"
+                />
+              ) : null}
+              <circle
+                cx={c.px}
+                cy={c.py}
+                r={on ? 5 : 3.2}
+                fill={on ? "#d96b52" : "#c4573f"}
+              />
               {labelEvery ? (
                 <text
                   x={c.px}
                   y={c.py - 8}
                   textAnchor="middle"
-                  style={{ fontSize: 9, fill: "#6e655e", fontWeight: 700 }}
+                  style={{
+                    fontSize: 9,
+                    fill: on ? "#d96b52" : "#6e655e",
+                    fontWeight: 700,
+                  }}
                 >
                   {c.y}
                 </text>

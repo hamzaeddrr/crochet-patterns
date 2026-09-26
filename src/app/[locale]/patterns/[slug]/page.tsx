@@ -17,17 +17,11 @@ import {
   PatternColorLegend,
   PatternMakePath,
   PatternPartsDiagram,
-  StitchCountChart,
 } from "@/components/site/PatternVisualGuide";
 import { CrochetStitchDiagram } from "@/components/site/CrochetStitchDiagram";
 import {
   cleanComponentDisplayName,
-  detectConstructionMode,
   isCrochetedComponent,
-  isFastenOffRound,
-  isRedundantNoteComponent,
-  partitionComponentRounds,
-  stepLabelForMode,
 } from "@/lib/crochet/construction";
 import { deriveTechniques } from "@/lib/crochet/techniques";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
@@ -35,11 +29,7 @@ import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 import { Reveal } from "@/components/site/Reveal";
 import { SavePatternButton } from "@/components/site/SavePatternButton";
 import { TrackRecentView } from "@/components/site/TrackRecentView";
-import {
-  RoundDoneButton,
-  RoundJumpBar,
-} from "@/components/site/RoundJumpBar";
-import { buildJumpChips, roundAnchor } from "@/lib/crochet/jump-chips";
+import { PatternStudioWorkspace } from "@/components/site/PatternStudioWorkspace";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -141,29 +131,6 @@ export default async function PatternDetailPage({
 
   const pdfHref = `/api/patterns/${pattern.slug}/pdf`;
   const techniques = deriveTechniques(pattern.designSpec, pattern.content);
-
-  const jumpChips = unlocked
-    ? buildJumpChips(
-        pattern.content.components
-          .filter((c) => !isRedundantNoteComponent(c))
-          .map((c) => {
-            const mode = detectConstructionMode(c);
-            if (mode === "note") {
-              return { componentId: c.id, rounds: [], stepLabel: "Step" };
-            }
-            const stepLabel = stepLabelForMode(mode);
-            const { main } = partitionComponentRounds(c.rounds || []);
-            return {
-              componentId: c.id,
-              stepLabel,
-              rounds: main.map((r) => ({
-                round: r.round,
-                fo: isFastenOffRound(r),
-              })),
-            };
-          })
-      )
-    : [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-32 sm:px-6">
@@ -444,173 +411,31 @@ export default async function PatternDetailPage({
 
       {unlocked ? (
         <>
-          <section className="mt-16" id="instructions">
-            <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
-            <div className="mt-6">
-              <RoundJumpBar
-                chips={jumpChips}
-                patternId={pattern.id}
-                title={t("jumpToRound")}
-                progressTemplate={String(t.raw("progressSummary"))}
-              />
-            </div>
-            <div className="mt-2 space-y-6">
-              {pattern.content.components.map((component) => {
-                if (isRedundantNoteComponent(component)) return null;
-
-                const mode = detectConstructionMode(component);
-                const stepLabel = stepLabelForMode(mode);
-                const { title, makeSuffix } = cleanComponentDisplayName(
-                  component.name,
-                  component.make
-                );
-                const showCharts = mode !== "note";
-                const { main, accessories } = partitionComponentRounds(
-                  component.rounds || []
-                );
-                return (
-                <div
-                  key={component.id}
-                  id={`part-${component.id}`}
-                  className="scroll-mt-36 overflow-hidden rounded-[1.5rem] border border-line bg-bg"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 bg-apricot px-5 py-4">
-                    <h3 className="font-display text-xl text-bone">
-                      {title}
-                      {makeSuffix}
-                    </h3>
-                    {showCharts ? (
-                      <a
-                        href="#instructions"
-                        className="text-xs font-bold uppercase tracking-wider text-bone/80 hover:text-bone"
-                      >
-                        {t("jumpToRounds")}
-                      </a>
-                    ) : null}
-                  </div>
-                  {showCharts ? (
-                    <>
-                      <StitchCountChart
-                        component={component}
-                        title={
-                          mode === "row"
-                            ? t("stitchChartRows")
-                            : t("stitchChart")
-                        }
-                      />
-                      <CrochetStitchDiagram
-                        component={component}
-                        title={t("stitchDiagramTitle")}
-                        subtitle={t("stitchDiagramSubtitle")}
-                        flatSubtitle={t("stitchDiagramFlatSubtitle")}
-                        roundLabel={t("stitchDiagramRound")}
-                        rowLabel={t("stitchDiagramRow")}
-                        writtenOrderLabel={t("stitchDiagramWritten")}
-                        legendLabel={t("stitchDiagramLegend")}
-                      />
-                    </>
-                  ) : null}
-                  {mode === "note" ? (
-                    <div className="space-y-3 px-5 py-4 text-sm text-ink">
-                      {(component.rounds || []).map((r) => (
-                        <p key={r.round}>{r.instructions}</p>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-elevated text-muted">
-                            <tr>
-                              <th className="px-5 py-3 font-semibold">
-                                {stepLabel}
-                              </th>
-                              <th className="px-5 py-3 font-semibold">
-                                Instructions
-                              </th>
-                              <th className="px-5 py-3 font-semibold">Count</th>
-                              <th className="px-5 py-3 font-semibold">
-                                {t("progressCol")}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {main.map((r, idx) => {
-                              const fo = isFastenOffRound(r);
-                              const anchor = roundAnchor(
-                                component.id,
-                                r.round,
-                                fo
-                              );
-                              return (
-                                <tr
-                                  key={`main-${r.round}-${idx}`}
-                                  id={anchor}
-                                  className="scroll-mt-40 border-t border-line"
-                                >
-                                  <td className="px-5 py-3 font-display text-lg text-gold">
-                                    {fo ? "FO" : r.round}
-                                  </td>
-                                  <td className="px-5 py-3">
-                                    {r.instructions}
-                                  </td>
-                                  <td className="px-5 py-3 font-bold">
-                                    {!fo &&
-                                    typeof r.result === "number" &&
-                                    r.result > 0
-                                      ? r.result
-                                      : "—"}
-                                  </td>
-                                  <td className="px-5 py-3">
-                                    {!fo ? (
-                                      <RoundDoneButton
-                                        patternId={pattern.id}
-                                        componentId={component.id}
-                                        round={r.round}
-                                        markLabel={t("markComplete")}
-                                        doneLabel={t("markedComplete")}
-                                      />
-                                    ) : null}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      {accessories
-                        .filter(
-                          (acc) =>
-                            !acc.steps.every((s) =>
-                              /\bassembl\w*|sew together|closing\b/i.test(
-                                s.instructions || ""
-                              )
-                            )
-                        )
-                        .map((acc) => (
-                        <div
-                          key={acc.title}
-                          className="border-t border-line px-5 py-4"
-                        >
-                          <h4 className="font-display text-lg text-ink">
-                            {acc.title}
-                          </h4>
-                          <ul className="mt-2 space-y-2 text-sm text-muted">
-                            {acc.steps.map((s, i) => (
-                              <li key={`${acc.title}-${i}`}>
-                                {s.instructions}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-                );
-              })}
-            </div>
-          </section>
+          <PatternStudioWorkspace
+            patternId={pattern.id}
+            components={pattern.content.components}
+            labels={{
+              instructions: t("instructions"),
+              jumpToRound: t("jumpToRound"),
+              progressTemplate: String(t.raw("progressSummary")),
+              markComplete: t("markComplete"),
+              markedComplete: t("markedComplete"),
+              next: t("studioNext"),
+              previous: t("studioPrevious"),
+              focusHint: t("studioFocusHint"),
+              roundOf: t("studioRoundOf"),
+              accessories: t("studioAccessories"),
+              stitchChart: t("stitchChart"),
+              stitchChartRows: t("stitchChartRows"),
+              stitchDiagramTitle: t("stitchDiagramTitle"),
+              stitchDiagramSubtitle: t("stitchDiagramSubtitle"),
+              stitchDiagramFlatSubtitle: t("stitchDiagramFlatSubtitle"),
+              stitchDiagramRound: t("stitchDiagramRound"),
+              stitchDiagramRow: t("stitchDiagramRow"),
+              stitchDiagramWritten: t("stitchDiagramWritten"),
+              stitchDiagramLegend: t("stitchDiagramLegend"),
+            }}
+          />
 
           {pattern.content.assembly.length > 0 && (
             <section

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PatternComponent, PatternRound } from "@/types";
 import {
   collapseSymbolRuns,
@@ -387,6 +387,8 @@ export function CrochetStitchDiagram({
   writtenOrderLabel,
   legendLabel,
   previewOnly,
+  activeRoundNumber,
+  onActiveRoundNumberChange,
 }: {
   component: PatternComponent;
   title: string;
@@ -397,6 +399,9 @@ export function CrochetStitchDiagram({
   writtenOrderLabel: string;
   legendLabel: string;
   previewOnly?: boolean;
+  /** Controlled round selection (studio workspace). */
+  activeRoundNumber?: number;
+  onActiveRoundNumberChange?: (round: number) => void;
 }) {
   const mode = detectConstructionMode(component);
   const flat = mode === "row";
@@ -408,12 +413,33 @@ export function CrochetStitchDiagram({
     [component.rounds, mode]
   );
 
-  const [activeRound, setActiveRound] = useState(
+  const [internalRound, setInternalRound] = useState(
     () => chartableRounds[0]?.round ?? component.rounds[0]?.round ?? 1
   );
 
+  const activeRound =
+    typeof activeRoundNumber === "number" ? activeRoundNumber : internalRound;
+
+  function selectRound(n: number) {
+    if (onActiveRoundNumberChange) onActiveRoundNumberChange(n);
+    else setInternalRound(n);
+  }
+
+  // Keep internal selection valid when component changes
+  useEffect(() => {
+    if (typeof activeRoundNumber === "number") return;
+    if (
+      chartableRounds.length &&
+      !chartableRounds.some((r) => r.round === internalRound)
+    ) {
+      setInternalRound(chartableRounds[0].round);
+    }
+  }, [chartableRounds, internalRound, activeRoundNumber]);
+
   const round: PatternRound | undefined =
-    chartableRounds.find((r) => r.round === activeRound) || chartableRounds[0];
+    chartableRounds.find((r) => r.round === activeRound) ||
+    chartableRounds.find((r) => r.round === internalRound) ||
+    chartableRounds[0];
 
   const symbols = useMemo(
     () => expandOperationsToSymbols(round?.operations),
@@ -451,7 +477,7 @@ export function CrochetStitchDiagram({
               <button
                 key={r.round}
                 type="button"
-                onClick={() => setActiveRound(r.round)}
+                onClick={() => selectRound(r.round)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition ${
                   on
                     ? "bg-apricot text-bone"
