@@ -41,7 +41,6 @@ export default async function LearnTechniquePage({
   const showSheet = Boolean(
     technique.showSheetOnPage && technique.sheetPath
   );
-  const hasBothVideos = Boolean(embed && shortEmbed);
   const others = (await getPublishedTechniques()).filter(
     (x) => x.id !== technique.id
   );
@@ -66,46 +65,48 @@ export default async function LearnTechniquePage({
         </p>
       </header>
 
-      {embed || shortEmbed ? (
+      {/* Landscape tutorial — full width when present */}
+      {embed ? (
+        <div className="mt-8 mx-auto w-full max-w-4xl overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src={embed}
+              title={pickLocalized(technique.title, locale)}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+          <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+        </div>
+      ) : null}
+
+      {/* Short + sheet: sheet left, vertical Short right (as in studio mockup) */}
+      {shortEmbed && showSheet ? (
         <div
           className={cn(
-            "mt-8 gap-6",
-            hasBothVideos
-              ? "grid items-start lg:grid-cols-[minmax(0,1fr)_auto]"
-              : "flex flex-col items-stretch"
+            "grid items-stretch gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.55fr)]",
+            embed ? "mt-6" : "mt-8"
           )}
         >
-          {embed ? (
-            <div
-              className={cn(
-                "overflow-hidden rounded-[1.25rem] border border-line bg-ink/5",
-                !hasBothVideos && "mx-auto w-full max-w-4xl"
-              )}
-            >
-              {/* Normal / landscape tutorial — always 16:9 */}
-              <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  src={embed}
-                  title={pickLocalized(technique.title, locale)}
-                  className="absolute inset-0 h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
-              </div>
-              <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
-            </div>
-          ) : null}
+          <figure className="overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={technique.sheetPath!}
+              alt={t("sheetAlt", {
+                title: pickLocalized(technique.title, locale),
+              })}
+              className="mx-auto block h-full max-h-[min(88vh,920px)] w-full object-contain object-top"
+            />
+            <figcaption className="border-t border-line/70 px-4 py-2 text-center text-xs text-muted">
+              {t("sheetCaption")}
+            </figcaption>
+          </figure>
 
-          {shortEmbed ? (
-            <div
-              className={cn(
-                "mx-auto w-full max-w-[280px] overflow-hidden rounded-[1.35rem] border border-line bg-ink shadow-sm sm:max-w-[300px]",
-                hasBothVideos && "lg:mx-0"
-              )}
-            >
-              {/* Vertical / Shorts — always 9:16 phone frame */}
+          <div className="mx-auto flex w-full max-w-[320px] flex-col justify-center lg:mx-0 lg:max-w-none">
+            <div className="overflow-hidden rounded-[1.35rem] border border-line bg-ink shadow-sm">
               <div
                 className="relative w-full bg-black"
                 style={{ paddingBottom: "177.78%" }}
@@ -124,15 +125,46 @@ export default async function LearnTechniquePage({
                 {t("shortsCredit")}
               </p>
             </div>
-          ) : null}
+          </div>
         </div>
       ) : null}
 
-      {showSheet ? (
+      {/* Short alone (no sheet on page) */}
+      {shortEmbed && !showSheet ? (
+        <div
+          className={cn(
+            "mx-auto w-full max-w-[300px]",
+            embed ? "mt-6" : "mt-8"
+          )}
+        >
+          <div className="overflow-hidden rounded-[1.35rem] border border-line bg-ink shadow-sm">
+            <div
+              className="relative w-full bg-black"
+              style={{ paddingBottom: "177.78%" }}
+            >
+              <iframe
+                src={shortEmbed}
+                title={`${pickLocalized(technique.title, locale)} — Short`}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+            <p className="bg-bg px-4 py-2 text-center text-xs text-muted">
+              {t("shortsCredit")}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Sheet alone (no Short) — full width */}
+      {showSheet && !shortEmbed ? (
         <figure
           className={cn(
             "overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]",
-            embed || shortEmbed ? "mt-6" : "mt-8"
+            embed ? "mt-6" : "mt-8"
           )}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

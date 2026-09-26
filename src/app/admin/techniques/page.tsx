@@ -1102,7 +1102,8 @@ export default function AdminTechniquesPage() {
                       })
                     }
                   />
-                  Show full sheet on /learn page (beside video when both exist)
+                  Show full sheet on /learn page (with a Short: sheet left +
+                  video right; otherwise full width)
                 </label>
               ) : null}
             </div>
