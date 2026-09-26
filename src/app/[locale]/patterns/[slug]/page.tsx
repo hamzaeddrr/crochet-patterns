@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -31,23 +30,9 @@ import { Reveal } from "@/components/site/Reveal";
 import { SavePatternButton } from "@/components/site/SavePatternButton";
 import { TrackRecentView } from "@/components/site/TrackRecentView";
 import { PatternStudioWorkspace } from "@/components/site/PatternStudioWorkspace";
+import { Pattern3DAssemblyLazy } from "@/components/site/Pattern3DAssemblyLazy";
 
 export const dynamic = "force-dynamic";
-
-const Pattern3DAssembly = nextDynamic(
-  () =>
-    import("@/components/site/Pattern3DAssembly").then(
-      (m) => m.Pattern3DAssembly
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex aspect-[16/10] items-center justify-center rounded-[1.5rem] border border-line bg-[#f3ebe0] text-sm text-muted">
-        Loading 3D studio…
-      </div>
-    ),
-  }
-);
 
 export async function generateMetadata({
   params,
@@ -323,7 +308,7 @@ export default async function PatternDetailPage({
       </Reveal>
 
       <Reveal className="mt-6 sm:mt-8" delay={40}>
-        <Pattern3DAssembly
+        <Pattern3DAssemblyLazy
           components={pattern.content.components}
           colors={pattern.designSpec.colors || []}
           objectLabel={pattern.designSpec.object.replace(/_/g, " ")}
