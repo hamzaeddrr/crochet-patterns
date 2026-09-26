@@ -74,6 +74,8 @@
     "stitchDiagramWritten": "Ordre écrit",
     "stitchDiagramLegend": "Légende",
     "stitchDiagramEmpty": "Pas d’opérations diagrammables pour cette pièce.",
+    "stitchDiagramEnlarge": "Agrandir",
+    "stitchDiagramClose": "Fermer",
     "savePattern": "Enregistrer",
     "savedPattern": "Enregistré",
     "jumpToRound": "Aller au rang",

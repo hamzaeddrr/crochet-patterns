@@ -53,6 +53,8 @@ export type StudioLabels = {
   stitchDiagramRow: string;
   stitchDiagramWritten: string;
   stitchDiagramLegend: string;
+  stitchDiagramEnlarge: string;
+  stitchDiagramClose: string;
   modeDashboard: string;
   modeFocus: string;
   modeList: string;
@@ -390,6 +392,8 @@ function VisualPanels({
             rowLabel={labels.stitchDiagramRow}
             writtenOrderLabel={labels.stitchDiagramWritten}
             legendLabel={labels.stitchDiagramLegend}
+            enlargeLabel={labels.stitchDiagramEnlarge}
+            closeLabel={labels.stitchDiagramClose}
             activeRoundNumber={activeRoundNumber}
             onActiveRoundNumberChange={onRoundChange}
           />

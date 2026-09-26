@@ -74,6 +74,8 @@
     "stitchDiagramWritten": "Written order",
     "stitchDiagramLegend": "Symbol key",
     "stitchDiagramEmpty": "No chartable stitch operations for this piece yet.",
+    "stitchDiagramEnlarge": "Enlarge",
+    "stitchDiagramClose": "Close",
     "savePattern": "Save pattern",
     "savedPattern": "Saved",
     "jumpToRound": "Jump to round",

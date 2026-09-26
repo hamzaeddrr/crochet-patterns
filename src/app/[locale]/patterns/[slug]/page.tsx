@@ -443,6 +443,8 @@ export default async function PatternDetailPage({
               stitchDiagramRow: t("stitchDiagramRow"),
               stitchDiagramWritten: t("stitchDiagramWritten"),
               stitchDiagramLegend: t("stitchDiagramLegend"),
+              stitchDiagramEnlarge: t("stitchDiagramEnlarge"),
+              stitchDiagramClose: t("stitchDiagramClose"),
               modeDashboard: t("studioModeDashboard"),
               modeFocus: t("studioModeFocus"),
               modeList: t("studioModeList"),
