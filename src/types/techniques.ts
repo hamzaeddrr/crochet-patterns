@@ -50,6 +50,8 @@ export interface Technique {
   youtubeEndSeconds?: number;
   /** Multi-panel storyboard before cropping. */
   sheetPath?: string;
+  /** Show the full storyboard sheet on the public /learn page. */
+  showSheetOnPage?: boolean;
   sheetCols: number;
   sheetRows: number;
   steps: TechniqueStep[];
@@ -80,6 +82,7 @@ export type TechniquePublic = Pick<
   | "youtubeStartSeconds"
   | "youtubeEndSeconds"
   | "sheetPath"
+  | "showSheetOnPage"
   | "sheetCols"
   | "sheetRows"
   | "steps"

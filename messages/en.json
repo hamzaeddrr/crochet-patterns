@@ -24,7 +24,11 @@
     "hasVideo": "Video",
     "back": "All techniques",
     "more": "More techniques",
-    "videoCredit": "Video embedded from YouTube. Opens in the player above."
+    "videoCredit": "Video embedded from YouTube. Opens in the player above.",
+    "stepsHeading": "Step by step",
+    "withPhotos": "with photos",
+    "sheetCaption": "Full storyboard sheet",
+    "sheetAlt": "Storyboard diagram for {title}"
   },
   "home": {
     "eyebrow": "Crochet patterns made to make",

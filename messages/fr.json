@@ -24,7 +24,11 @@
     "hasVideo": "Vidéo",
     "back": "Toutes les techniques",
     "more": "Autres techniques",
-    "videoCredit": "Vidéo intégrée depuis YouTube."
+    "videoCredit": "Vidéo intégrée depuis YouTube.",
+    "stepsHeading": "Pas à pas",
+    "withPhotos": "avec photos",
+    "sheetCaption": "Planche d’illustration complète",
+    "sheetAlt": "Planche illustrée pour {title}"
   },
   "home": {
     "eyebrow": "Des modèles au crochet à réaliser",

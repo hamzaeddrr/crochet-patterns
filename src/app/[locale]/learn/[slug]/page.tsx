@@ -9,6 +9,7 @@ import { youtubeEmbedUrl } from "@/lib/crochet/youtube";
 import { pickLocalized } from "@/types";
 import type { Locale } from "@/i18n/routing";
 import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,17 @@ export default async function LearnTechniquePage({
     startSeconds: technique.youtubeStartSeconds,
     endSeconds: technique.youtubeEndSeconds,
   });
+  const showSheet = Boolean(
+    technique.showSheetOnPage && technique.sheetPath
+  );
+  const hasMediaPair = Boolean(embed && showSheet);
   const others = (await getPublishedTechniques()).filter(
     (x) => x.id !== technique.id
   );
+  const stepsWithImages = technique.steps.filter((s) => s.imagePath).length;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-20 pt-28 sm:px-6">
       <Link
         href="/learn"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-ink"
@@ -47,7 +53,7 @@ export default async function LearnTechniquePage({
         {t("back")}
       </Link>
 
-      <header className="mt-6">
+      <header className="mt-6 max-w-3xl">
         <h1 className="font-display text-4xl text-ink sm:text-5xl">
           {pickLocalized(technique.title, locale)}
         </h1>
@@ -56,54 +62,114 @@ export default async function LearnTechniquePage({
         </p>
       </header>
 
-      {embed ? (
-        <div className="mt-8 overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
-          <div className="aspect-video w-full">
-            <iframe
-              src={embed}
-              title={pickLocalized(technique.title, locale)}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
-          <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+      {embed || showSheet ? (
+        <div
+          className={cn(
+            "mt-8 gap-5",
+            hasMediaPair
+              ? "grid lg:grid-cols-[1.15fr_0.85fr] lg:items-start"
+              : "grid"
+          )}
+        >
+          {embed ? (
+            <div className="overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
+              <div className="aspect-video w-full">
+                <iframe
+                  src={embed}
+                  title={pickLocalized(technique.title, locale)}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
+              <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+            </div>
+          ) : null}
+
+          {showSheet ? (
+            <figure className="overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={technique.sheetPath!}
+                alt={t("sheetAlt", {
+                  title: pickLocalized(technique.title, locale),
+                })}
+                className="mx-auto max-h-[min(70vh,520px)] w-full object-contain p-2 sm:p-3"
+              />
+              <figcaption className="border-t border-line/70 px-4 py-2 text-xs text-muted">
+                {t("sheetCaption")}
+              </figcaption>
+            </figure>
+          ) : null}
         </div>
       ) : null}
 
-      <ol className="mt-10 space-y-8">
-        {technique.steps.map((step, i) => (
-          <li key={i} className="grid gap-4 sm:grid-cols-[1.05fr_0.95fr] sm:items-start">
-            <div className="overflow-hidden rounded-[1.15rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]">
-              {step.imagePath ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={step.imagePath}
-                  alt=""
-                  className="aspect-[4/3] w-full object-contain"
-                />
-              ) : (
-                <div className="flex aspect-[4/3] items-center justify-center text-sm text-muted">
-                  {t("step")} {i + 1}
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
-                {t("step")} {i + 1}
-              </p>
-              <h2 className="mt-1 font-display text-2xl text-ink">
-                {pickLocalized(step.caption, locale)}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">
-                {pickLocalized(step.body, locale)}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
+      {technique.steps.length > 0 ? (
+        <section className="mt-12">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-2 border-b border-line pb-3">
+            <h2 className="font-display text-2xl text-ink sm:text-3xl">
+              {t("stepsHeading")}
+            </h2>
+            <p className="text-sm text-muted">
+              {technique.steps.length} {t("steps")}
+              {stepsWithImages
+                ? ` · ${stepsWithImages} ${t("withPhotos")}`
+                : ""}
+            </p>
+          </div>
+
+          <ol className="mx-auto max-w-4xl space-y-8">
+            {technique.steps.map((step, i) => {
+              const hasImage = Boolean(step.imagePath);
+              return (
+                <li
+                  key={i}
+                  className={cn(
+                    hasImage
+                      ? "grid gap-5 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:items-start"
+                      : "flex gap-4 border-b border-line/60 pb-7 last:border-b-0 last:pb-0"
+                  )}
+                >
+                  {hasImage ? (
+                    <div className="overflow-hidden rounded-[1.15rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={step.imagePath}
+                        alt=""
+                        className="aspect-[4/3] w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-apricot/15 font-display text-sm text-apricot">
+                      {i + 1}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    {hasImage ? (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                        {t("step")} {i + 1}
+                      </p>
+                    ) : null}
+                    <h3
+                      className={cn(
+                        "font-display text-ink",
+                        hasImage ? "mt-1 text-xl sm:text-2xl" : "text-xl"
+                      )}
+                    >
+                      {pickLocalized(step.caption, locale)}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">
+                      {pickLocalized(step.body, locale)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ) : null}
 
       {others.length > 0 ? (
         <section className="mt-16 border-t border-line pt-10">

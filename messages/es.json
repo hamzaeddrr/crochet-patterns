@@ -24,7 +24,11 @@
     "hasVideo": "Vídeo",
     "back": "Todas las técnicas",
     "more": "Más técnicas",
-    "videoCredit": "Vídeo incrustado desde YouTube."
+    "videoCredit": "Vídeo incrustado desde YouTube.",
+    "stepsHeading": "Paso a paso",
+    "withPhotos": "con fotos",
+    "sheetCaption": "Lámina completa del tutorial",
+    "sheetAlt": "Lámina ilustrada de {title}"
   },
   "home": {
     "eyebrow": "Patrones de crochet para crear",

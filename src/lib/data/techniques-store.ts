@@ -116,6 +116,7 @@ export function toPublic(t: Technique): TechniquePublic {
     youtubeStartSeconds: t.youtubeStartSeconds,
     youtubeEndSeconds: t.youtubeEndSeconds,
     sheetPath: t.sheetPath,
+    showSheetOnPage: t.showSheetOnPage,
     sheetCols: t.sheetCols,
     sheetRows: t.sheetRows,
     steps: t.steps,

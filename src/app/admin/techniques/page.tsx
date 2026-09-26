@@ -39,6 +39,7 @@ function emptyTechnique(): Technique {
     youtubeEndSeconds: undefined,
     sheetCols: 2,
     sheetRows: 2,
+    showSheetOnPage: false,
     steps: [],
     bonusImages: [],
     updatedAt: "",
@@ -1037,6 +1038,21 @@ export default function AdminTechniquesPage() {
                   Manual crop
                 </button>
               </div>
+              {form.sheetPath ? (
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.showSheetOnPage)}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        showSheetOnPage: e.target.checked,
+                      })
+                    }
+                  />
+                  Show full sheet on /learn page (beside video when both exist)
+                </label>
+              ) : null}
             </div>
 
             {msg &&
