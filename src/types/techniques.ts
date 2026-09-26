@@ -20,6 +20,21 @@ export interface TechniqueStep {
   imagePath?: string;
 }
 
+export interface TechniqueQaPanelResult {
+  stepIndex: number;
+  pass: boolean;
+  score: number;
+  failures: string[];
+  notes: string;
+}
+
+export interface TechniqueQaReport {
+  pass: boolean;
+  averageScore: number;
+  panels: TechniqueQaPanelResult[];
+  checkedAt: string;
+}
+
 export interface Technique {
   id: string;
   slug: string;
@@ -27,6 +42,9 @@ export interface Technique {
   key: TechniqueKey;
   sortOrder: number;
   published: boolean;
+  /** Set automatically when vision QA passes. */
+  technicallyApproved?: boolean;
+  qaReport?: TechniqueQaReport;
   title: LocalizedString;
   tip: LocalizedString;
   /** Full YouTube URL or 11-char id — optional. */
@@ -58,4 +76,5 @@ export type TechniquePublic = Pick<
   | "sheetCols"
   | "sheetRows"
   | "steps"
+  | "technicallyApproved"
 >;

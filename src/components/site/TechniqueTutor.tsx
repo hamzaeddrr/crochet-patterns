@@ -101,7 +101,9 @@ export function TechniqueTutor({
       ? (t.raw(`${msgKey}.frames`) as string[])
       : [];
 
-  const hasImages = Boolean(cms?.steps.some((s) => s.imagePath));
+  const hasImages = Boolean(
+    cms?.technicallyApproved && cms.steps.some((s) => s.imagePath)
+  );
   const frameTotal = cms
     ? Math.max(cms.steps.length, 1)
     : active

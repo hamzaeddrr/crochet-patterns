@@ -8,6 +8,7 @@ import {
   Sparkles,
   Trash2,
   Upload,
+  Wand2,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import type { Locale } from "@/i18n/routing";
@@ -174,6 +175,56 @@ export default function AdminTechniquesPage() {
     }
   }
 
+  async function autoIllustrate() {
+    if (!form.id) {
+      setMsg("Save the technique first");
+      return;
+    }
+    setBusy("auto");
+    setMsg(
+      "Auto illustrate: generate → crop → vision QA → retry if needed (can take a few minutes)…"
+    );
+    try {
+      const res = await fetch("/api/admin/techniques/auto-illustrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          techniqueId: form.id,
+          cols: form.sheetCols,
+          rows: form.sheetRows,
+          maxAttempts: 3,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { error?: string }).error || `Auto illustrate failed (${res.status})`
+        );
+      }
+      if (!data.technique) {
+        throw new Error("Auto illustrate returned no technique");
+      }
+      applyTechnique(data.technique);
+      const failBits =
+        data.qa && !data.approved
+          ? " · " +
+            (data.qa.panels || [])
+              .filter((p: { pass: boolean }) => !p.pass)
+              .map(
+                (p: { stepIndex: number; failures: string[] }) =>
+                  `S${p.stepIndex + 1}: ${(p.failures || []).join("; ")}`
+              )
+              .slice(0, 4)
+              .join(" | ")
+          : "";
+      setMsg((data.message || "Done") + failBits);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Auto illustrate failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function generateSheet() {
     if (!form.id) {
       setMsg("Save the technique first");
@@ -315,6 +366,7 @@ export default function AdminTechniquesPage() {
                 </span>
                 <span className="text-[11px] text-slate-500">
                   {t.key} · {t.published ? "live" : "draft"}
+                  {t.technicallyApproved ? " · QA✓" : ""}
                 </span>
               </span>
             </button>
@@ -431,6 +483,13 @@ export default function AdminTechniquesPage() {
             <h3 className="text-sm font-medium text-slate-200">
               Storyboard sheet (1 image → many steps)
             </h3>
+            <p className="text-xs text-slate-500">
+              Prefer <span className="text-slate-300">Auto illustrate</span>:
+              generates a Loopcraft-style sheet (DMC-like pedagogy, original art),
+              crops panels, then vision-QA checks hook entry, yarn strand, loop
+              count, stitch anatomy, hands, and yarn path — regenerates up to 3
+              times until it passes. Studio only uses images marked QA✓.
+            </p>
             <div className="flex flex-wrap gap-3">
               <label className="text-sm text-slate-400">
                 Cols
@@ -482,11 +541,22 @@ export default function AdminTechniquesPage() {
               <button
                 type="button"
                 disabled={!!busy || !form.id}
+                onClick={autoIllustrate}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+              >
+                <Wand2 className="h-4 w-4" />
+                {busy === "auto"
+                  ? "Auto illustrating…"
+                  : "Auto illustrate (QA loop)"}
+              </button>
+              <button
+                type="button"
+                disabled={!!busy || !form.id}
                 onClick={generateSheet}
                 className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
               >
                 <Sparkles className="h-4 w-4" />
-                {busy === "generate" ? "Generating…" : "Generate sheet"}
+                {busy === "generate" ? "Generating…" : "Generate sheet only"}
               </button>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
                 <Upload className="h-4 w-4" />
@@ -518,17 +588,43 @@ export default function AdminTechniquesPage() {
             (busy === "crop" ||
               busy === "generate" ||
               busy === "upload" ||
-              /crop|sheet|panel|upload|generat/i.test(msg)) ? (
+              busy === "auto" ||
+              /crop|sheet|panel|upload|generat|approv|QA|attempt/i.test(msg)) ? (
               <p
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm",
-                  /fail|error|could not|not found|required/i.test(msg)
+                  /fail|error|could not|not found|required|not approved/i.test(msg)
                     ? "bg-rose-950/50 text-rose-200"
                     : "bg-emerald-950/40 text-emerald-200"
                 )}
               >
                 {msg}
               </p>
+            ) : null}
+
+            {form.qaReport ? (
+              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-400">
+                <p className="font-medium text-slate-200">
+                  Last QA:{" "}
+                  {form.technicallyApproved ? (
+                    <span className="text-emerald-300">Approved</span>
+                  ) : (
+                    <span className="text-amber-300">Not approved</span>
+                  )}{" "}
+                  · avg {form.qaReport.averageScore}/100
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {form.qaReport.panels.map((p) => (
+                    <li key={p.stepIndex}>
+                      Step {p.stepIndex + 1}: {p.pass ? "pass" : "fail"} (
+                      {p.score})
+                      {!p.pass && p.failures?.length
+                        ? ` — ${p.failures.join("; ")}`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
 
             {form.sheetPath ? (

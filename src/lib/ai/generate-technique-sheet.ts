@@ -11,6 +11,10 @@ import {
   type FlareGenerateQuality,
 } from "@/lib/ai/flare-types";
 import { savePublicAsset } from "@/lib/storage/assets";
+import {
+  blueprintToPromptPanels,
+  getTechniqueBlueprint,
+} from "@/lib/crochet/technique-blueprints";
 import type { Technique } from "@/types/techniques";
 
 const STANDARD_SIZES = new Set([
@@ -47,32 +51,59 @@ function resolveSafeImageParams(
 export function buildTechniqueSheetPrompt(
   technique: Technique,
   cols: number,
-  rows: number
+  rows: number,
+  qaFeedback?: string
 ): string {
-  const panels = technique.steps
-    .slice(0, cols * rows)
-    .map((s, i) => `Panel ${i + 1}: ${s.body.en || s.caption.en}`)
-    .join("\n");
+  const bp = getTechniqueBlueprint(String(technique.key));
+  const panels = bp
+    ? blueprintToPromptPanels(bp)
+    : technique.steps
+        .slice(0, cols * rows)
+        .map((s, i) => `Panel ${i + 1}: ${s.body.en || s.caption.en}`)
+        .join("\n");
 
   return [
-    `Create ONE single illustration sheet for a crochet beginner tutorial: "${technique.title.en}".`,
-    `Layout: exact ${cols} columns × ${rows} rows equal panels in a clean grid, thin soft cream dividers between panels.`,
-    `Style: soft flat vector tutorial art like a yarn brand guide — cream background (#faf7f2), simple hands, silver crochet hook, warm apricot/tan yarn, clear readable stitches, consistent lighting and camera angle across every panel.`,
-    `CRITICAL: no letters, no numbers, no watermarks, no logos, no captions inside the image.`,
-    `Show only hands, hook, and yarn. Each panel is one sequential motion of the technique.`,
+    `Create ONE single illustration sheet for a crochet beginner tutorial: "${technique.title.en || bp?.title || technique.slug}".`,
+    `Layout: exact ${cols} columns × ${rows} rows equal panels in a clean grid, thin soft cream (#faf7f2) dividers between panels.`,
+    `Brand style (Loopcraft — original, do not copy any existing brand art): soft flat vector tutorial diagrams, peach/apricot yarn (#d96b52 / #c49a5a), silver metal crochet hook with a CLEAR hook throat and tip, simplified but anatomically plausible hands, consistent camera angle across all panels.`,
+    `Pedagogy: like a professional yarn-brand step guide — each panel is ONE motion; yarn path must read continuously left-to-right / top-to-bottom across panels.`,
+    `CRITICAL accuracy:`,
+    `- Show exactly where the hook enters (ring opening or both top loops of a stitch V).`,
+    `- Show which yarn strand is caught on the hook.`,
+    `- Show the correct number of loops on the hook for that step.`,
+    `- Stitches must look like crochet (V tops / short posts), not generic ribs or gears.`,
+    `- Hand poses must make the action physically possible.`,
+    `CRITICAL: no letters, numbers, watermarks, logos, or captions inside the image.`,
     panels,
-  ].join("\n");
+    qaFeedback
+      ? `CORRECTIONS FROM FAILED QA (must fix):\n${qaFeedback}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function generateTechniqueSheet(
   technique: Technique,
-  opts?: { cols?: number; rows?: number; customPrompt?: string }
+  opts?: {
+    cols?: number;
+    rows?: number;
+    customPrompt?: string;
+    qaFeedback?: string;
+  }
 ): Promise<{ sheetPath: string; promptUsed: string; model: string }> {
-  const cols = Math.max(1, opts?.cols ?? technique.sheetCols ?? 2);
-  const rows = Math.max(1, opts?.rows ?? technique.sheetRows ?? 2);
+  const bp = getTechniqueBlueprint(String(technique.key));
+  const cols = Math.max(
+    1,
+    opts?.cols ?? bp?.preferredCols ?? technique.sheetCols ?? 2
+  );
+  const rows = Math.max(
+    1,
+    opts?.rows ?? bp?.preferredRows ?? technique.sheetRows ?? 2
+  );
   const promptUsed =
     opts?.customPrompt?.trim() ||
-    buildTechniqueSheetPrompt(technique, cols, rows);
+    buildTechniqueSheetPrompt(technique, cols, rows, opts?.qaFeedback);
 
   const openai = await getOpenAI();
   const model = await resolveImageModel();

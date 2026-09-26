@@ -366,6 +366,7 @@ export function toPublic(t: Technique): TechniquePublic {
     sheetCols: t.sheetCols,
     sheetRows: t.sheetRows,
     steps: t.steps,
+    technicallyApproved: t.technicallyApproved,
   };
 }
 
