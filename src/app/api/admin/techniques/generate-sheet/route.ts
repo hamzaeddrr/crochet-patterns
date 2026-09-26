@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTechniqueById, patchTechnique } from "@/lib/data/techniques-store";
+import { getTechniqueById, upsertTechnique } from "@/lib/data/techniques-store";
 import { generateTechniqueSheet } from "@/lib/ai/generate-technique-sheet";
 
 export const runtime = "nodejs";
@@ -24,14 +24,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const cols = body.cols ?? technique.sheetCols;
-    const rows = body.rows ?? technique.sheetRows;
+    const cols = Math.max(1, Number(body.cols) || technique.sheetCols || 2);
+    const rows = Math.max(1, Number(body.rows) || technique.sheetRows || 2);
     const { sheetPath, promptUsed, model } = await generateTechniqueSheet(
       technique,
       { cols, rows, customPrompt: body.customPrompt }
     );
 
-    const updated = await patchTechnique(technique.id, {
+    const updated = await upsertTechnique({
+      ...technique,
+      id: technique.id,
       sheetPath,
       sheetCols: cols,
       sheetRows: rows,

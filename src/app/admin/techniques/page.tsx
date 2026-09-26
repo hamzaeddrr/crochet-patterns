@@ -56,15 +56,28 @@ export default function AdminTechniquesPage() {
     [list, selectedId]
   );
 
-  async function load() {
+  async function load(opts?: { keepForm?: boolean }) {
     const res = await fetch("/api/admin/techniques");
     const data = await res.json();
     const techniques = (data.techniques || []) as Technique[];
     setList(techniques);
+    if (opts?.keepForm) return;
     if (selectedId) {
       const still = techniques.find((t) => t.id === selectedId);
       if (still) setForm(still);
     }
+  }
+
+  function applyTechnique(technique: Technique) {
+    setForm(technique);
+    setSelectedId(technique.id);
+    setList((prev) => {
+      const idx = prev.findIndex((t) => t.id === technique.id);
+      if (idx < 0) return [...prev, technique].sort((a, b) => a.sortOrder - b.sortOrder);
+      const next = [...prev];
+      next[idx] = technique;
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -112,10 +125,8 @@ export default function AdminTechniquesPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
-      setForm(data.technique);
-      setSelectedId(data.technique.id);
+      applyTechnique(data.technique);
       setMsg("Saved");
-      await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -134,7 +145,7 @@ export default function AdminTechniquesPage() {
     setSelectedId(null);
     setForm(emptyTechnique());
     setBusy(null);
-    await load();
+    await load({ keepForm: true });
   }
 
   async function uploadSheet(file: File) {
@@ -154,9 +165,8 @@ export default function AdminTechniquesPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
-      setForm(data.technique);
-      setMsg("Sheet uploaded");
-      await load();
+      applyTechnique(data.technique);
+      setMsg("Sheet uploaded — set cols/rows, then Crop to steps");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -184,9 +194,9 @@ export default function AdminTechniquesPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generate failed");
-      setForm(data.technique);
-      setMsg(`Sheet generated (${data.model})`);
-      await load();
+      if (!data.technique) throw new Error("Generate returned no technique");
+      applyTechnique(data.technique);
+      setMsg(`Sheet generated (${data.model}) — click Crop to steps`);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Generate failed");
     } finally {
@@ -195,7 +205,14 @@ export default function AdminTechniquesPage() {
   }
 
   async function cropSheet() {
-    if (!form.id) return;
+    if (!form.id) {
+      setMsg("Save the technique first");
+      return;
+    }
+    if (!form.sheetPath) {
+      setMsg("Generate or upload a sheet first");
+      return;
+    }
     setBusy("crop");
     setMsg("Cropping panels…");
     try {
@@ -206,13 +223,28 @@ export default function AdminTechniquesPage() {
           techniqueId: form.id,
           cols: form.sheetCols,
           rows: form.sheetRows,
+          sheetPath: form.sheetPath,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Crop failed");
-      setForm(data.technique);
-      setMsg(`Cropped ${data.paths?.length || 0} step images`);
-      await load();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { error?: string }).error || `Crop failed (${res.status})`
+        );
+      }
+      if (!data.technique) {
+        throw new Error("Crop returned no technique data");
+      }
+      applyTechnique(data.technique);
+      const n = Array.isArray(data.paths) ? data.paths.length : 0;
+      const withImg = (data.technique.steps || []).filter(
+        (s: { imagePath?: string }) => s.imagePath
+      ).length;
+      setMsg(
+        n
+          ? `Cropped ${n} panels → ${withImg} steps now have images`
+          : "Crop finished but no paths returned"
+      );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Crop failed");
     } finally {
@@ -482,6 +514,23 @@ export default function AdminTechniquesPage() {
               </button>
             </div>
 
+            {msg &&
+            (busy === "crop" ||
+              busy === "generate" ||
+              busy === "upload" ||
+              /crop|sheet|panel|upload|generat/i.test(msg)) ? (
+              <p
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm",
+                  /fail|error|could not|not found|required/i.test(msg)
+                    ? "bg-rose-950/50 text-rose-200"
+                    : "bg-emerald-950/40 text-emerald-200"
+                )}
+              >
+                {msg}
+              </p>
+            ) : null}
+
             {form.sheetPath ? (
               <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -591,7 +640,18 @@ export default function AdminTechniquesPage() {
               </button>
             ) : null}
             {msg ? (
-              <p className="text-sm text-slate-400">{msg}</p>
+              <p
+                className={cn(
+                  "w-full rounded-lg px-3 py-2 text-sm sm:w-auto",
+                  /fail|error|could not|not found|required/i.test(msg)
+                    ? "bg-rose-950/50 text-rose-200"
+                    : /cropp|saved|generated|uploaded|panels/i.test(msg)
+                      ? "bg-emerald-950/40 text-emerald-200"
+                      : "bg-slate-800 text-slate-300"
+                )}
+              >
+                {msg}
+              </p>
             ) : null}
             {selected ? (
               <a

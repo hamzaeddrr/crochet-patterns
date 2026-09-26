@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTechniqueById, patchTechnique } from "@/lib/data/techniques-store";
+import { getTechniqueById, upsertTechnique } from "@/lib/data/techniques-store";
 import { cropSheetToStepImages } from "@/lib/crochet/crop-sheet";
 
 export const runtime = "nodejs";
@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
       techniqueId?: string;
       cols?: number;
       rows?: number;
+      /** Prefer form sheet path — Blob doc reads can lag after generate/upload. */
+      sheetPath?: string;
     };
     if (!body.techniqueId) {
       return NextResponse.json(
@@ -22,29 +24,49 @@ export async function POST(request: NextRequest) {
     if (!technique) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if (!technique.sheetPath) {
+
+    const sheetPath = (body.sheetPath || technique.sheetPath || "").trim();
+    if (!sheetPath) {
       return NextResponse.json(
         { error: "Upload or generate a sheet first" },
         { status: 400 }
       );
     }
 
-    const cols = Math.max(1, body.cols ?? technique.sheetCols);
-    const rows = Math.max(1, body.rows ?? technique.sheetRows);
+    const cols = Math.max(1, Number(body.cols) || technique.sheetCols || 2);
+    const rows = Math.max(1, Number(body.rows) || technique.sheetRows || 2);
+
+    if (!technique.steps?.length) {
+      return NextResponse.json(
+        { error: "Add at least one step before cropping" },
+        { status: 400 }
+      );
+    }
+
     const paths = await cropSheetToStepImages({
       techniqueId: technique.id,
-      sheetPath: technique.sheetPath,
+      sheetPath,
       cols,
       rows,
       stepCount: technique.steps.length,
     });
+
+    if (!paths.length) {
+      return NextResponse.json(
+        { error: "Crop produced no images — check cols/rows vs sheet" },
+        { status: 500 }
+      );
+    }
 
     const steps = technique.steps.map((step, i) => ({
       ...step,
       imagePath: paths[i] || step.imagePath,
     }));
 
-    const updated = await patchTechnique(technique.id, {
+    const updated = await upsertTechnique({
+      ...technique,
+      id: technique.id,
+      sheetPath,
       sheetCols: cols,
       sheetRows: rows,
       steps,

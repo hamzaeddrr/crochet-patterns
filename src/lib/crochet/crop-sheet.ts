@@ -19,8 +19,28 @@ export async function cropSheetToStepImages(opts: {
   const cells = cols * rows;
   const count = Math.min(Math.max(1, opts.stepCount), cells);
 
-  const buf = await readPublicAsset(opts.sheetPath);
-  const meta = await sharp(buf).metadata();
+  let raw: Buffer;
+  try {
+    raw = await readPublicAsset(opts.sheetPath);
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Could not read sheet image (${opts.sheetPath}): ${why}`
+    );
+  }
+
+  if (!raw?.length) {
+    throw new Error("Sheet image is empty");
+  }
+
+  // Normalize EXIF orientation + decode before measuring
+  const normalized = await sharp(raw, { failOn: "none" })
+    .rotate()
+    .ensureAlpha()
+    .png()
+    .toBuffer();
+
+  const meta = await sharp(normalized).metadata();
   const width = meta.width || 0;
   const height = meta.height || 0;
   if (!width || !height) {
@@ -30,7 +50,9 @@ export async function cropSheetToStepImages(opts: {
   const cellW = Math.floor(width / cols);
   const cellH = Math.floor(height / rows);
   if (cellW < 32 || cellH < 32) {
-    throw new Error("Sheet cells are too small — check cols/rows");
+    throw new Error(
+      `Sheet cells are too small (${cellW}×${cellH}px) — check cols/rows (image is ${width}×${height})`
+    );
   }
 
   const stamp = Date.now();
@@ -44,7 +66,7 @@ export async function cropSheetToStepImages(opts: {
     const extractW = col === cols - 1 ? width - left : cellW;
     const extractH = row === rows - 1 ? height - top : cellH;
 
-    const cropped = await sharp(buf)
+    const cropped = await sharp(normalized)
       .extract({ left, top, width: extractW, height: extractH })
       .resize(720, 520, {
         fit: "contain",
