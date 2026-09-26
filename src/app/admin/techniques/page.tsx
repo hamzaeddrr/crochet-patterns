@@ -12,6 +12,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { TechniqueManualCropper } from "@/components/admin/TechniqueManualCropper";
 import type { Locale } from "@/i18n/routing";
 import type { Technique, TechniqueStep } from "@/types/techniques";
 import { emptyLocalized } from "@/types";
@@ -56,6 +57,7 @@ export default function AdminTechniquesPage() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [batchSheets, setBatchSheets] = useState<1 | 2 | 3>(3);
   const [batchSheetPaths, setBatchSheetPaths] = useState<string[]>([]);
+  const [manualCropOpen, setManualCropOpen] = useState(false);
 
   const selected = useMemo(
     () => list.find((t) => t.id === selectedId) || null,
@@ -376,16 +378,128 @@ export default function AdminTechniquesPage() {
       }
       applyTechnique(data.technique);
       const n = Array.isArray(data.paths) ? data.paths.length : 0;
-      const withImg = (data.technique.steps || []).filter(
-        (s: { imagePath?: string }) => s.imagePath
-      ).length;
+      const stepN = Number(data.stepAssigned) || 0;
+      const bonusN = Number(data.bonusAssigned) || 0;
       setMsg(
         n
-          ? `Cropped ${n} panels → ${withImg} steps now have images`
+          ? `Cropped ${n} panels → ${stepN} to steps${
+              bonusN ? `, ${bonusN} to bonus` : ""
+            }`
           : "Crop finished but no paths returned"
       );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Crop failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function manualCropRegion(region: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    target: "auto" | "bonus" | number;
+  }) {
+    if (!form.id || !form.sheetPath) {
+      throw new Error("Save the technique and upload a sheet first");
+    }
+    const res = await fetch("/api/admin/techniques/crop-region", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        techniqueId: form.id,
+        sheetPath: form.sheetPath,
+        ...region,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(
+        (data as { error?: string }).error || `Crop failed (${res.status})`
+      );
+    }
+    if (!data.technique) throw new Error("Crop returned no technique");
+    applyTechnique(data.technique);
+    const where =
+      data.assigned === "bonus"
+        ? "bonus images"
+        : `step ${Number(data.assigned) + 1}`;
+    setMsg(`Manual crop saved → ${where}`);
+  }
+
+  async function clearStepImage(stepIndex: number) {
+    if (!form.id) {
+      setMsg("Save the technique first");
+      return;
+    }
+    setBusy(`clear-step-${stepIndex}`);
+    setMsg("");
+    try {
+      const steps = form.steps.map((s, i) => {
+        if (i !== stepIndex) return s;
+        return { caption: s.caption, body: s.body };
+      });
+      const res = await fetch("/api/admin/techniques", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: form.id, steps }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not clear image");
+      applyTechnique(data.technique);
+      setMsg(`Step ${stepIndex + 1} image removed — upload or crop a replacement`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not clear image");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteBonusImage(index: number) {
+    if (!form.id) return;
+    setBusy(`clear-bonus-${index}`);
+    try {
+      const bonusImages = (form.bonusImages || []).filter((_, i) => i !== index);
+      const res = await fetch("/api/admin/techniques", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: form.id, bonusImages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not delete bonus image");
+      applyTechnique(data.technique);
+      setMsg("Bonus image removed");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not delete bonus image");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function useBonusOnStep(bonusIndex: number, stepIndex: number) {
+    if (!form.id) return;
+    const path = form.bonusImages?.[bonusIndex];
+    if (!path) return;
+    setBusy(`promo-bonus-${bonusIndex}`);
+    try {
+      const steps = form.steps.map((s, i) =>
+        i === stepIndex ? { ...s, imagePath: path } : s
+      );
+      const bonusImages = (form.bonusImages || []).filter(
+        (_, i) => i !== bonusIndex
+      );
+      const res = await fetch("/api/admin/techniques", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: form.id, steps, bonusImages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not assign bonus");
+      applyTechnique(data.technique);
+      setMsg(`Bonus image moved to step ${stepIndex + 1}`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not assign bonus");
     } finally {
       setBusy(null);
     }
@@ -771,8 +885,9 @@ export default function AdminTechniquesPage() {
                   Your own images
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Upload a multi-panel sheet (grid), set cols × rows above, then
-                  crop into steps — or upload one photo per step below.
+                  Upload a multi-panel sheet, set cols × rows, then auto-crop —
+                  or open manual crop and draw boxes. Extra panels become bonus
+                  images.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -798,7 +913,16 @@ export default function AdminTechniquesPage() {
                   className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/60 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-200 disabled:opacity-40"
                 >
                   <Crop className="h-4 w-4" />
-                  {busy === "crop" ? "Cropping…" : "Crop sheet to steps"}
+                  {busy === "crop" ? "Cropping…" : "Auto-crop grid"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!!busy || !form.id || !form.sheetPath}
+                  onClick={() => setManualCropOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-sky-700/60 bg-sky-950/40 px-3 py-2 text-sm font-medium text-sky-200 disabled:opacity-40"
+                >
+                  <Crop className="h-4 w-4" />
+                  Manual crop
                 </button>
               </div>
             </div>
@@ -869,21 +993,34 @@ export default function AdminTechniquesPage() {
                       No image
                     </div>
                   )}
-                  <label className="flex cursor-pointer items-center justify-center gap-1 border-t border-slate-800 bg-slate-950/80 py-1.5 text-[10px] font-medium text-slate-400 hover:bg-slate-900 hover:text-slate-200">
-                    <Upload className="h-3 w-3" />
-                    {busy === `step-${i}` ? "…" : "Upload photo"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={!!busy || !form.id}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) uploadStepImage(i, f);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                  <div className="flex border-t border-slate-800">
+                    <label className="flex flex-1 cursor-pointer items-center justify-center gap-1 bg-slate-950/80 py-1.5 text-[10px] font-medium text-slate-400 hover:bg-slate-900 hover:text-slate-200">
+                      <Upload className="h-3 w-3" />
+                      {busy === `step-${i}` ? "…" : "Upload"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={!!busy || !form.id}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) uploadStepImage(i, f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {step.imagePath ? (
+                      <button
+                        type="button"
+                        disabled={!!busy || !form.id}
+                        onClick={() => clearStepImage(i)}
+                        className="flex flex-1 items-center justify-center gap-1 border-l border-slate-800 bg-slate-950/80 py-1.5 text-[10px] font-medium text-rose-300/90 hover:bg-rose-950/40 disabled:opacity-40"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        {busy === `clear-step-${i}` ? "…" : "Delete"}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -927,6 +1064,64 @@ export default function AdminTechniquesPage() {
               </div>
             ))}
           </section>
+
+          {(form.bonusImages?.length || 0) > 0 ? (
+            <section className="space-y-3">
+              <div>
+                <h3 className="text-sm font-medium text-slate-200">
+                  Bonus images
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Extra crops that did not fit into steps. Assign one to a step
+                  or delete it.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(form.bonusImages || []).map((src, bi) => (
+                  <div
+                    key={`${src}-${bi}`}
+                    className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt=""
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                    <div className="flex flex-wrap items-center gap-2 p-2">
+                      <select
+                        className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-white"
+                        defaultValue=""
+                        disabled={!!busy}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "") return;
+                          useBonusOnStep(bi, Number(v));
+                          e.target.value = "";
+                        }}
+                      >
+                        <option value="">Move to step…</option>
+                        {form.steps.map((s, si) => (
+                          <option key={si} value={si}>
+                            Step {si + 1}
+                            {s.caption.en ? ` — ${s.caption.en}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!!busy}
+                        onClick={() => deleteBonusImage(bi)}
+                        className="rounded-md border border-rose-900/50 px-2 py-1 text-xs text-rose-300 hover:bg-rose-950/40"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-slate-800 pt-4">
             <button
@@ -974,6 +1169,16 @@ export default function AdminTechniquesPage() {
           </div>
         </div>
       </div>
+
+      {manualCropOpen && form.sheetPath ? (
+        <TechniqueManualCropper
+          sheetPath={form.sheetPath}
+          stepCount={form.steps.length}
+          stepLabels={form.steps.map((s) => s.caption.en || "")}
+          onClose={() => setManualCropOpen(false)}
+          onCrop={manualCropRegion}
+        />
+      ) : null}
     </AdminShell>
   );
 }

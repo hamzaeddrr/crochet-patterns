@@ -44,6 +44,11 @@ export interface Technique {
   sheetCols: number;
   sheetRows: number;
   steps: TechniqueStep[];
+  /**
+   * Extra crops that did not fit into steps (manual or grid overflow).
+   * Can be promoted into a step later.
+   */
+  bonusImages?: string[];
   updatedAt: string;
 }
 
@@ -68,6 +73,7 @@ export type TechniquePublic = Pick<
   | "sheetCols"
   | "sheetRows"
   | "steps"
+  | "bonusImages"
   | "professionallyReady"
   | "technicallyApproved"
 >;

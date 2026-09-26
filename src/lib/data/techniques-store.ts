@@ -79,6 +79,7 @@ export function toPublic(t: Technique): TechniquePublic {
     sheetCols: t.sheetCols,
     sheetRows: t.sheetRows,
     steps: t.steps,
+    bonusImages: t.bonusImages,
     professionallyReady: t.professionallyReady ?? t.technicallyApproved,
     technicallyApproved: t.technicallyApproved,
   };
@@ -103,7 +104,20 @@ export async function upsertTechnique(
       key: (input.key || prev.key).trim(),
       sheetCols: Math.max(1, input.sheetCols ?? prev.sheetCols),
       sheetRows: Math.max(1, input.sheetRows ?? prev.sheetRows),
-      steps: input.steps ?? prev.steps,
+      steps: input.steps
+        ? input.steps.map((s) => {
+            const step: Technique["steps"][number] = {
+              caption: s.caption,
+              body: s.body,
+            };
+            if (s.imagePath) step.imagePath = s.imagePath;
+            return step;
+          })
+        : prev.steps,
+      bonusImages:
+        input.bonusImages !== undefined
+          ? input.bonusImages
+          : prev.bonusImages,
       updatedAt: now,
     };
     doc.techniques[existingIdx] = next;

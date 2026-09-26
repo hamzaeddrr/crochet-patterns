@@ -24,6 +24,24 @@ export async function cropSheetToStepImages(opts: {
   });
 }
 
+/** Crop every grid cell (for steps + bonus overflow). */
+export async function cropAllSheetCells(opts: {
+  techniqueId: string;
+  sheetPath: string;
+  cols: number;
+  rows: number;
+}): Promise<string[]> {
+  const cells = Math.max(1, opts.cols) * Math.max(1, opts.rows);
+  return cropSheetCells({
+    sheetPath: opts.sheetPath,
+    cols: opts.cols,
+    rows: opts.rows,
+    count: cells,
+    pathForIndex: (i, stamp) =>
+      `techniques/${opts.techniqueId}/cell-${i + 1}-${stamp}.webp`,
+  });
+}
+
 /** Crop N cells from a grid sheet into saved webp assets. */
 export async function cropSheetCells(opts: {
   sheetPath: string;
@@ -101,4 +119,76 @@ export async function cropSheetCells(opts: {
   }
 
   return paths;
+}
+
+/**
+ * Crop a free rectangle from a sheet (coords are fractions 0–1 of natural size).
+ */
+export async function cropSheetRegion(opts: {
+  techniqueId: string;
+  sheetPath: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+}): Promise<string> {
+  let raw: Buffer;
+  try {
+    raw = await readPublicAsset(opts.sheetPath);
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Could not read sheet image (${opts.sheetPath}): ${why}`
+    );
+  }
+
+  const normalized = await sharp(raw, { failOn: "none" })
+    .rotate()
+    .ensureAlpha()
+    .png()
+    .toBuffer();
+
+  const meta = await sharp(normalized).metadata();
+  const imgW = meta.width || 0;
+  const imgH = meta.height || 0;
+  if (!imgW || !imgH) {
+    throw new Error("Could not read sheet dimensions");
+  }
+
+  const left = Math.max(0, Math.min(imgW - 1, Math.round(opts.x * imgW)));
+  const top = Math.max(0, Math.min(imgH - 1, Math.round(opts.y * imgH)));
+  const right = Math.max(
+    left + 1,
+    Math.min(imgW, Math.round((opts.x + opts.width) * imgW))
+  );
+  const bottom = Math.max(
+    top + 1,
+    Math.min(imgH, Math.round((opts.y + opts.height) * imgH))
+  );
+  const extractW = right - left;
+  const extractH = bottom - top;
+
+  if (extractW < 8 || extractH < 8) {
+    throw new Error("Crop region is too small — draw a larger box");
+  }
+
+  const cropped = await sharp(normalized)
+    .extract({ left, top, width: extractW, height: extractH })
+    .resize(720, 520, {
+      fit: "contain",
+      background: { r: 250, g: 247, b: 242, alpha: 1 },
+    })
+    .webp({ quality: 86 })
+    .toBuffer();
+
+  const stamp = Date.now();
+  const tag = (opts.label || "manual")
+    .replace(/[^a-z0-9_-]/gi, "")
+    .slice(0, 24);
+  return savePublicAsset(
+    `techniques/${opts.techniqueId}/${tag}-${stamp}.webp`,
+    cropped,
+    "image/webp"
+  );
 }

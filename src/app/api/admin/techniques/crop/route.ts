@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTechniqueById, upsertTechnique } from "@/lib/data/techniques-store";
-import { cropSheetToStepImages } from "@/lib/crochet/crop-sheet";
+import { cropAllSheetCells } from "@/lib/crochet/crop-sheet";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,19 +36,11 @@ export async function POST(request: NextRequest) {
     const cols = Math.max(1, Number(body.cols) || technique.sheetCols || 2);
     const rows = Math.max(1, Number(body.rows) || technique.sheetRows || 2);
 
-    if (!technique.steps?.length) {
-      return NextResponse.json(
-        { error: "Add at least one step before cropping" },
-        { status: 400 }
-      );
-    }
-
-    const paths = await cropSheetToStepImages({
+    const paths = await cropAllSheetCells({
       techniqueId: technique.id,
       sheetPath,
       cols,
       rows,
-      stepCount: technique.steps.length,
     });
 
     if (!paths.length) {
@@ -58,10 +50,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const steps = technique.steps.map((step, i) => ({
+    const stepCount = technique.steps?.length || 0;
+    const steps = (technique.steps || []).map((step, i) => ({
       ...step,
       imagePath: paths[i] || step.imagePath,
     }));
+    const overflow = paths.slice(stepCount);
+    const bonusImages = [
+      ...(technique.bonusImages || []),
+      ...overflow,
+    ];
 
     const updated = await upsertTechnique({
       ...technique,
@@ -70,9 +68,16 @@ export async function POST(request: NextRequest) {
       sheetCols: cols,
       sheetRows: rows,
       steps,
+      bonusImages,
     });
 
-    return NextResponse.json({ ok: true, paths, technique: updated });
+    return NextResponse.json({
+      ok: true,
+      paths,
+      stepAssigned: Math.min(paths.length, stepCount),
+      bonusAssigned: overflow.length,
+      technique: updated,
+    });
   } catch (error) {
     console.error("crop-sheet:", error);
     return NextResponse.json(
