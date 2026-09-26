@@ -1,5 +1,6 @@
 import { generateStoryboardSheet } from "@/lib/ai/generate-technique-sheet";
 import { cropSheetCells } from "@/lib/crochet/crop-sheet";
+import { TECHNIQUE_ILLUSTRATION_STYLE } from "@/lib/crochet/illustration-style";
 import {
   applyTechniquePatches,
   listTechniques,
@@ -115,8 +116,7 @@ function buildBatchSheetPrompt(
     `Create ONE single Loopcraft crochet tutorial storyboard sheet covering MULTIPLE techniques.`,
     `Layout: exact ${cols} columns × ${rows} rows equal panels, thin cream (#faf7f2) dividers.`,
     `Fill panels left→right, top→bottom in order. ${empty > 0 ? `Leave the last ${empty} panel(s) as plain cream empty cells.` : "Fill every cell."}`,
-    `Style: polished flat vector yarn-brand diagrams, peach/apricot yarn (#d96b52), silver hook with clear tip/throat, simplified hands, consistent camera angle, soft lighting.`,
-    `CRITICAL: no letters, numbers, watermarks, logos, or captions in the image.`,
+    TECHNIQUE_ILLUSTRATION_STYLE,
     `Each panel is an independent crochet motion for its labeled technique/step:`,
     panelBlock,
   ].join("\n");

@@ -99,40 +99,72 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       "Base des ouvrages et mailles tournantes.",
       "Base de la labor y cadenas de subida.",
     ),
-    sheetCols: 2,
+    sheetCols: 4,
     sheetRows: 2,
     detect: { ops: ["chain"], pattern: /\b(ch|chain)\b/i },
     steps: [
       step(
+        ["Hold slip knot on hook", "Nœud coulant en main", "Nudo en el ganchillo"],
+        [
+          "Hold the hook with the slip knot in your right hand; working yarn in your left.",
+          "Tenez le crochet avec le nœud coulant ; fil qui travaille à gauche.",
+          "Sostén el ganchillo con el nudo; hilo de trabajo a la izquierda.",
+        ]
+      ),
+      step(
         ["Yarn over", "Faites un jeté", "Haz hebra"],
         [
-          "With a slip knot on the hook, wrap yarn over the hook.",
-          "Avec un nœud coulant, faites un jeté.",
-          "Con un nudo corredizo, haz hebra.",
+          "Wrap the yarn over the hook clockwise.",
+          "Enroulez le fil sur le crochet dans le sens horaire.",
+          "Envuelve el hilo sobre el ganchillo en sentido horario.",
         ]
       ),
       step(
-        ["Pull through loop", "Tirez à travers", "Pasa por el bucle"],
+        ["Catch the yarn", "Attrapez le fil", "Atrapa el hilo"],
         [
-          "Pull the yarn through the loop on the hook — one chain made.",
-          "Tirez le fil à travers la boucle — une ml.",
-          "Pasa el hilo por el bucle — una cadeneta.",
+          "Pull the hook through the slip-knot loop, catching the wrap in the groove.",
+          "Tirez le crochet hors du nœud en attrapant le jeté dans la gorge.",
+          "Saca el ganchillo del nudo atrapando la hebra en la garganta.",
         ]
       ),
       step(
-        ["Repeat", "Répétez", "Repite"],
+        ["First chain made", "1re ml faite", "1.ª cadeneta"],
         [
-          "Yarn over and pull through again for each chain needed.",
-          "Répétez jeté + tirez pour chaque ml.",
-          "Repite hebra + pasar por cada cadeneta.",
+          "Slide the new loop onto the shaft — one chain stitch made.",
+          "Glissez la boucle sur le fût — une ml.",
+          "Desliza el bucle en el fuste — una cadeneta.",
         ]
       ),
       step(
-        ["Count chains", "Comptez", "Cuenta"],
+        ["Yarn over again", "Nouveau jeté", "Otra hebra"],
         [
-          "The loop on the hook does not count as a chain.",
-          "La boucle sur le crochet ne compte pas.",
-          "El bucle en el ganchillo no cuenta.",
+          "Wrap the yarn over the hook the same way.",
+          "Refaites un jeté de la même façon.",
+          "Haz hebra otra vez igual.",
+        ]
+      ),
+      step(
+        ["Pull through again", "Tirez encore", "Pasa otra vez"],
+        [
+          "Catch the wrap and pull through the loop on the hook.",
+          "Attrapez le jeté et tirez à travers la boucle.",
+          "Atrapa la hebra y pasa por el bucle.",
+        ]
+      ),
+      step(
+        ["Two chains", "Deux ml", "Dos cadenetas"],
+        [
+          "You now have two chain stitches below the loop on the hook.",
+          "Vous avez deux ml sous la boucle du crochet.",
+          "Tienes dos cadenetas bajo el bucle del ganchillo.",
+        ]
+      ),
+      step(
+        ["Continue & count", "Continuez et comptez", "Sigue y cuenta"],
+        [
+          "Repeat until you have enough chains. The loop on the hook does not count.",
+          "Répétez jusqu’au bon nombre. La boucle sur le crochet ne compte pas.",
+          "Repite hasta tener las suficientes. El bucle del ganchillo no cuenta.",
         ]
       ),
     ],
@@ -195,25 +227,25 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       step(
         ["Insert hook", "Piquez", "Introduce"],
         [
-          "Insert the hook into the next stitch.",
-          "Piquez dans la maille suivante.",
-          "Introduce en el siguiente punto.",
+          "Insert the hook into the next stitch (under both top loops).",
+          "Piquez dans la maille suivante (sous les deux brins).",
+          "Introduce en el siguiente punto (bajo ambos bucles).",
         ]
       ),
       step(
         ["Yarn over", "Jeté", "Hebra"],
         [
-          "Yarn over.",
-          "Faites un jeté.",
-          "Haz hebra.",
+          "Yarn over — wrap the working yarn on the hook.",
+          "Faites un jeté — enroulez le fil qui travaille.",
+          "Haz hebra — envuelve el hilo de trabajo.",
         ]
       ),
       step(
         ["Pull through both", "Passez les deux", "Pasa por ambos"],
         [
-          "Pull through the stitch and the loop on the hook in one go.",
-          "Passez d’un coup la maille et la boucle du crochet.",
-          "Pasa de una por el punto y el bucle del ganchillo.",
+          "Pull through the stitch and the loop on the hook in one go — one loop remains.",
+          "Passez d’un coup la maille et la boucle — une boucle reste.",
+          "Pasa de una por el punto y el bucle — queda un bucle.",
         ]
       ),
     ],
@@ -273,40 +305,56 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       "Un centre bien fermé pour l’amigurumi.",
       "Un centro cerrado para amigurumi.",
     ),
-    sheetCols: 2,
+    sheetCols: 3,
     sheetRows: 2,
     detect: { ops: ["magic_ring"], pattern: /\b(mr|magic\s*ring)\b/i },
     steps: [
       step(
-        ["Make a loop", "Formez une boucle", "Haz un lazo"],
+        ["Form a loop on fingers", "Boucle sur les doigts", "Lazo en los dedos"],
         [
-          "Wrap yarn around your fingers to form a ring, keeping a short tail.",
-          "Enroulez le fil pour former un anneau, courte queue.",
-          "Enrolla el hilo para formar un anillo, cola corta.",
+          "With the tail in your palm, wrap yarn around index and middle fingers into a loop.",
+          "Queue dans la paume, enroulez le fil autour de l’index et du majeur.",
+          "Con la cola en la palma, enrolla el hilo en índice y medio.",
         ]
       ),
       step(
-        ["Insert hook", "Passez le crochet", "Introduce el ganchillo"],
+        ["Insert, yarn over, pull up", "Piquez, jeté, tirez", "Introduce, hebra, saca"],
         [
-          "Insert the hook into the ring, yarn over, and pull up a loop.",
-          "Passez le crochet, jeté, tirez une boucle.",
-          "Introduce, hebra y saca un bucle.",
+          "Hold the overlap; insert the hook into the loop, yarn over, and pull through.",
+          "Tenez le croisement ; piquez dans la boucle, jeté, tirez à travers.",
+          "Sostén el cruce; introduce en el lazo, hebra y saca.",
         ]
       ),
       step(
-        ["Work stitches", "Travaillez les mailles", "Teje los puntos"],
+        ["Chain one", "1 ml", "1 cad"],
         [
-          "Work the stitches listed into the ring.",
-          "Travaillez les mailles dans l’anneau.",
-          "Teje los puntos dentro del anillo.",
+          "Yarn over and pull through the loop on the hook — one chain to lock the start.",
+          "Jeté et passez la boucle — 1 ml pour fixer.",
+          "Hebra y pasa por el bucle — 1 cad para fijar.",
         ]
       ),
       step(
-        ["Pull to close", "Fermez l’anneau", "Cierra el anillo"],
+        ["Work stitches into the ring", "Mailles dans l’anneau", "Puntos en el anillo"],
         [
-          "Pull the yarn tail to close the center snug.",
-          "Tirez la queue pour fermer le centre.",
-          "Tira de la cola para cerrar el centro.",
+          "Insert into the ring, yarn over, pull up, yarn over, pull through both (one sc).",
+          "Piquez dans l’anneau, jeté, tirez, jeté, passez les 2 (1 ms).",
+          "Introduce en el anillo, hebra, saca, hebra, pasa por 2 (1 pb).",
+        ]
+      ),
+      step(
+        ["Repeat to pattern count", "Répétez le nombre", "Repite hasta el número"],
+        [
+          "Repeat into the ring until you have the stitch count from your pattern.",
+          "Répétez dans l’anneau jusqu’au nombre du modèle.",
+          "Repite en el anillo hasta el número del patrón.",
+        ]
+      ),
+      step(
+        ["Join & pull the tail closed", "Joignez et fermez", "Une y cierra"],
+        [
+          "Slip stitch to join if needed, then pull the short tail to close the center hole.",
+          "Mc pour joindre si besoin, puis tirez la courte queue pour fermer le centre.",
+          "Pe para unir si hace falta; tira de la cola corta para cerrar el centro.",
         ]
       ),
     ],
@@ -323,31 +371,47 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       "EE.UU.: pb — Reino Unido: double crochet (dc).",
     ),
     sheetCols: 3,
-    sheetRows: 1,
+    sheetRows: 2,
     detect: { ops: ["sc"], pattern: /\bsc\b/i },
     steps: [
       step(
         ["Insert under both loops", "Piquez sous les 2 brins", "Bajo ambos bucles"],
         [
-          "Insert under both top loops of the next stitch.",
-          "Piquez sous les deux brins.",
-          "Introduce bajo los dos bucles.",
+          "Insert under both top loops (the V) of the next stitch.",
+          "Piquez sous les deux brins du V de la maille suivante.",
+          "Introduce bajo ambos bucles (la V) del siguiente punto.",
+        ]
+      ),
+      step(
+        ["Yarn over", "Faites un jeté", "Haz hebra"],
+        [
+          "Wrap the yarn over the hook clockwise.",
+          "Enroulez le fil sur le crochet dans le sens horaire.",
+          "Envuelve el hilo sobre el ganchillo en sentido horario.",
         ]
       ),
       step(
         ["Pull up a loop", "Tirez une boucle", "Saca un bucle"],
         [
-          "Yarn over and pull up a loop (2 loops on hook).",
-          "Jeté et tirez (2 boucles).",
-          "Hebra y saca (2 bucles).",
+          "Pull the hook back through the stitch, catching the wrap — 2 loops on hook.",
+          "Tirez à travers la maille en attrapant le jeté — 2 boucles.",
+          "Saca el ganchillo por el punto atrapando la hebra — 2 bucles.",
         ]
       ),
       step(
-        ["Pull through both", "Passez les 2", "Pasa por ambos"],
+        ["Yarn over again", "Nouveau jeté", "Otra hebra"],
         [
-          "Yarn over and pull through both loops — one sc made.",
-          "Jeté et passez les deux — 1 ms.",
-          "Hebra y pasa por ambos — 1 pb.",
+          "Yarn over once more — you still have 2 loops on the hook.",
+          "Refaites un jeté — toujours 2 boucles sur le crochet.",
+          "Haz hebra otra vez — siguen 2 bucles en el ganchillo.",
+        ]
+      ),
+      step(
+        ["Pull through both loops", "Passez les 2", "Pasa por ambos"],
+        [
+          "Pull through both loops — one single crochet made; 1 loop remains.",
+          "Passez les deux — 1 ms ; 1 boucle reste.",
+          "Pasa por ambos — 1 pb; queda 1 bucle.",
         ]
       ),
     ],
@@ -411,40 +475,32 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       "US : db — UK : half treble (htr).",
       "EE.UU.: mpa — Reino Unido: half treble (htr).",
     ),
-    sheetCols: 2,
-    sheetRows: 2,
+    sheetCols: 3,
+    sheetRows: 1,
     detect: { ops: ["hdc"], pattern: /\bhdc\b/i },
     steps: [
       step(
-        ["Yarn over first", "Jeté d’abord", "Hebra primero"],
+        ["Yarn over and insert", "Jeté puis piquez", "Hebra e introduce"],
         [
-          "Yarn over before inserting the hook.",
-          "Faites un jeté avant de piquer.",
-          "Haz hebra antes de introducir.",
+          "Yarn over, then insert under both top loops of the next stitch.",
+          "Faites un jeté, puis piquez sous les deux brins.",
+          "Haz hebra e introduce bajo ambos bucles.",
         ]
       ),
       step(
-        ["Insert and pull up", "Piquez et tirez", "Introduce y saca"],
+        ["Pull up a loop", "Tirez une boucle", "Saca un bucle"],
         [
-          "Insert into the stitch, yarn over, pull up a loop (3 loops).",
-          "Piquez, jeté, tirez (3 boucles).",
-          "Introduce, hebra, saca (3 bucles).",
-        ]
-      ),
-      step(
-        ["Yarn over", "Jeté", "Hebra"],
-        [
-          "Yarn over again.",
-          "Refaites un jeté.",
-          "Haz hebra otra vez.",
+          "Yarn over and pull up through the stitch — 3 loops on the hook.",
+          "Jeté et tirez à travers — 3 boucles sur le crochet.",
+          "Hebra y saca por el punto — 3 bucles en el ganchillo.",
         ]
       ),
       step(
         ["Pull through all three", "Passez les 3", "Pasa por los 3"],
         [
-          "Pull through all three loops — one hdc made.",
-          "Passez les trois boucles — 1 db.",
-          "Pasa por los tres — 1 mpa.",
+          "Yarn over and pull through all three loops — one hdc made.",
+          "Jeté et passez les trois — 1 db.",
+          "Hebra y pasa por los tres — 1 mpa.",
         ]
       ),
     ],
@@ -564,40 +620,56 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       "US : bride — UK : treble (tr).",
       "EE.UU.: pa — Reino Unido: treble (tr).",
     ),
-    sheetCols: 2,
+    sheetCols: 3,
     sheetRows: 2,
     detect: { ops: ["dc"], pattern: /\bdc\b/i },
     steps: [
       step(
-        ["Yarn over", "Jeté", "Hebra"],
+        ["Yarn over", "Faites un jeté", "Haz hebra"],
         [
-          "Yarn over.",
-          "Faites un jeté.",
-          "Haz hebra.",
+          "Yarn over once before inserting.",
+          "Faites un jeté avant de piquer.",
+          "Haz hebra antes de introducir.",
         ]
       ),
       step(
-        ["Insert and pull up", "Piquez et tirez", "Introduce y saca"],
+        ["Insert under both loops", "Piquez sous les 2", "Bajo ambos bucles"],
         [
-          "Insert, yarn over, pull up a loop (3 loops on hook).",
-          "Piquez, jeté, tirez (3 boucles).",
-          "Introduce, hebra, saca (3 bucles).",
+          "Insert under both top loops of the next stitch.",
+          "Piquez sous les deux brins de la maille suivante.",
+          "Introduce bajo ambos bucles del siguiente punto.",
         ]
       ),
       step(
-        ["Pull through two", "Passez 2", "Pasa por 2"],
+        ["Yarn over and pull up", "Jeté et tirez", "Hebra y saca"],
         [
-          "Yarn over, pull through the first two loops (2 left).",
-          "Jeté, passez les deux premières (il en reste 2).",
-          "Hebra, pasa por los dos primeros (quedan 2).",
+          "Yarn over and pull up through the stitch — 3 loops on the hook.",
+          "Jeté et tirez à travers — 3 boucles sur le crochet.",
+          "Hebra y saca por el punto — 3 bucles en el ganchillo.",
+        ]
+      ),
+      step(
+        ["Pull through first two", "Passez les 2 premières", "Pasa por los 2 primeros"],
+        [
+          "Yarn over and pull through the first two loops only — 2 loops remain.",
+          "Jeté et passez seulement les deux premières — il reste 2.",
+          "Hebra y pasa solo por los dos primeros — quedan 2.",
+        ]
+      ),
+      step(
+        ["Yarn over again", "Nouveau jeté", "Otra hebra"],
+        [
+          "Yarn over once more with 2 loops still on the hook.",
+          "Encore un jeté — toujours 2 boucles.",
+          "Haz hebra otra vez — siguen 2 bucles.",
         ]
       ),
       step(
         ["Pull through last two", "Passez les 2 dernières", "Pasa por los 2 últimos"],
         [
-          "Yarn over, pull through the last two — one dc made.",
-          "Jeté, passez les deux dernières — 1 bride.",
-          "Hebra, pasa por los dos últimos — 1 pa.",
+          "Pull through the last two loops — one double crochet made.",
+          "Passez les deux dernières — 1 bride.",
+          "Pasa por los dos últimos — 1 pa.",
         ]
       ),
     ],
@@ -655,37 +727,38 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
     ),
     sheetCols: 2,
     sheetRows: 2,
+    detect: { ops: ["tr"], pattern: /\btr\b/i },
     steps: [
       step(
-        ["Yarn over twice", "Deux jetés", "Dos hebras"],
+        ["Yarn over twice & insert", "Deux jetés et piquez", "Dos hebras e introduce"],
         [
-          "Yarn over twice before inserting.",
-          "Faites deux jetés.",
-          "Haz dos hebras.",
+          "Yarn over twice, then insert under both top loops of the next stitch.",
+          "Faites deux jetés, puis piquez sous les deux brins.",
+          "Haz dos hebras e introduce bajo ambos bucles.",
         ]
       ),
       step(
-        ["Insert and pull up", "Piquez et tirez", "Introduce y saca"],
+        ["Pull up a loop", "Tirez une boucle", "Saca un bucle"],
         [
-          "Insert, yarn over, pull up (4 loops).",
-          "Piquez, jeté, tirez (4 boucles).",
-          "Introduce, hebra, saca (4 bucles).",
+          "Yarn over and pull up — 4 loops on the hook.",
+          "Jeté et tirez — 4 boucles sur le crochet.",
+          "Hebra y saca — 4 bucles en el ganchillo.",
         ]
       ),
       step(
-        ["Pull through two, three times", "Passez 2 × 3", "Pasa de 2 en 2"],
+        ["Pull through twos", "Passez de 2 en 2", "Pasa de 2 en 2"],
         [
-          "Yarn over, pull through 2 — repeat until one loop remains.",
-          "Jeté, passez 2 — répétez jusqu’à 1 boucle.",
-          "Hebra, pasa 2 — repite hasta 1 bucle.",
+          "Yarn over, pull through 2; repeat until 2 loops remain.",
+          "Jeté, passez 2 ; répétez jusqu’à 2 boucles.",
+          "Hebra, pasa 2; repite hasta 2 bucles.",
         ]
       ),
       step(
-        ["Tall stitch done", "Point terminé", "Punto listo"],
+        ["Finish last two", "Terminez les 2", "Termina los 2"],
         [
-          "You have one treble crochet.",
-          "Vous avez une double bride.",
-          "Tienes un punto alto doble.",
+          "Yarn over and pull through the last two — one treble made.",
+          "Jeté et passez les deux dernières — 1 double bride.",
+          "Hebra y pasa por los dos últimos — 1 alto doble.",
         ]
       ),
     ],
@@ -845,25 +918,25 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       step(
         ["Loop from first stitch", "Boucle de la 1re", "Bucle del 1.º"],
         [
-          "Insert in the next stitch and pull up a loop.",
-          "Piquez et tirez une boucle.",
-          "Introduce y saca un bucle.",
+          "Insert in the next stitch and pull up a loop (2 on hook).",
+          "Piquez et tirez une boucle (2 sur le crochet).",
+          "Introduce y saca un bucle (2 en el ganchillo).",
         ]
       ),
       step(
         ["Loop from next", "Boucle de la suivante", "Bucle del siguiente"],
         [
           "Insert in the following stitch and pull up another loop (3 on hook).",
-          "Piquez dans la suivante (3 boucles).",
-          "Introduce en el siguiente (3 bucles).",
+          "Piquez dans la suivante et tirez (3 boucles).",
+          "Introduce en el siguiente y saca (3 bucles).",
         ]
       ),
       step(
         ["Pull through all", "Passez tout", "Pasa por todos"],
         [
-          "Yarn over and pull through all three loops.",
-          "Jeté et passez les trois.",
-          "Hebra y pasa por los tres.",
+          "Yarn over and pull through all three loops — one decrease made.",
+          "Jeté et passez les trois — 1 diminution.",
+          "Hebra y pasa por los tres — 1 disminución.",
         ]
       ),
     ],
@@ -1475,6 +1548,796 @@ export const TECHNIQUE_CATALOG: CatalogTechnique[] = [
       ),
     ],
   },
+  // --- Decorative / pattern stitches (topics inspired by public tutorial libraries) ---
+  {
+    id: "tech-invisible-join",
+    slug: "invisible-join",
+    key: "invisible_join",
+    sortOrder: 250,
+    title: L(
+      "Invisible join (rounds)",
+      "Jointure invisible",
+      "Unión invisible"
+    ),
+    tip: L(
+      "Finish a round so the join looks seamless — no visible slip-stitch bump.",
+      "Fermez un tour sans bosse de mc visible.",
+      "Cierra una vuelta sin el bulto del pe.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    steps: [
+      step(
+        ["Finish the last stitch", "Dernière maille", "Último punto"],
+        [
+          "Complete the last stitch of the round; cut yarn leaving a tail.",
+          "Terminez la dernière maille ; coupez en laissant une queue.",
+          "Termina el último punto; corta dejando cola.",
+        ]
+      ),
+      step(
+        ["Needle under both loops", "Aiguille sous les 2 brins", "Aguja bajo 2 bucles"],
+        [
+          "Thread the tail; insert the needle under both top loops of the first stitch of the round.",
+          "Enfilez la queue ; passez sous les deux brins de la 1re maille du tour.",
+          "Enhebra la cola; pasa bajo ambos bucles del 1.er punto de la vuelta.",
+        ]
+      ),
+      step(
+        ["Back into the last stitch", "Dans la dernière maille", "En el último punto"],
+        [
+          "Insert the needle into the middle of the last stitch (or back loop) and pull snug.",
+          "Piquez au milieu de la dernière maille et serrez.",
+          "Introduce en el centro del último punto y ajusta.",
+        ]
+      ),
+      step(
+        ["Weave in the end", "Rentrez le fil", "Esconde el extremo"],
+        [
+          "The join should mimic a stitch top — weave the remaining tail on the wrong side.",
+          "La jointure imite un dessus de maille — rentrez la queue.",
+          "La unión imita la tapa de un punto — esconde la cola.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-shell",
+    slug: "shell-stitch",
+    key: "shell",
+    sortOrder: 260,
+    title: L("Shell stitch", "Point coquille", "Punto concha"),
+    tip: L(
+      "Several stitches in one place that fan into a shell.",
+      "Plusieurs mailles au même endroit en éventail.",
+      "Varios puntos en el mismo sitio en abanico.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bshell\b/i },
+    steps: [
+      step(
+        ["Skip to the shell base", "Base de la coquille", "Base de la concha"],
+        [
+          "Work to the stitch or space where the shell sits (often skip stitches before/after).",
+          "Arrivez à la maille ou à l’espace de la coquille.",
+          "Llega al punto o espacio de la concha.",
+        ]
+      ),
+      step(
+        ["Work multiple stitches in one place", "Plusieurs mailles au même endroit", "Varios en el mismo sitio"],
+        [
+          "Work the pattern’s tall stitches (often 5 dc) all into the same stitch or space.",
+          "Faites les mailles hautes indiquées (souvent 5 brides) au même endroit.",
+          "Teje los puntos altos indicados (suele ser 5 pa) en el mismo sitio.",
+        ]
+      ),
+      step(
+        ["Fan complete", "Éventail terminé", "Abanico listo"],
+        [
+          "The stitches spread into a shell; continue as the pattern says.",
+          "Les mailles s’ouvrent en coquille ; continuez.",
+          "Los puntos se abren en concha; continúa.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-v-stitch",
+    slug: "v-stitch",
+    key: "v_stitch",
+    sortOrder: 270,
+    title: L("V-stitch", "Point en V", "Punto en V"),
+    tip: L(
+      "Two tall stitches with a chain between them — a clear V.",
+      "Deux mailles hautes séparées par une ml — un V.",
+      "Dos puntos altos con una cad entre ellos — una V.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bv[\s-]?stitch\b/i },
+    steps: [
+      step(
+        ["First tall stitch", "1re maille haute", "1.er punto alto"],
+        [
+          "Work a dc (or as written) into the indicated stitch or space.",
+          "Faites une bride (ou selon le modèle) à l’endroit indiqué.",
+          "Teje un pa (o según el patrón) en el sitio indicado.",
+        ]
+      ),
+      step(
+        ["Chain between", "Ml au centre", "Cad en el centro"],
+        [
+          "Chain the number listed (often ch 1 or ch 2).",
+          "Faites le nombre de ml indiqué (souvent 1 ou 2).",
+          "Haz las cadenetas indicadas (suele ser 1 o 2).",
+        ]
+      ),
+      step(
+        ["Second tall stitch", "2e maille haute", "2.º punto alto"],
+        [
+          "Work another dc into the same stitch or space — the V is complete.",
+          "Une 2e bride au même endroit — le V est fait.",
+          "Otro pa en el mismo sitio — la V está lista.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-x-stitch",
+    slug: "x-stitch",
+    key: "x_stitch",
+    sortOrder: 280,
+    title: L("X-stitch (crossed double crochet)", "Point en X", "Punto en X"),
+    tip: L(
+      "Two crossed tall stitches that form an X.",
+      "Deux mailles hautes croisées en X.",
+      "Dos puntos altos cruzados en X.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\bx[\s-]?stitch\b/i },
+    steps: [
+      step(
+        ["Skip and work the first leg", "Sautez puis 1re jambe", "Salta y 1.ª pierna"],
+        [
+          "Skip the next stitch; dc in the following stitch.",
+          "Sautez 1 maille ; bride dans la suivante.",
+          "Salta 1 punto; pa en el siguiente.",
+        ]
+      ),
+      step(
+        ["Go behind to the skipped stitch", "Derrière vers la sautée", "Detrás al saltado"],
+        [
+          "Working behind (or in front, as written), dc into the skipped stitch.",
+          "En passant derrière (ou devant), bride dans la maille sautée.",
+          "Por detrás (o delante), pa en el punto saltado.",
+        ]
+      ),
+      step(
+        ["Legs cross into an X", "Les jambes forment un X", "Las piernas forman una X"],
+        [
+          "The two posts cross; continue across the row as directed.",
+          "Les deux brides se croisent ; continuez.",
+          "Los dos postes se cruzan; continúa.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-alpine",
+    slug: "alpine-stitch",
+    key: "alpine",
+    sortOrder: 290,
+    title: L("Alpine stitch", "Point alpin", "Punto alpino"),
+    tip: L(
+      "Alternating front-post and regular stitches for a textured zig-zag.",
+      "Alternance de brides en relief et brides normales.",
+      "Alterna puntos en relieve y normales.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\balpine\b/i },
+    steps: [
+      step(
+        ["Set up the row", "Préparez le rang", "Prepara la hilera"],
+        [
+          "Follow the pattern’s setup row (often a row of dc).",
+          "Suivez le rang de base du modèle (souvent des brides).",
+          "Sigue la hilera base del patrón (suele ser pa).",
+        ]
+      ),
+      step(
+        ["Front-post stitch", "Bride en relief devant", "Punto en relieve al frente"],
+        [
+          "Yarn over; insert the hook from front to back to front around the post below; complete the stitch.",
+          "Jeté ; piquez autour du montant devant ; terminez la maille.",
+          "Hebra; introduce alrededor del poste por delante; termina el punto.",
+        ]
+      ),
+      step(
+        ["Regular stitch next", "Maille normale ensuite", "Punto normal después"],
+        [
+          "Work the next stitch into the top of the following stitch as usual.",
+          "Travaillez la suivante dans le dessus de maille normal.",
+          "Teje el siguiente en la tapa del punto como siempre.",
+        ]
+      ),
+      step(
+        ["Alternate across", "Alternez", "Alterna"],
+        [
+          "Keep alternating front-post and regular stitches for the alpine texture.",
+          "Alternez relief et normal pour le relief alpin.",
+          "Alterna relieve y normal para la textura alpina.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-herringbone",
+    slug: "herringbone-stitch",
+    key: "herringbone",
+    sortOrder: 300,
+    title: L(
+      "Herringbone stitch",
+      "Point chevron / herringbone",
+      "Punto espiga (herringbone)"
+    ),
+    tip: L(
+      "A slanted stitch that stacks into a herringbone fabric.",
+      "Maille inclinée qui forme un chevron.",
+      "Punto inclinado que forma espiga.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\bherringbone\b/i },
+    steps: [
+      step(
+        ["Yarn over and insert", "Jeté et piquez", "Hebra e introduce"],
+        [
+          "Yarn over and insert into the next stitch.",
+          "Jeté et piquez dans la maille suivante.",
+          "Hebra e introduce en el siguiente punto.",
+        ]
+      ),
+      step(
+        ["Pull through stitch and first loop", "Tirez maille + 1re boucle", "Pasa punto + 1.er bucle"],
+        [
+          "Pull up a loop and immediately pull it through the first loop on the hook.",
+          "Tirez une boucle et passez-la tout de suite dans la 1re boucle du crochet.",
+          "Saca un bucle y pásalo de inmediato por el 1.er bucle del ganchillo.",
+        ]
+      ),
+      step(
+        ["Finish like a tall stitch", "Terminez comme une maille haute", "Termina como punto alto"],
+        [
+          "Yarn over and pull through the remaining loops as the pattern’s herringbone requires.",
+          "Jeté et passez les boucles restantes selon le herringbone du modèle.",
+          "Hebra y pasa los bucles restantes según el herringbone del patrón.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-star",
+    slug: "star-stitch",
+    key: "star_stitch",
+    sortOrder: 310,
+    title: L("Star stitch", "Point étoile", "Punto estrella"),
+    tip: L(
+      "Clusters of pulled loops closed together that look like stars.",
+      "Boucles tirées refermées ensemble — aspect étoile.",
+      "Bucles sacados y cerrados juntos — aspecto estrella.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\bstar\s*stitch\b/i },
+    steps: [
+      step(
+        ["Pull up loops across", "Tirez plusieurs boucles", "Saca varios bucles"],
+        [
+          "Insert and pull up a loop in each of the places the pattern lists (often 5–6 loops on hook).",
+          "Piquez et tirez une boucle à chaque endroit indiqué (souvent 5–6 boucles).",
+          "Introduce y saca un bucle en cada sitio indicado (suele ser 5–6).",
+        ]
+      ),
+      step(
+        ["Close the star eye", "Fermez l’œil", "Cierra el ojo"],
+        [
+          "Yarn over and pull through all loops on the hook.",
+          "Jeté et passez toutes les boucles.",
+          "Hebra y pasa por todos los bucles.",
+        ]
+      ),
+      step(
+        ["Chain to lock", "Ml pour fixer", "Cad para fijar"],
+        [
+          "Chain 1 (or as written) to close the center of the star.",
+          "1 ml (ou selon le modèle) pour fermer le centre.",
+          "1 cad (o según el patrón) para cerrar el centro.",
+        ]
+      ),
+      step(
+        ["Next star starts in the eye", "Étoile suivante", "Siguiente estrella"],
+        [
+          "Begin the next star in the chain-space / eye just made, as directed.",
+          "Démarrez la suivante dans l’œil / l’espace ml créé.",
+          "Empieza la siguiente en el ojo / espacio de cad creado.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-tulip",
+    slug: "tulip-stitch",
+    key: "tulip",
+    sortOrder: 320,
+    title: L("Tulip stitch", "Point tulipe", "Punto tulipán"),
+    tip: L(
+      "A flower-like cluster motif often used in blankets.",
+      "Motif en bouquet / fleur pour couvertures.",
+      "Motivo tipo flor para mantas.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\btulip\b/i },
+    steps: [
+      step(
+        ["Build the base", "Base", "Base"],
+        [
+          "Work the chains / spaces the pattern uses under each tulip.",
+          "Faites les ml / espaces sous chaque tulipe.",
+          "Haz las cad / espacios bajo cada tulipán.",
+        ]
+      ),
+      step(
+        ["Work the petals", "Pétales", "Pétalos"],
+        [
+          "Work the clustered or shell stitches that form the tulip head.",
+          "Travaillez les mailles groupées / coquille de la tête.",
+          "Teje los puntos agrupados / concha de la cabeza.",
+        ]
+      ),
+      step(
+        ["Secure and move on", "Fixez et continuez", "Fija y sigue"],
+        [
+          "Close or slip-stitch as written, then move to the next motif.",
+          "Fermez ou mc selon le modèle, puis motif suivant.",
+          "Cierra o pe según el patrón, luego el siguiente motivo.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-wrapped",
+    slug: "wrapped-stitches",
+    key: "wrapped",
+    sortOrder: 330,
+    title: L("Wrapped stitches", "Mailles enveloppées", "Puntos envueltos"),
+    tip: L(
+      "Yarn wraps around a stitch or post for extra texture.",
+      "Le fil s’enroule autour d’une maille ou d’un montant.",
+      "El hilo rodea un punto o poste.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bwrapped?\b/i },
+    steps: [
+      step(
+        ["Reach the stitch to wrap", "Maille à envelopper", "Punto a envolver"],
+        [
+          "Work to the stitch or post the pattern wants wrapped.",
+          "Arrivez à la maille / au montant à envelopper.",
+          "Llega al punto / poste a envolver.",
+        ]
+      ),
+      step(
+        ["Wrap the yarn", "Enroulez le fil", "Envuelve el hilo"],
+        [
+          "Bring the yarn around the stitch as many times as written.",
+          "Passez le fil autour le nombre de fois indiqué.",
+          "Pasa el hilo alrededor las veces indicadas.",
+        ]
+      ),
+      step(
+        ["Complete the stitch", "Terminez la maille", "Completa el punto"],
+        [
+          "Finish the underlying stitch so the wraps sit neatly on the fabric.",
+          "Terminez la maille pour que les tours restent nets.",
+          "Termina el punto para que las vueltas queden limpias.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-granny-cluster",
+    slug: "granny-cluster",
+    key: "granny_cluster",
+    sortOrder: 340,
+    title: L("Granny clusters", "Groupes granny", "Racimos granny"),
+    tip: L(
+      "Classic granny-square style groups of tall stitches separated by chains.",
+      "Groupes de brides séparés par des ml — style granny.",
+      "Grupos de pa separados por cad — estilo granny.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bgranny\b/i },
+    steps: [
+      step(
+        ["Chain space", "Espace de ml", "Espacio de cad"],
+        [
+          "Work into the chain space (or corner) where the cluster sits.",
+          "Travaillez dans l’espace de ml (ou coin).",
+          "Teje en el espacio de cad (o esquina).",
+        ]
+      ),
+      step(
+        ["Group of tall stitches", "Groupe de brides", "Grupo de pa"],
+        [
+          "Work 3 dc (or as written) into the same space.",
+          "Faites 3 brides (ou selon le modèle) dans le même espace.",
+          "Haz 3 pa (o según el patrón) en el mismo espacio.",
+        ]
+      ),
+      step(
+        ["Chain and next cluster", "Ml puis groupe suivant", "Cad y siguiente"],
+        [
+          "Chain between clusters; repeat around or across.",
+          "Ml entre les groupes ; répétez.",
+          "Cad entre grupos; repite.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-catherine-wheel",
+    slug: "catherine-wheel",
+    key: "catherine_wheel",
+    sortOrder: 350,
+    title: L("Catherine wheel", "Roue de Catherine", "Rueda de Catalina"),
+    tip: L(
+      "Fans and decreases that form rolling wheel motifs.",
+      "Éventails et diminutions formant des roues.",
+      "Abanicos y disminuciones que forman ruedas.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\bcatherine\s*wheel\b/i },
+    steps: [
+      step(
+        ["Build the fan", "Éventail", "Abanico"],
+        [
+          "Work the increase / shell half of the wheel as written.",
+          "Faites la partie éventail / augmentations.",
+          "Teje la parte de abanico / aumentos.",
+        ]
+      ),
+      step(
+        ["Decrease to gather", "Diminuez pour ramasser", "Disminuye para juntar"],
+        [
+          "Work the decrease stitches that pull the fan into a wheel segment.",
+          "Faites les diminutions qui ramassent l’éventail.",
+          "Haz las disminuciones que juntan el abanico.",
+        ]
+      ),
+      step(
+        ["Repeat the motif", "Répétez le motif", "Repite el motivo"],
+        [
+          "Continue alternating fans and decreases for the Catherine-wheel fabric.",
+          "Alternez éventails et diminutions.",
+          "Alterna abanicos y disminuciones.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-jacobs-ladder",
+    slug: "jacobs-ladder",
+    key: "jacobs_ladder",
+    sortOrder: 360,
+    title: L("Jacob’s ladder", "Échelle de Jacob", "Escalera de Jacob"),
+    tip: L(
+      "Chain loops laced through each other like a ladder.",
+      "Boucles de ml passées les unes dans les autres.",
+      "Lazos de cad pasados unos por otros.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\bjacob'?s?\s*ladder\b/i },
+    steps: [
+      step(
+        ["Make chain loops", "Boucles de ml", "Lazos de cad"],
+        [
+          "Work the long chain loops (or chain spaces) listed in the pattern.",
+          "Faites les longues boucles / espaces de ml indiqués.",
+          "Haz los lazos / espacios de cad largos indicados.",
+        ]
+      ),
+      step(
+        ["Lace loops together", "Enfilez les boucles", "Enlaza los lazos"],
+        [
+          "Pull each loop through the one below (or as shown) to build the ladder.",
+          "Passez chaque boucle dans celle du dessous pour l’échelle.",
+          "Pasa cada lazo por el de abajo para la escalera.",
+        ]
+      ),
+      step(
+        ["Anchor the top", "Ancrez le haut", "Ancla la parte superior"],
+        [
+          "Secure the final loop with a stitch so the ladder does not unravel.",
+          "Fixez la dernière boucle avec une maille.",
+          "Fija el último lazo con un punto.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-larksfoot",
+    slug: "larksfoot",
+    key: "larksfoot",
+    sortOrder: 370,
+    title: L("Larksfoot stitch", "Point pied d’alouette", "Punto larksfoot"),
+    tip: L(
+      "Offset spikes / long stitches that create a larksfoot color pattern.",
+      "Mailles longues décalées — motif pied d’alouette.",
+      "Puntos largos desplazados — motivo larksfoot.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\blarks?foot\b/i },
+    steps: [
+      step(
+        ["Work the base stitches", "Mailles de base", "Puntos base"],
+        [
+          "Work the short stitches of the row as written.",
+          "Faites les mailles courtes du rang.",
+          "Teje los puntos cortos de la hilera.",
+        ]
+      ),
+      step(
+        ["Long stitch into the row below", "Maille longue en dessous", "Punto largo abajo"],
+        [
+          "Insert one or more rows down for the long “spike” stitch.",
+          "Piquez une ou plusieurs rangs plus bas pour la maille longue.",
+          "Introduce una o más hileras abajo para el punto largo.",
+        ]
+      ),
+      step(
+        ["Offset the next color", "Décalez la couleur", "Desplaza el color"],
+        [
+          "On the next stripe, shift the long stitches so the larksfoot pattern forms.",
+          "Au prochain rang couleur, décalez les mailles longues.",
+          "En la siguiente franja, desplaza los puntos largos.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-wave",
+    slug: "wave-stitch",
+    key: "wave",
+    sortOrder: 380,
+    title: L("Wave stitch", "Point vague", "Punto ola"),
+    tip: L(
+      "Increases and decreases that make undulating waves.",
+      "Augmentations et diminutions en vagues.",
+      "Aumentos y disminuciones en olas.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bwave\s*stitch\b/i },
+    steps: [
+      step(
+        ["Climb with taller stitches", "Montez en mailles hautes", "Sube con puntos altos"],
+        [
+          "Work progressively taller stitches up the wave (e.g. sc → hdc → dc).",
+          "Passez à des mailles plus hautes (ms → db → bride).",
+          "Pasa a puntos más altos (pb → mpa → pa).",
+        ]
+      ),
+      step(
+        ["Peak of the wave", "Crête", "Cresta"],
+        [
+          "Work the tallest stitches at the crest as written.",
+          "Les mailles les plus hautes au sommet.",
+          "Los puntos más altos en la cresta.",
+        ]
+      ),
+      step(
+        ["Descend again", "Redescendez", "Baja de nuevo"],
+        [
+          "Step back down in height (and/or decrease) to finish the wave.",
+          "Redescendez en hauteur (et/ou diminuez).",
+          "Baja de altura (y/o disminuye).",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-apache-tear",
+    slug: "apache-tear",
+    key: "apache_tear",
+    sortOrder: 390,
+    title: L("Apache tear", "Apache tear", "Apache tear"),
+    tip: L(
+      "Dropped long stitches that form diagonal “tear” motifs.",
+      "Mailles longues tombantes en motif diagonal.",
+      "Puntos largos caídos en motivo diagonal.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bapache\s*tear\b/i },
+    steps: [
+      step(
+        ["Work to the drop point", "Jusqu’au point de chute", "Hasta el punto de caída"],
+        [
+          "Crochet across until the pattern calls for a long stitch down.",
+          "Avancez jusqu’à la maille longue vers le bas.",
+          "Avanza hasta el punto largo hacia abajo.",
+        ]
+      ),
+      step(
+        ["Long stitch several rows down", "Maille longue plus bas", "Punto largo más abajo"],
+        [
+          "Insert the hook the required number of rows below and complete the tall stitch.",
+          "Piquez le nombre de rangs plus bas et terminez la maille haute.",
+          "Introduce el número de hileras más abajo y termina el punto alto.",
+        ]
+      ),
+      step(
+        ["Continue the diagonal", "Continuez en diagonal", "Sigue en diagonal"],
+        [
+          "Repeat so the long stitches travel on a diagonal across the fabric.",
+          "Répétez pour faire voyager les mailles en diagonal.",
+          "Repite para que los puntos viajen en diagonal.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-c2c",
+    slug: "corner-to-corner",
+    key: "c2c",
+    sortOrder: 400,
+    title: L(
+      "Corner to corner (C2C)",
+      "Coin à coin (C2C)",
+      "Esquina a esquina (C2C)"
+    ),
+    tip: L(
+      "Build a fabric in diagonal blocks from one corner to the opposite.",
+      "Tissu en blocs en diagonale d’un coin à l’autre.",
+      "Tejido en bloques en diagonal de esquina a esquina.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\b(c2c|corner\s*to\s*corner)\b/i },
+    steps: [
+      step(
+        ["First block", "1er bloc", "1.er bloque"],
+        [
+          "Chain the start (often 6), then work the first C2C block into the chain.",
+          "Faites les ml de départ (souvent 6), puis le 1er bloc.",
+          "Haz las cad de inicio (suele ser 6), luego el 1.er bloque.",
+        ]
+      ),
+      step(
+        ["Increase on the edge", "Augmentez sur le bord", "Aumenta en el borde"],
+        [
+          "Turn, chain, and add a new block on the increase edge each row.",
+          "Tournez, ml, et ajoutez un bloc sur le bord d’augmentation.",
+          "Gira, cad, y añade un bloque en el borde de aumento.",
+        ]
+      ),
+      step(
+        ["Work across existing blocks", "Sur les blocs existants", "Sobre bloques existentes"],
+        [
+          "Slip stitch to the next block top, chain, and work into each block across.",
+          "Mc vers le bloc suivant, ml, travaillez chaque bloc.",
+          "Pe al siguiente bloque, cad, teje cada bloque.",
+        ]
+      ),
+      step(
+        ["Decrease when the graph says", "Diminuez selon le graphique", "Disminuye según el gráfico"],
+        [
+          "When decreasing, skip starting a new edge block and continue across the shorter edge.",
+          "En diminution, ne démarrez pas de nouveau bloc de bord.",
+          "Al disminuir, no inicies un bloque nuevo en el borde.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-surface",
+    slug: "surface-crochet",
+    key: "surface",
+    sortOrder: 410,
+    title: L("Surface crochet", "Crochet de surface", "Crochet de superficie"),
+    tip: L(
+      "Slip stitches worked on top of fabric to draw lines or outlines.",
+      "Mc travaillées sur le tissu pour dessiner des lignes.",
+      "Pe trabajados sobre el tejido para dibujar líneas.",
+    ),
+    sheetCols: 3,
+    sheetRows: 1,
+    detect: { pattern: /\bsurface\s*crochet\b/i },
+    steps: [
+      step(
+        ["Insert from the front", "Piquez devant", "Introduce por delante"],
+        [
+          "With yarn behind the work, insert the hook from front to back where the line starts.",
+          "Fil derrière, piquez d’avant en arrière au début du trait.",
+          "Hilo detrás, introduce de adelante atrás al inicio de la línea.",
+        ]
+      ),
+      step(
+        ["Pull up and slip stitch", "Tirez et mc", "Saca y pe"],
+        [
+          "Yarn over behind, pull up a loop, then slip stitch through the loop on the hook.",
+          "Jeté derrière, tirez, puis mc à travers la boucle du crochet.",
+          "Hebra detrás, saca, luego pe por el bucle del ganchillo.",
+        ]
+      ),
+      step(
+        ["Walk the line", "Suivez le trait", "Sigue la línea"],
+        [
+          "Keep inserting into neighboring gaps to draw the surface path.",
+          "Continuez dans les espaces voisins pour tracer le motif.",
+          "Sigue en los huecos vecinos para trazar el motivo.",
+        ]
+      ),
+    ],
+  },
+  {
+    id: "tech-tassel",
+    slug: "yarn-tassel",
+    key: "tassel",
+    sortOrder: 420,
+    title: L("Yarn tassel", "Pompon / gland de fil", "Borla de hilo"),
+    tip: L(
+      "A scrap-yarn tassel for edges, bunting, and finishing.",
+      "Gland en restes de fil pour bordures et fanions.",
+      "Borla con restos para bordes y banderines.",
+    ),
+    sheetCols: 2,
+    sheetRows: 2,
+    detect: { pattern: /\btassel\b/i },
+    steps: [
+      step(
+        ["Wrap yarn", "Enroulez le fil", "Enrolla el hilo"],
+        [
+          "Wrap yarn many times around a cardboard rectangle (or your hand).",
+          "Enroulez le fil autour d’un carton (ou de la main).",
+          "Enrolla el hilo alrededor de un cartón (o la mano).",
+        ]
+      ),
+      step(
+        ["Tie the top", "Liez le haut", "Ata la parte superior"],
+        [
+          "Slide a tie under the wraps at one edge and knot tightly.",
+          "Passez un lien sous les tours d’un côté et serrez.",
+          "Pasa un lazo bajo las vueltas de un lado y aprieta.",
+        ]
+      ),
+      step(
+        ["Cut the opposite edge", "Coupez le bord opposé", "Corta el borde opuesto"],
+        [
+          "Cut through the wraps on the opposite edge to free the fringe.",
+          "Coupez les tours du bord opposé pour former les franges.",
+          "Corta las vueltas del borde opuesto para formar flecos.",
+        ]
+      ),
+      step(
+        ["Neck wrap & trim", "Collier et égalisez", "Cuello y recorta"],
+        [
+          "Wrap a neck below the tie, then trim the fringe even.",
+          "Faites un collier sous le nœud, puis égalisez.",
+          "Haz un cuello bajo el nudo y recorta al mismo largo.",
+        ]
+      ),
+    ],
+  },
 ];
 
 export function catalogToTechnique(c: CatalogTechnique, now: string): Technique {
@@ -1501,7 +2364,7 @@ export function buildDefaultTechniques(): Technique[] {
   return TECHNIQUE_CATALOG.map((c) => catalogToTechnique(c, now));
 }
 
-/** Add any catalog techniques missing from a stored doc (keeps existing art). */
+/** Add missing catalog techniques and enrich shorter step lists (keeps existing art). */
 export function mergeCatalogIntoTechniques(
   existing: Technique[]
 ): Technique[] {
@@ -1511,10 +2374,39 @@ export function mergeCatalogIntoTechniques(
   const merged = [...existing];
 
   for (const c of TECHNIQUE_CATALOG) {
-    if (byKey.has(c.key) || byId.has(c.id)) continue;
-    const next = catalogToTechnique(c, now);
-    merged.push(next);
-    byKey.set(next.key, next);
+    const prev = byKey.get(c.key) || byId.get(c.id);
+    if (!prev) {
+      const next = catalogToTechnique(c, now);
+      merged.push(next);
+      byKey.set(next.key, next);
+      continue;
+    }
+
+    // Sync step count/text from catalog (grow or shrink); keep imagePath by index.
+    if (c.steps.length !== prev.steps.length) {
+      const steps = c.steps.map((catalogStep, i) => {
+        const old = prev.steps[i];
+        return {
+          caption: catalogStep.caption,
+          body: catalogStep.body,
+          imagePath: old?.imagePath,
+        };
+      });
+      const idx = merged.findIndex((t) => t.id === prev.id || t.key === prev.key);
+      if (idx >= 0) {
+        merged[idx] = {
+          ...prev,
+          title: c.title,
+          tip: c.tip,
+          sortOrder: c.sortOrder,
+          sheetCols: c.sheetCols,
+          sheetRows: c.sheetRows,
+          steps,
+          updatedAt: now,
+        };
+        byKey.set(prev.key, merged[idx]);
+      }
+    }
   }
 
   return merged.sort((a, b) => a.sortOrder - b.sortOrder);

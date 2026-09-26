@@ -15,6 +15,7 @@ import {
   blueprintToPromptPanels,
   getTechniqueBlueprint,
 } from "@/lib/crochet/technique-blueprints";
+import { TECHNIQUE_ILLUSTRATION_STYLE } from "@/lib/crochet/illustration-style";
 import type { Technique } from "@/types/techniques";
 
 const STANDARD_SIZES = new Set([
@@ -65,16 +66,14 @@ export function buildTechniqueSheetPrompt(
   return [
     `Create ONE single illustration sheet for a crochet beginner tutorial: "${technique.title.en || bp?.title || technique.slug}".`,
     `Layout: exact ${cols} columns × ${rows} rows equal panels in a clean grid, thin soft cream (#faf7f2) dividers between panels.`,
-    `Brand style (Loopcraft — original art, do not imitate any existing brand drawings): polished flat vector crochet tutorial diagrams suitable for a premium yarn company guide. Cream background (#faf7f2), peach/apricot yarn (#d96b52), soft tan accents (#c49a5a), silver crochet hook with a sharp readable hook tip and throat, calm simplified hands with correct finger count, soft even lighting, identical camera angle in every panel.`,
-    `Quality bar: each panel must be clear enough that a beginner can copy the motion without guessing. Prefer fewer, sharper details over decorative clutter.`,
+    TECHNIQUE_ILLUSTRATION_STYLE,
     `Pedagogy: sequential one-motion panels left-to-right / top-to-bottom; yarn path continuous across panels.`,
     `Technical accuracy (mandatory):`,
     `- Exact hook entry point (ring opening, or both top loops of a stitch V).`,
-    `- Exact yarn strand caught on the hook.`,
+    `- Exact yarn strand caught on the hook (draw that strand in instructional blue).`,
     `- Correct loop count on the hook for that step.`,
     `- Real crochet stitch anatomy (V-shaped tops / short posts) — never generic ribs, gears, or blobs.`,
     `- Hands must be able to perform the action shown.`,
-    `CRITICAL: no letters, numbers, watermarks, logos, or captions inside the image.`,
     panels,
     qaFeedback
       ? `CORRECTIONS FROM FAILED QA (must fix):\n${qaFeedback}`

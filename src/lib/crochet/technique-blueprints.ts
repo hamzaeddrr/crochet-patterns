@@ -1,7 +1,7 @@
 /**
  * Pedagogical blueprints for Loopcraft technique art.
- * Structure inspired by brand step-guides (e.g. DMC SBS) — original wording & checks.
- * Used for image prompts + automatic refine. Not a copy of any third-party art.
+ * Step counts follow real stitch motions (aligned with public SBS guides like DMC) —
+ * original wording & checks only. Used for image prompts + automatic refine.
  */
 
 import { TECHNIQUE_CATALOG } from "@/lib/crochet/technique-catalog";
@@ -26,72 +26,130 @@ export interface TechniqueBlueprint {
   panels: TechniquePanelBlueprint[];
 }
 
+const COLOR = {
+  mustBlue:
+    "Active yarn for THIS motion drawn in bright instructional blue (#3b82f6)",
+  mustApricot:
+    "Established fabric / inactive yarn in soft apricot-tan (#d4a574)",
+};
+
 const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
+  chain: {
+    key: "chain",
+    title: "Chain",
+    tip: "Foundation stitches and turning chains.",
+    preferredCols: 4,
+    preferredRows: 2,
+    panels: [
+      {
+        caption: "Hold slip knot on hook",
+        action: "Hook held with one clear slip-knot loop on the shaft; working yarn ready.",
+        mustShow: [COLOR.mustApricot, "Exactly one loop on the hook"],
+        rejectIf: ["Multiple chains already finished with no focus on start"],
+      },
+      {
+        caption: "Yarn over",
+        action: "Working yarn wraps over the hook clockwise.",
+        mustShow: [COLOR.mustBlue + " on the yarn-over", "Starting loop still on shaft"],
+        rejectIf: ["No yarn-over visible"],
+      },
+      {
+        caption: "Catch the yarn",
+        action: "Hook tip pulls through the slip knot, catching the wrap in the throat.",
+        mustShow: [COLOR.mustBlue + " caught in hook throat", "Readable silver hook tip"],
+        rejectIf: ["Hook floating away from yarn"],
+      },
+      {
+        caption: "First chain made",
+        action: "New loop on shaft; one chain V below the hook.",
+        mustShow: ["Exactly one loop on hook", "One clear chain V below"],
+        rejectIf: ["Tangled scribble with no chain V"],
+      },
+      {
+        caption: "Yarn over again",
+        action: "Same yarn-over for the next chain.",
+        mustShow: [COLOR.mustBlue + " wrapping", "Prior chain still visible"],
+        rejectIf: ["Camera angle drastically different"],
+      },
+      {
+        caption: "Pull through again",
+        action: "Second chain drawn through the loop on the hook.",
+        mustShow: ["Two clear chain Vs", "One loop on hook"],
+        rejectIf: ["Only one chain or a blob"],
+      },
+      {
+        caption: "Two chains",
+        action: "Two finished chain stitches sit below the active loop.",
+        mustShow: ["Two distinct chain Vs", COLOR.mustApricot],
+        rejectIf: ["Cannot count two separate chains"],
+      },
+      {
+        caption: "Continue & count",
+        action: "A short row of chain Vs; loop on hook visually separate from the count.",
+        mustShow: [
+          "Several chain Vs in a row",
+          "Loop on hook clearly not counted as a chain",
+        ],
+        rejectIf: ["Counting the loop on the hook as a chain stitch"],
+      },
+    ],
+  },
   magic_ring: {
     key: "magic_ring",
     title: "Magic ring",
     tip: "A tight center for amigurumi — no hole in the middle.",
-    preferredCols: 2,
+    preferredCols: 3,
     preferredRows: 2,
     panels: [
       {
-        caption: "Make a loop with the yarn",
-        action:
-          "Left hand forms an open yarn ring; short tail hangs free; working yarn over the index finger.",
-        mustShow: [
-          "Clear closed yarn loop / ring held by fingers",
-          "Distinct short yarn tail separate from working yarn",
-          "No crochet hook yet (or hook not inserted)",
-        ],
-        rejectIf: [
-          "Finished fabric or closed stitch circle already",
-          "Hook piercing yarn with no visible ring",
-        ],
+        caption: "Form a loop on fingers",
+        action: "Yarn loop around index and middle fingers; short tail in the palm.",
+        mustShow: [COLOR.mustApricot, "Open loop on fingers", "Distinct short tail"],
+        rejectIf: ["Finished fabric circle already"],
       },
       {
-        caption: "Insert hook into the ring",
-        action:
-          "Hook tip enters through the center of the yarn ring; yarn-over ready; one working loop path visible.",
+        caption: "Insert, yarn over, pull up",
+        action: "Hook enters the loop; blue yarn wraps and a loop is pulled through.",
         mustShow: [
-          "Silver hook tip clearly inside / through the ring opening",
-          "Yarn ring still open and visible around the hook shaft or tip",
-          "Working yarn approach for yarn-over is readable",
+          "Hook tip inside the ring opening",
+          COLOR.mustBlue + " on the pull-up yarn",
         ],
-        rejectIf: [
-          "Hook floating away from the ring",
-          "No visible ring opening",
-          "Hook merged into a solid blob of yarn",
-        ],
+        rejectIf: ["No visible ring opening", "Hook floating away"],
+      },
+      {
+        caption: "Chain one",
+        action: "Yarn over and pull through the loop on the hook (chain 1).",
+        mustShow: [COLOR.mustBlue, "Exactly one loop remaining on the hook"],
+        rejectIf: ["Multiple stitches already around the ring"],
       },
       {
         caption: "Work stitches into the ring",
-        action:
-          "Several single-crochet-like stitches stand around the open ring; active loop on the hook.",
+        action: "An sc is worked into the still-open ring (insert, pull up, pull through both).",
         mustShow: [
-          "Open ring still visible in the center",
-          "At least 3 distinct stitch posts / V-shaped tops around the ring",
-          "Exactly one clear active loop on the hook neck",
-          "Hook entering under both top loops of a stitch or into the ring for the next stitch",
+          "Open ring still visible",
+          "At least one clear stitch post / V around the ring",
+          COLOR.mustBlue + " on active yarn",
         ],
-        rejectIf: [
-          "Generic ribs or gear teeth instead of stitch Vs",
-          "Zero loops or a messy scribble on the hook",
-          "Ring already fully closed with no center opening",
-        ],
+        rejectIf: ["Generic ribs instead of stitch Vs", "Ring already fully closed"],
       },
       {
-        caption: "Pull the tail to close the ring",
-        action:
-          "Hand pulls the short tail; center closes snug; stitches gather; loop remains on hook.",
+        caption: "Repeat to pattern count",
+        action: "Several short stitches stand around the open ring.",
         mustShow: [
-          "Hand clearly pulling the short tail",
-          "Center hole much smaller / closed vs previous panel",
+          "Open center still visible",
+          "At least 3 distinct stitch tops around the ring",
+        ],
+        rejectIf: ["Center already sealed shut"],
+      },
+      {
+        caption: "Join & pull the tail closed",
+        action: "Hand pulls the short tail; center closes snug; loop remains on hook.",
+        mustShow: [
+          "Hand pulling the short tail",
+          "Center hole closed or nearly closed",
           "Active loop still on the hook",
         ],
-        rejectIf: [
-          "Pulling the working yarn instead of the tail with no distinction",
-          "Fabric looks unrelated to prior panels",
-        ],
+        rejectIf: ["Pulling working yarn with no tail distinction"],
       },
     ],
   },
@@ -100,45 +158,130 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
     title: "Single crochet",
     tip: "The basic stitch for most amigurumi rounds.",
     preferredCols: 3,
+    preferredRows: 2,
+    panels: [
+      {
+        caption: "Insert under both loops",
+        action: "Hook tip goes under both top loops (the V) of the next stitch.",
+        mustShow: [
+          COLOR.mustApricot,
+          "Clear V on the target stitch",
+          "Hook tip under BOTH loops",
+          "One starting loop already on the hook",
+        ],
+        rejectIf: ["Hook only under one strand", "No identifiable stitch top"],
+      },
+      {
+        caption: "Yarn over",
+        action: "Working yarn wraps over the hook in instructional blue.",
+        mustShow: [COLOR.mustBlue + " wrapped on the hook", "Hook still through the stitch"],
+        rejectIf: ["No yarn-over"],
+      },
+      {
+        caption: "Pull up a loop",
+        action: "Blue yarn pulled through the stitch; exactly two loops on hook.",
+        mustShow: [
+          COLOR.mustBlue + " being drawn through",
+          "Exactly two loops on the hook",
+        ],
+        rejectIf: ["One loop or three+ when two are required"],
+      },
+      {
+        caption: "Yarn over again",
+        action: "Second yarn-over in blue across the two loops.",
+        mustShow: [COLOR.mustBlue, "Still two loops on hook"],
+        rejectIf: ["Already finished stitch"],
+      },
+      {
+        caption: "Pull through both loops",
+        action: "Pull through both; one loop remains — short SC post complete.",
+        mustShow: [
+          "Exactly one loop remaining on the hook",
+          "New stitch height matches a single crochet (short post)",
+        ],
+        rejectIf: ["Still two loops left", "Looks like a tall double-crochet post"],
+      },
+    ],
+  },
+  hdc: {
+    key: "hdc",
+    title: "Half double crochet",
+    tip: "US hdc — UK half treble (htr).",
+    preferredCols: 3,
     preferredRows: 1,
     panels: [
       {
-        caption: "Insert hook under both loops",
-        action: "Hook tip goes under both top loops (the V) of the next stitch.",
+        caption: "Yarn over and insert",
+        action: "Blue yarn-over already on hook; tip inserts under both top loops.",
         mustShow: [
-          "Previous stitch shows a clear V (two top loops)",
-          "Hook tip under BOTH loops of that V",
-          "One loop already on the hook shaft before insert (starting loop)",
+          COLOR.mustBlue + " yarn-over on hook",
+          "Hook under both loops of the V",
         ],
-        rejectIf: [
-          "Hook only under one strand with no V visible",
-          "Hook stabbing the middle of fabric randomly",
-        ],
+        rejectIf: ["Inserting with no yarn-over"],
       },
       {
-        caption: "Yarn over and pull up a loop",
-        action: "Yarn wrapped over hook; hook pulls a new loop through the stitch; two loops on hook.",
-        mustShow: [
-          "Yarn over clearly wrapped on the hook",
-          "Exactly two loops visible on the hook after the pull-up",
-        ],
-        rejectIf: [
-          "One loop or three+ loops when two are required",
-          "No yarn-over visible",
-        ],
+        caption: "Pull up a loop",
+        action: "Pull up — exactly three loops on the hook.",
+        mustShow: ["Exactly three loops on the hook", COLOR.mustBlue],
+        rejectIf: ["Two or four loops"],
       },
       {
-        caption: "Yarn over and pull through both loops",
-        action: "Second yarn over; hook pulls through both loops; one loop remains — SC complete.",
+        caption: "Pull through all three",
+        action: "Yarn over; pull through all three; one loop remains — medium-height hdc.",
         mustShow: [
-          "Yarn over present",
-          "Exactly one loop remaining on the hook at the end",
-          "New stitch height matches a single crochet (short post)",
+          COLOR.mustBlue + " finishing yarn-over",
+          "Exactly one loop on the hook",
+          "Stitch taller than sc but shorter than dc",
         ],
-        rejectIf: [
-          "Still two loops left on the hook",
-          "Looks like a tall double-crochet post",
+        rejectIf: ["Multiple loops remaining"],
+      },
+    ],
+  },
+  dc: {
+    key: "dc",
+    title: "Double crochet",
+    tip: "US double crochet — UK treble (tr).",
+    preferredCols: 3,
+    preferredRows: 2,
+    panels: [
+      {
+        caption: "Yarn over",
+        action: "Blue yarn-over before insert.",
+        mustShow: [COLOR.mustBlue + " yarn-over on hook"],
+        rejectIf: ["Inserting with no yarn-over"],
+      },
+      {
+        caption: "Insert under both loops",
+        action: "Hook under both top loops of the next V.",
+        mustShow: ["Hook under both loops", "Prior YO still on shaft"],
+        rejectIf: ["Random fabric pierce"],
+      },
+      {
+        caption: "Yarn over and pull up",
+        action: "Yarn over and pull up — exactly three loops on the hook.",
+        mustShow: ["Exactly three loops on the hook", COLOR.mustBlue],
+        rejectIf: ["Wrong loop count"],
+      },
+      {
+        caption: "Pull through first two",
+        action: "Yarn over; pull through first two only — two loops remain.",
+        mustShow: ["Exactly two loops remaining", COLOR.mustBlue],
+        rejectIf: ["Pulled through all three at once"],
+      },
+      {
+        caption: "Yarn over again",
+        action: "Final blue yarn-over with two loops on the hook.",
+        mustShow: [COLOR.mustBlue, "Two loops on hook"],
+        rejectIf: ["No yarn-over"],
+      },
+      {
+        caption: "Pull through last two",
+        action: "Pull through last two — tall dc post; one loop remains.",
+        mustShow: [
+          "Exactly one loop on the hook",
+          "Tall post matching double crochet height",
         ],
+        rejectIf: ["Short sc-height stitch", "Two loops still left"],
       },
     ],
   },
@@ -154,6 +297,7 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
         action: "Identify one target stitch V where two SC will go.",
         mustShow: [
           "One clear target stitch V highlighted by hook approach",
+          COLOR.mustApricot,
         ],
         rejectIf: ["No identifiable stitch to work into"],
       },
@@ -163,6 +307,7 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
         mustShow: [
           "One finished short stitch in the target place",
           "One loop on hook",
+          COLOR.mustBlue + " on active yarn during the stitch",
         ],
         rejectIf: ["Two stitches already complete"],
       },
@@ -173,9 +318,7 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
           "Hook entering the same stitch as the first SC",
           "First SC still visible beside the hook",
         ],
-        rejectIf: [
-          "Hook clearly in a different neighboring stitch",
-        ],
+        rejectIf: ["Hook clearly in a different neighboring stitch"],
       },
       {
         caption: "Two stitches from one",
@@ -196,31 +339,25 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
     preferredRows: 1,
     panels: [
       {
-        caption: "Pull up a loop from first stitch",
+        caption: "Loop from first stitch",
         action: "Hook inserts in stitch 1 and pulls up a loop (2 loops on hook).",
-        mustShow: [
-          "Hook through first stitch",
-          "Two loops on hook",
-        ],
+        mustShow: ["Hook through first stitch", "Two loops on hook", COLOR.mustBlue],
         rejectIf: ["Three loops already"],
       },
       {
-        caption: "Pull up a loop from next stitch",
+        caption: "Loop from next",
         action: "Hook inserts in stitch 2 and pulls up another loop (3 loops on hook).",
         mustShow: [
           "Two adjacent stitches involved",
           "Exactly three loops on the hook",
         ],
-        rejectIf: [
-          "Still only two loops",
-          "Loops look like a tangled mess with no count",
-        ],
+        rejectIf: ["Still only two loops"],
       },
       {
-        caption: "Yarn over and pull through all loops",
+        caption: "Pull through all",
         action: "Yarn over; pull through all three; one loop remains.",
         mustShow: [
-          "Yarn over",
+          COLOR.mustBlue + " yarn-over",
           "Exactly one loop left on hook",
           "Two bases joined into one stitch top",
         ],
@@ -249,8 +386,8 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
         caption: "Yarn over and pull the tail through",
         action: "Hook pulls the cut tail entirely through the last loop.",
         mustShow: [
+          COLOR.mustBlue + " on the tail being pulled through",
           "Tail passing through the final loop",
-          "Hook involved in pulling the tail",
         ],
         rejectIf: ["Tail not going through a loop"],
       },
@@ -260,6 +397,7 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
         mustShow: [
           "Closed last stitch / no open loop on hook",
           "Tail being woven or tucked into fabric",
+          COLOR.mustApricot,
         ],
         rejectIf: ["Open loop still on hook as if mid-stitch"],
       },
@@ -284,6 +422,8 @@ export function getTechniqueBlueprint(
       action: s.body.en,
       mustShow: [
         `Clearly illustrate: ${s.caption.en}`,
+        COLOR.mustBlue + " for the active yarn of this step",
+        COLOR.mustApricot + " for established fabric",
         "Readable silver hook tip and yarn path",
         "Plausible hand pose for this motion",
       ],
@@ -291,6 +431,7 @@ export function getTechniqueBlueprint(
         "Unreadable scribble of yarn",
         "Wrong number of loops on the hook for this step",
         "Hook floating with no connection to the fabric or ring",
+        "All yarn the same color with no blue active-yarn highlight",
       ],
     })),
   };

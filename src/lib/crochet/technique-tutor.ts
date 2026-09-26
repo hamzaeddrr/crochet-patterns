@@ -48,7 +48,7 @@ export function techniquesForRound(round: PatternRound): TechniqueKey[] {
   if (/\b(slip\s*knot)\b/i.test(instr)) found.add("slip_knot");
   if (/\b(blo)\b/i.test(instr)) found.add("blo");
   if (/\b(flo)\b/i.test(instr)) found.add("flo");
-  if (/\b(bobble|puff|popcorn|crab|dc2tog|hdc2tog|tr2tog|dc3tog|weave|fsc|fhdc)\b/i.test(instr)) {
+  if (/\b(bobble|puff|popcorn|crab|dc2tog|hdc2tog|tr2tog|dc3tog|weave|fsc|fhdc|shell|alpine|c2c|granny|tassel)\b/i.test(instr)) {
     if (/\bbobble\b/i.test(instr)) found.add("bobble");
     if (/\bpuff\b/i.test(instr)) found.add("puff");
     if (/\bpopcorn\b/i.test(instr)) found.add("popcorn");
@@ -60,6 +60,11 @@ export function techniquesForRound(round: PatternRound): TechniqueKey[] {
     if (/\bweave\b/i.test(instr)) found.add("weave_ends");
     if (/\bfsc\b/i.test(instr)) found.add("fsc");
     if (/\bfhdc\b/i.test(instr)) found.add("fhdc");
+    if (/\bshell\b/i.test(instr)) found.add("shell");
+    if (/\balpine\b/i.test(instr)) found.add("alpine");
+    if (/\b(c2c|corner\s*to\s*corner)\b/i.test(instr)) found.add("c2c");
+    if (/\bgranny\b/i.test(instr)) found.add("granny_cluster");
+    if (/\btassel\b/i.test(instr)) found.add("tassel");
   }
   if (/\b(color\s*change|change\s*colou?r|new\s*ball)\b/i.test(instr)) {
     found.add("color_change");

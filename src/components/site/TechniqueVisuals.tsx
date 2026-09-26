@@ -4,10 +4,12 @@ import type { TechniqueKey } from "@/lib/crochet/technique-tutor";
 import { cn } from "@/lib/utils";
 
 const INK = "#2b2522";
-const APRICOT = "#d96b52";
-const YARN = "#c49a5a";
+/** Established fabric / inactive yarn */
+const FABRIC = "#d4a574";
+/** Active yarn for the current motion (pedagogical highlight) */
+const ACTIVE = "#3b82f6";
 const BONE = "#faf7f2";
-const MUTED = "#6e655e";
+const HOOK = "#94a3b8";
 
 /** Multi-frame SVG illustrations for beginner technique tutorials. */
 export function TechniqueVisual({
@@ -71,14 +73,14 @@ function Hook({ x, y }: { x: number; y: number }) {
       <path
         d="M8 8 C8 2, 20 2, 20 10 L20 52"
         fill="none"
-        stroke={INK}
+        stroke={HOOK}
         strokeWidth="3.2"
         strokeLinecap="round"
       />
       <path
         d="M20 10 C28 4, 34 12, 26 16"
         fill="none"
-        stroke={INK}
+        stroke={HOOK}
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -96,17 +98,17 @@ function MagicRingFrames({ frame }: { frame: number }) {
           rx="48"
           ry="28"
           fill="none"
-          stroke={YARN}
+          stroke={FABRIC}
           strokeWidth="8"
           strokeLinecap="round"
         />
         <path
           d="M90 95 Q70 70 95 55"
           fill="none"
-          stroke={YARN}
+          stroke={ACTIVE}
           strokeWidth="5"
           strokeLinecap="round"
-        />
+        />
       </g>
     );
   }
@@ -119,17 +121,17 @@ function MagicRingFrames({ frame }: { frame: number }) {
           rx="42"
           ry="24"
           fill="none"
-          stroke={YARN}
+          stroke={FABRIC}
           strokeWidth="7"
         />
         <Hook x={150} y={28} />
         <path
           d="M170 55 Q150 90 130 100"
           fill="none"
-          stroke={APRICOT}
+          stroke={ACTIVE}
           strokeWidth="4"
           strokeLinecap="round"
-        />
+        />
       </g>
     );
   }
@@ -142,10 +144,9 @@ function MagicRingFrames({ frame }: { frame: number }) {
           rx="40"
           ry="22"
           fill="none"
-          stroke={YARN}
+          stroke={FABRIC}
           strokeWidth="6"
         />
-        {/* stitches around ring */}
         {[0, 1, 2, 3, 4, 5].map((i) => {
           const a = -Math.PI / 2 + (i / 6) * Math.PI * 2;
           const x = 130 + Math.cos(a) * 38;
@@ -154,19 +155,26 @@ function MagicRingFrames({ frame }: { frame: number }) {
             <path
               key={i}
               d={`M${x - 5} ${y - 4} L${x + 5} ${y + 4} M${x + 5} ${y - 4} L${x - 5} ${y + 4}`}
-              stroke={APRICOT}
+              stroke={FABRIC}
               strokeWidth="2.4"
               strokeLinecap="round"
             />
           );
         })}
-        <Hook x={168} y={22} />
+        <Hook x={168} y={22} />
+        <path
+          d="M188 48 Q175 70 160 90"
+          fill="none"
+          stroke={ACTIVE}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
       </g>
     );
   }
   return (
     <g>
-      <circle cx="140" cy="95" r="28" fill={BONE} stroke={YARN} strokeWidth="5" />
+      <circle cx="140" cy="95" r="28" fill={BONE} stroke={FABRIC} strokeWidth="5" />
       {[0, 1, 2, 3, 4, 5].map((i) => {
         const a = -Math.PI / 2 + (i / 6) * Math.PI * 2;
         const x = 140 + Math.cos(a) * 22;
@@ -175,7 +183,7 @@ function MagicRingFrames({ frame }: { frame: number }) {
           <path
             key={i}
             d={`M${x - 4} ${y - 4} L${x + 4} ${y + 4} M${x + 4} ${y - 4} L${x - 4} ${y + 4}`}
-            stroke={APRICOT}
+            stroke={FABRIC}
             strokeWidth="2.2"
             strokeLinecap="round"
           />
@@ -184,10 +192,10 @@ function MagicRingFrames({ frame }: { frame: number }) {
       <path
         d="M95 115 Q80 130 70 150"
         fill="none"
-        stroke={YARN}
+        stroke={ACTIVE}
         strokeWidth="4"
         strokeLinecap="round"
-      />
+      />
     </g>
   );
 }
@@ -198,12 +206,12 @@ function ScFrames({ frame }: { frame: number }) {
       <g>
         <path
           d="M70 110 H210"
-          stroke={YARN}
+          stroke={FABRIC}
           strokeWidth="10"
           strokeLinecap="round"
         />
         <circle cx="120" cy="110" r="8" fill={BONE} stroke={INK} strokeWidth="2" />
-        <Hook x={128} y={40} />
+        <Hook x={128} y={40} />
       </g>
     );
   }
@@ -212,18 +220,18 @@ function ScFrames({ frame }: { frame: number }) {
       <g>
         <path
           d="M70 110 H210"
-          stroke={YARN}
+          stroke={FABRIC}
           strokeWidth="10"
           strokeLinecap="round"
         />
         <path
           d="M148 70 Q130 100 120 110"
           fill="none"
-          stroke={APRICOT}
+          stroke={ACTIVE}
           strokeWidth="4"
           strokeLinecap="round"
         />
-        <Hook x={128} y={36} />
+        <Hook x={128} y={36} />
       </g>
     );
   }
@@ -231,17 +239,24 @@ function ScFrames({ frame }: { frame: number }) {
     <g>
       <path
         d="M70 110 H210"
-        stroke={YARN}
+        stroke={FABRIC}
         strokeWidth="10"
         strokeLinecap="round"
       />
       <path
         d="M120 90 L135 110 M135 90 L120 110"
-        stroke={APRICOT}
+        stroke={FABRIC}
         strokeWidth="3.2"
         strokeLinecap="round"
       />
-      <Hook x={150} y={34} />
+      <path
+        d="M155 55 Q145 75 140 95"
+        fill="none"
+        stroke={ACTIVE}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <Hook x={150} y={34} />
     </g>
   );
 }
@@ -250,57 +265,62 @@ function IncFrames({ frame }: { frame: number }) {
   if (frame <= 0) {
     return (
       <g>
-        <path d="M60 115 H220" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
-        <circle cx="140" cy="115" r="10" fill={BONE} stroke={INK} strokeWidth="2.2" />
+        <path d="M60 115 H220" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
+        <circle cx="140" cy="115" r="10" fill={BONE} stroke={INK} strokeWidth="2.2" />
       </g>
     );
   }
   if (frame === 1) {
     return (
       <g>
-        <path d="M60 115 H220" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
+        <path d="M60 115 H220" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
         <path
           d="M130 95 L145 115 M145 95 L130 115"
-          stroke={APRICOT}
+          stroke={FABRIC}
           strokeWidth="3"
           strokeLinecap="round"
         />
-        <Hook x={150} y={38} />
+        <path
+          d="M165 50 Q155 80 148 100"
+          fill="none"
+          stroke={ACTIVE}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+        <Hook x={150} y={38} />
       </g>
     );
   }
   if (frame === 2) {
     return (
       <g>
-        <path d="M60 115 H220" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
+        <path d="M60 115 H220" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
         <path
           d="M122 92 L137 115 M137 92 L122 115"
-          stroke={APRICOT}
+          stroke={FABRIC}
           strokeWidth="3"
           strokeLinecap="round"
         />
         <path
           d="M148 88 L163 115 M163 88 L148 115"
-          stroke={APRICOT}
+          stroke={ACTIVE}
           strokeWidth="3"
           strokeLinecap="round"
-          opacity="0.55"
         />
-        <Hook x={160} y={32} />
+        <Hook x={160} y={32} />
       </g>
     );
   }
   return (
     <g>
-      <path d="M60 115 H220" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
-      {/* V shape = increase */}
+      <path d="M60 115 H220" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
       <path
         d="M140 125 L118 85 M140 125 L162 85"
-        stroke={APRICOT}
+        stroke={FABRIC}
         strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
+      />
     </g>
   );
 }
@@ -309,37 +329,44 @@ function DecFrames({ frame }: { frame: number }) {
   if (frame <= 0) {
     return (
       <g>
-        <path d="M55 115 H225" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
+        <path d="M55 115 H225" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
         <circle cx="120" cy="115" r="9" fill={BONE} stroke={INK} strokeWidth="2" />
-        <circle cx="160" cy="115" r="9" fill={BONE} stroke={INK} strokeWidth="2" />
+        <circle cx="160" cy="115" r="9" fill={BONE} stroke={INK} strokeWidth="2" />
       </g>
     );
   }
   if (frame === 1) {
     return (
       <g>
-        <path d="M55 115 H225" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
+        <path d="M55 115 H225" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
         <path
           d="M120 115 Q140 70 160 115"
           fill="none"
-          stroke={APRICOT}
+          stroke={ACTIVE}
           strokeWidth="4"
           strokeLinecap="round"
         />
-        <Hook x={132} y={28} />
+        <Hook x={132} y={28} />
       </g>
     );
   }
   return (
     <g>
-      <path d="M55 115 H225" stroke={YARN} strokeWidth="11" strokeLinecap="round" />
+      <path d="M55 115 H225" stroke={FABRIC} strokeWidth="11" strokeLinecap="round" />
       <path
         d="M140 70 L125 110 M140 70 L155 110"
-        stroke={APRICOT}
+        stroke={FABRIC}
         strokeWidth="3.5"
         strokeLinecap="round"
       />
-      <Hook x={150} y={24} />
+      <path
+        d="M168 40 Q158 60 150 85"
+        fill="none"
+        stroke={ACTIVE}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <Hook x={150} y={24} />
     </g>
   );
 }
@@ -349,7 +376,7 @@ function FoFrames({ frame }: { frame: number }) {
     return (
       <g>
         <Hook x={120} y={40} />
-        <circle cx="148" cy="58" r="10" fill="none" stroke={YARN} strokeWidth="5" />
+        <circle cx="148" cy="58" r="10" fill="none" stroke={FABRIC} strokeWidth="5" />
       </g>
     );
   }
@@ -360,10 +387,10 @@ function FoFrames({ frame }: { frame: number }) {
         <path
           d="M148 55 Q170 80 160 110"
           fill="none"
-          stroke={YARN}
+          stroke={ACTIVE}
           strokeWidth="5"
           strokeLinecap="round"
-        />
+        />
       </g>
     );
   }
@@ -372,16 +399,16 @@ function FoFrames({ frame }: { frame: number }) {
       <path
         d="M90 70 Q140 50 190 90"
         fill="none"
-        stroke={YARN}
+        stroke={FABRIC}
         strokeWidth="5"
         strokeLinecap="round"
       />
       <path
         d="M150 95 L165 115 M165 95 L150 115"
-        stroke={APRICOT}
+        stroke={FABRIC}
         strokeWidth="3"
         strokeLinecap="round"
-      />
+      />
     </g>
   );
 }

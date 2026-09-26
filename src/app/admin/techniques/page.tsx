@@ -166,6 +166,7 @@ export default function AdminTechniquesPage() {
     try {
       const fd = new FormData();
       fd.append("techniqueId", form.id);
+      fd.append("kind", "sheet");
       fd.append("file", file);
       const res = await fetch("/api/admin/techniques", {
         method: "POST",
@@ -174,9 +175,39 @@ export default function AdminTechniquesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
       applyTechnique(data.technique);
-      setMsg("Sheet uploaded — set cols/rows, then Crop to steps");
+      setMsg(
+        "Sheet uploaded — set cols × rows to match your grid, then Crop to steps"
+      );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function uploadStepImage(stepIndex: number, file: File) {
+    if (!form.id) {
+      setMsg("Save the technique first, then upload a step photo");
+      return;
+    }
+    setBusy(`step-${stepIndex}`);
+    setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("techniqueId", form.id);
+      fd.append("kind", "step");
+      fd.append("stepIndex", String(stepIndex));
+      fd.append("file", file);
+      const res = await fetch("/api/admin/techniques", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Step upload failed");
+      applyTechnique(data.technique);
+      setMsg(`Step ${stepIndex + 1} photo uploaded`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Step upload failed");
     } finally {
       setBusy(null);
     }
@@ -732,30 +763,44 @@ export default function AdminTechniquesPage() {
                 <Sparkles className="h-4 w-4" />
                 {busy === "generate" ? "Generating…" : "Generate sheet only"}
               </button>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
-                <Upload className="h-4 w-4" />
-                Upload sheet
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={!!busy || !form.id}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadSheet(f);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={!!busy || !form.id || !form.sheetPath}
-                onClick={cropSheet}
-                className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/60 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-200 disabled:opacity-40"
-              >
-                <Crop className="h-4 w-4" />
-                {busy === "crop" ? "Cropping…" : "Crop to steps"}
-              </button>
+            </div>
+
+            <div className="rounded-lg border border-slate-700/80 bg-slate-950/50 p-3 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-slate-200">
+                  Your own images
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Upload a multi-panel sheet (grid), set cols × rows above, then
+                  crop into steps — or upload one photo per step below.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 hover:bg-slate-800">
+                  <Upload className="h-4 w-4" />
+                  Upload sheet / collage
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={!!busy || !form.id}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadSheet(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={!!busy || !form.id || !form.sheetPath}
+                  onClick={cropSheet}
+                  className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/60 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-200 disabled:opacity-40"
+                >
+                  <Crop className="h-4 w-4" />
+                  {busy === "crop" ? "Cropping…" : "Crop sheet to steps"}
+                </button>
+              </div>
             </div>
 
             {msg &&
@@ -763,7 +808,8 @@ export default function AdminTechniquesPage() {
               busy === "generate" ||
               busy === "upload" ||
               busy === "auto" ||
-              /crop|sheet|panel|upload|generat|illustrat|ready|refin/i.test(
+              busy?.startsWith("step-") ||
+              /crop|sheet|panel|upload|generat|illustrat|ready|refin|photo/i.test(
                 msg
               )) ? (
               <p
@@ -820,9 +866,24 @@ export default function AdminTechniquesPage() {
                     />
                   ) : (
                     <div className="flex aspect-[4/3] items-center justify-center text-[10px] text-slate-600">
-                      No crop
+                      No image
                     </div>
                   )}
+                  <label className="flex cursor-pointer items-center justify-center gap-1 border-t border-slate-800 bg-slate-950/80 py-1.5 text-[10px] font-medium text-slate-400 hover:bg-slate-900 hover:text-slate-200">
+                    <Upload className="h-3 w-3" />
+                    {busy === `step-${i}` ? "…" : "Upload photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={!!busy || !form.id}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadStepImage(i, f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">

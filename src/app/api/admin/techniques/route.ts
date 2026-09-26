@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { savePublicAsset } from "@/lib/storage/assets";
 import {
   deleteTechnique,
+  getTechniqueById,
   listTechniques,
   upsertTechnique,
 } from "@/lib/data/techniques-store";
@@ -20,11 +21,12 @@ export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get("content-type") || "";
 
-    // Sheet upload: multipart with techniqueId + file
+    // Multipart: sheet upload OR per-step image upload
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
       const techniqueId = String(form.get("techniqueId") || "");
       const file = form.get("file");
+      const kind = String(form.get("kind") || "sheet");
       if (!techniqueId || !(file instanceof File)) {
         return NextResponse.json(
           { error: "techniqueId and file required" },
@@ -38,6 +40,34 @@ export async function POST(request: NextRequest) {
           : file.type === "image/webp"
             ? "webp"
             : "jpg";
+
+      if (kind === "step") {
+        const stepIndex = Math.max(0, Number(form.get("stepIndex")) || 0);
+        const existing = await getTechniqueById(techniqueId);
+        if (!existing) {
+          return NextResponse.json({ error: "Not found" }, { status: 404 });
+        }
+        if (stepIndex >= existing.steps.length) {
+          return NextResponse.json(
+            { error: "stepIndex out of range — add the step first" },
+            { status: 400 }
+          );
+        }
+        const imagePath = await savePublicAsset(
+          `techniques/${techniqueId}/step-${stepIndex}-${randomUUID().slice(0, 8)}.${ext}`,
+          buf,
+          file.type || "image/jpeg"
+        );
+        const steps = existing.steps.map((s, i) =>
+          i === stepIndex ? { ...s, imagePath } : s
+        );
+        const updated = await upsertTechnique({
+          id: techniqueId,
+          steps,
+        });
+        return NextResponse.json({ ok: true, imagePath, technique: updated });
+      }
+
       const sheetPath = await savePublicAsset(
         `techniques/${techniqueId}/sheet-upload-${randomUUID().slice(0, 8)}.${ext}`,
         buf,

@@ -198,7 +198,10 @@ export function TechniqueTutor({
                   ) : (
                     <TechniqueVisual
                       technique={active as TechniqueKey}
-                      frame={frame}
+                      frame={Math.min(
+                        frame,
+                        Math.max(0, techniqueFrameCount(active as TechniqueKey) - 1)
+                      )}
                     />
                   )}
                   <p className="mt-2 text-center text-sm font-semibold text-ink">
