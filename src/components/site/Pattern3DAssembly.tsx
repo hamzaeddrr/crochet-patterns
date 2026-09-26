@@ -1,19 +1,23 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
   OrbitControls,
 } from "@react-three/drei";
+import * as THREE from "three";
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from "lucide-react";
 import type { PatternComponent } from "@/types";
 import {
   buildAssemblyParts3D,
   type AssemblyPart3D,
-  type PartShape,
 } from "@/lib/crochet/assembly-3d";
+import {
+  buildStitchInstances,
+  createYarnTexture,
+} from "@/lib/crochet/yarn-stitches";
 import { cn } from "@/lib/utils";
 
 export type Pattern3DLabels = {
@@ -28,127 +32,95 @@ export type Pattern3DLabels = {
   loading: string;
 };
 
-function YarnMesh({
-  shape,
-  color,
-}: {
-  shape: PartShape;
-  color: string;
-}) {
-  const mat = (
-    <meshStandardMaterial
-      color={color}
-      roughness={0.72}
-      metalness={0.04}
-    />
-  );
-
-  switch (shape) {
-    case "sphere":
-      return (
-        <mesh castShadow>
-          <sphereGeometry args={[0.5, 48, 48]} />
-          {mat}
-        </mesh>
-      );
-    case "egg":
-      return (
-        <mesh castShadow scale={[1, 1.25, 0.95]}>
-          <sphereGeometry args={[0.5, 48, 48]} />
-          {mat}
-        </mesh>
-      );
-    case "disc":
-      return (
-        <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
-          {mat}
-        </mesh>
-      );
-    case "wing":
-      return (
-        <mesh castShadow>
-          <boxGeometry args={[0.55, 1.1, 0.22]} />
-          {mat}
-        </mesh>
-      );
-    case "cone":
-      return (
-        <mesh castShadow rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.35, 0.7, 32]} />
-          {mat}
-        </mesh>
-      );
-    case "capsule":
-      return (
-        <mesh castShadow>
-          <capsuleGeometry args={[0.22, 0.45, 8, 16]} />
-          {mat}
-        </mesh>
-      );
-    case "torus":
-      return (
-        <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.38, 0.1, 16, 48]} />
-          {mat}
-        </mesh>
-      );
-    default:
-      return (
-        <mesh castShadow>
-          <sphereGeometry args={[0.45, 32, 32]} />
-          {mat}
-        </mesh>
-      );
-  }
-}
-
-function AssemblyPart({
+function CrochetYarnPart({
   part,
   visible,
-  settled,
+  highlight,
 }: {
   part: AssemblyPart3D;
   visible: boolean;
-  settled: boolean;
+  highlight: boolean;
 }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const stitches = useMemo(
+    () => buildStitchInstances(part.shape, 1),
+    [part.shape]
+  );
+  const yarnMap = useMemo(() => createYarnTexture(part.color), [part.color]);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color(part.color);
+    stitches.forEach((s, i) => {
+      dummy.position.set(...s.position);
+      dummy.rotation.set(...s.rotation);
+      const sc = s.scale * 1.08;
+      dummy.scale.set(sc, sc, sc);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      const c = color.clone().offsetHSL(0, 0, ((i * 17) % 7) * 0.012 - 0.03);
+      mesh.setColorAt(i, c);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [stitches, part.color]);
+
+  useFrame((_, dt) => {
+    if (!groupRef.current || !visible || !highlight) return;
+    groupRef.current.rotation.y += dt * 0.2;
+  });
+
   if (!visible) return null;
 
-  const t = settled ? 1 : 0.35;
-  const pos: [number, number, number] = settled
-    ? part.position
-    : [
-        part.position[0] * 0.35 + part.enterFrom[0] * 0.65,
-        part.position[1] * 0.35 + part.enterFrom[1] * 0.65,
-        part.position[2] * 0.35 + part.enterFrom[2] * 0.65,
-      ];
-
-  // make > 1: show a subtle twin offset
-  const clones = Math.min(part.make, 2);
+  const coreScale: [number, number, number] =
+    part.shape === "egg"
+      ? [0.9, 1.15, 0.85]
+      : part.shape === "disc"
+        ? [1, 0.22, 1]
+        : part.shape === "wing"
+          ? [0.7, 1.15, 0.35]
+          : part.shape === "cone"
+            ? [0.55, 0.9, 0.55]
+            : part.shape === "capsule"
+              ? [0.55, 0.95, 0.55]
+              : [0.88, 0.88, 0.88];
 
   return (
-    <>
-      {Array.from({ length: clones }).map((_, i) => {
-        const twin: [number, number, number] =
-          i === 0
-            ? pos
-            : [pos[0] + 0.55, pos[1], pos[2] - 0.15];
-        return (
-          <group
-            key={`${part.id}-${i}`}
-            position={twin}
-            rotation={part.rotation}
-            scale={[
-              part.scale[0] * (0.85 + t * 0.15),
-              part.scale[1] * (0.85 + t * 0.15),
-              part.scale[2] * (0.85 + t * 0.15),
-            ]}
-          >
-            <YarnMesh shape={part.shape} color={part.color} />
-          </group>
-        );
-      })}
-    </>
+    <group
+      ref={groupRef}
+      position={part.position}
+      rotation={part.rotation}
+      scale={part.scale}
+    >
+      {/* Soft stuffed core */}
+      <mesh castShadow scale={coreScale}>
+        <sphereGeometry args={[0.42, 40, 40]} />
+        <meshStandardMaterial
+          map={yarnMap}
+          color={part.color}
+          roughness={0.95}
+          metalness={0}
+        />
+      </mesh>
+
+      {/* Crochet stitch loops covering the form */}
+      <instancedMesh
+        ref={meshRef}
+        args={[undefined, undefined, stitches.length]}
+        castShadow
+      >
+        <torusGeometry args={[0.048, 0.017, 8, 16]} />
+        <meshStandardMaterial
+          color={part.color}
+          roughness={0.86}
+          metalness={0}
+          map={yarnMap}
+        />
+      </instancedMesh>
+    </group>
   );
 }
 
@@ -166,48 +138,59 @@ function Scene({
 
   return (
     <>
-      <color attach="background" args={["#f3ebe0"]} />
-      <ambientLight intensity={0.55} />
+      <color attach="background" args={["#f7f1e8"]} />
+      <fog attach="fog" args={["#f7f1e8", 7, 14]} />
+      <ambientLight intensity={0.65} />
       <directionalLight
-        position={[4, 8, 3]}
-        intensity={1.15}
+        position={[3.5, 6, 2.5]}
+        intensity={1.05}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <directionalLight position={[-3, 2, -2]} intensity={0.35} />
+      <directionalLight position={[-2.5, 2, -2]} intensity={0.4} color="#fff5e8" />
+      <hemisphereLight args={["#fff8f0", "#c4b8a8", 0.35]} />
 
-      <group position={[0, -0.15, 0]}>
-        {parts.map((part, i) => (
-          <AssemblyPart
-            key={part.id}
-            part={part}
-            visible={showAll || i < stepIndex}
-            settled={showAll || i < stepIndex}
-          />
-        ))}
+      <group position={[0, -0.1, 0]}>
+        {parts.map((part, i) => {
+          const visible = showAll || i < stepIndex;
+          const highlight = !showAll && i === stepIndex - 1;
+          return (
+            <CrochetYarnPart
+              key={part.id}
+              part={part}
+              visible={visible}
+              highlight={!!highlight}
+            />
+          );
+        })}
       </group>
 
       <ContactShadows
-        position={[0, -1.35, 0]}
-        opacity={0.35}
-        scale={10}
-        blur={2.4}
-        far={4}
+        position={[0, -1.32, 0]}
+        opacity={0.28}
+        scale={9}
+        blur={2.6}
+        far={3.5}
+        color="#6e655e"
       />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.36, 0]} receiveShadow>
-        <circleGeometry args={[3.2, 64]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -1.33, 0]}
+        receiveShadow
+      >
+        <circleGeometry args={[2.8, 64]} />
         <meshStandardMaterial color="#efe7db" roughness={1} />
       </mesh>
 
-      <Environment preset="apartment" />
+      <Environment preset="warehouse" />
       <OrbitControls
         enablePan={false}
-        minDistance={2.8}
-        maxDistance={8}
-        maxPolarAngle={Math.PI * 0.48}
+        minDistance={2.6}
+        maxDistance={7.5}
+        maxPolarAngle={Math.PI * 0.49}
         autoRotate={autoRotate && showAll}
-        autoRotateSpeed={0.7}
-        target={[0, 0.2, 0]}
+        autoRotateSpeed={0.55}
+        target={[0, 0.25, 0]}
       />
     </>
   );
@@ -229,7 +212,7 @@ export function Pattern3DAssembly({
     [components, colors]
   );
 
-  const totalSteps = parts.length + 1; // pieces + final
+  const totalSteps = parts.length + 1;
   const [step, setStep] = useState(1);
   const [playing, setPlaying] = useState(false);
 
@@ -243,7 +226,7 @@ export function Pattern3DAssembly({
         }
         return s + 1;
       });
-    }, 1600);
+    }, 1700);
     return () => window.clearInterval(id);
   }, [playing, totalSteps]);
 
@@ -251,19 +234,17 @@ export function Pattern3DAssembly({
 
   const isFinal = step >= totalSteps;
   const currentPart = !isFinal && step > 0 ? parts[step - 1] : null;
-  const stepLabel = isFinal
-    ? labels.finalResult
-    : labels.stepOf
-        .replace("{current}", String(step))
-        .replace("{total}", String(parts.length))
-        .replace("{part}", currentPart?.label || "");
+  const stepLabel = labels.stepOf
+    .replace("{current}", String(Math.min(step, parts.length)))
+    .replace("{total}", String(parts.length))
+    .replace("{part}", currentPart?.label || "");
 
   return (
     <section className="overflow-hidden rounded-[1.5rem] border border-line bg-[#fffdf9] shadow-[0_16px_40px_rgba(43,37,34,0.06)] sm:rounded-[1.75rem]">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gold">
-            3D
+            Crochet preview
           </p>
           <h2 className="mt-1 font-display text-2xl text-ink sm:text-3xl">
             {labels.title}
@@ -275,7 +256,7 @@ export function Pattern3DAssembly({
         </p>
       </div>
 
-      <div className="relative aspect-[4/3] bg-[radial-gradient(ellipse_at_50%_30%,rgba(217,107,82,0.1),transparent_55%),#f3ebe0] sm:aspect-[16/10]">
+      <div className="relative aspect-[4/3] bg-[radial-gradient(ellipse_at_50%_28%,rgba(217,107,82,0.08),transparent_50%),#f7f1e8] sm:aspect-[16/10]">
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center text-sm text-muted">
@@ -285,8 +266,8 @@ export function Pattern3DAssembly({
         >
           <Canvas
             shadows
-            camera={{ position: [2.8, 1.6, 3.4], fov: 38 }}
-            dpr={[1, 1.75]}
+            camera={{ position: [2.6, 1.45, 3.2], fov: 36 }}
+            dpr={[1, 1.6]}
             gl={{ antialias: true, alpha: false }}
           >
             <Scene
@@ -297,7 +278,7 @@ export function Pattern3DAssembly({
           </Canvas>
         </Suspense>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2b2522]/25 to-transparent px-4 pb-3 pt-10">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2b2522]/20 to-transparent px-4 pb-3 pt-10">
           <p className="text-center text-[11px] font-semibold text-bone/90">
             {labels.dragHint}
           </p>
@@ -374,7 +355,6 @@ export function Pattern3DAssembly({
           </div>
         </div>
 
-        {/* Step chips */}
         <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {parts.map((p, i) => {
             const n = i + 1;
@@ -418,7 +398,6 @@ export function Pattern3DAssembly({
           </button>
         </div>
 
-        {/* Progress */}
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-elevated">
           <div
             className="h-full rounded-full bg-apricot transition-[width] duration-500 ease-out"
