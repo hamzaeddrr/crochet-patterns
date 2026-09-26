@@ -7,7 +7,7 @@ const ACCESSORY_RE =
   /\b(drawstring|hanging loop|hang(ing)?\s*loop|embroider|embroidery|safety eyes?|pompom|tassel|cut (cotton|fabric)|lining)\b/i;
 
 const NON_STITCH_COMPONENT_RE =
-  /\b(eye|embroider|assembl|finish|lining|fabric|pompom|tassel|note)\b/i;
+  /\b(eye|embroider\w*|assembl\w*|closing|finish(?:ing)?|lining|fabric|pompom|tassel|note)\b/i;
 
 /** Strip duplicated “make N” already present in the component name. */
 export function cleanComponentDisplayName(
@@ -165,14 +165,72 @@ export function chartAxisLastRound(rounds: PatternRound[]): number {
 
 /** True when a component is only assembly/embroidery notes (skip in PDF instructions). */
 export function isRedundantNoteComponent(component: PatternComponent): boolean {
-  const mode = detectConstructionMode(component);
-  if (mode !== "note") return false;
   const name = (component.name || "").toLowerCase();
-  if (/\b(assembl|closing|finish)\b/.test(name)) return true;
+  // Always skip dedicated assembly/closing stub components
+  if (/\bassembl\w*|\bclosing\b/.test(name)) return true;
+
+  const mode = detectConstructionMode(component);
+  if (mode !== "note") {
+    // Also skip if every round is assemble/sew with no stitch work
+    const rounds = component.rounds || [];
+    if (
+      rounds.length > 0 &&
+      rounds.every(
+        (r) =>
+          (r.result === 0 || r.result == null) &&
+          /\bassembl\w*|sew together|closing\b/i.test(r.instructions || "")
+      )
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  if (/\b(finish(?:ing)?)\b/.test(name)) return true;
   const onlyAssemble = (component.rounds || []).every((r) =>
-    /\bassembl|sew together|closing\b/i.test(r.instructions || "")
+    /\bassembl\w*|sew together|closing\b/i.test(r.instructions || "")
   );
   return onlyAssemble;
+}
+
+/** Non-crochet detail pieces shown under “Details & assembly” in overview. */
+export function isDetailComponent(component: PatternComponent): boolean {
+  if (isCrochetedComponent(component)) return false;
+  if (isRedundantNoteComponent(component)) return false; // folded into “Assembly”
+  return detectConstructionMode(component) === "note";
+}
+
+/** Labels for the overview “Details & assembly” list. */
+export function overviewDetailLabels(
+  components: PatternComponent[],
+  hasAssemblySection: boolean
+): string[] {
+  const labels: string[] = [];
+  for (const c of components) {
+    if (!isDetailComponent(c)) continue;
+    labels.push(cleanComponentDisplayName(c.name, c.make).title);
+  }
+  if (
+    hasAssemblySection ||
+    components.some((c) => isRedundantNoteComponent(c))
+  ) {
+    labels.push("Assembly");
+  }
+  return labels;
+}
+
+/** Format stitch-count chart summary in chronological order (not min→max). */
+export function formatStitchCountSummary(counts: number[]): string {
+  if (!counts.length) return "";
+  if (counts.every((c) => c === counts[0])) return `${counts[0]} sts each`;
+  if (counts.length <= 6) return `${counts.join(" → ")} sts`;
+  const first = counts[0];
+  const last = counts[counts.length - 1];
+  const peak = Math.max(...counts);
+  if (peak !== first && peak !== last) {
+    return `${first} → ${peak} → ${last} sts`;
+  }
+  return `${first} → ${last} sts`;
 }
 
 export function isFastenOffRound(round: PatternRound): boolean {

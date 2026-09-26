@@ -2,10 +2,12 @@ import type { PatternComponent } from "@/types";
 import {
   cleanComponentDisplayName,
   isCrochetedComponent,
+  isRedundantNoteComponent,
   stitchBearingRounds,
   stepLabelForMode,
   detectConstructionMode,
   chartAxisLastRound,
+  formatStitchCountSummary,
 } from "@/lib/crochet/construction";
 
 const ACCENTS = [
@@ -39,7 +41,9 @@ export function PatternMakePath({
   interactive: boolean;
 }) {
     const steps: { id: string; label: string; meta?: string; href?: string }[] =
-    components.map((c) => {
+    components
+      .filter((c) => !isRedundantNoteComponent(c))
+      .map((c) => {
       const { title } = cleanComponentDisplayName(c.name, c.make);
       const mode = detectConstructionMode(c);
       const step = stepLabelForMode(mode);
@@ -432,7 +436,7 @@ export function StitchCountChart({
           {title}
         </p>
         <p className="text-xs text-muted">
-          {isEven ? `${minY} sts each · even` : `${minY} → ${maxY} sts`}
+          {formatStitchCountSummary(points.map((p) => p.y))}
         </p>
       </div>
       <svg

@@ -4,9 +4,12 @@ import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
 import {
   cleanComponentDisplayName,
   detectConstructionMode,
+  formatStitchCountSummary,
   isAccessoryOrNoteRound,
+  isCrochetedComponent,
   isFastenOffRound,
   isRedundantNoteComponent,
+  overviewDetailLabels,
   partitionComponentRounds,
   stepLabelForMode,
 } from "@/lib/crochet/construction";
@@ -371,6 +374,14 @@ function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
   drawSpacer(ctx, 8);
 
   for (const acc of accessories) {
+    // Never print a fake “Accessory / assemble…” block — Assembly section covers it
+    if (
+      acc.steps.every((s) =>
+        /\bassembl\w*|sew together|closing\b/i.test(s.instructions || "")
+      )
+    ) {
+      continue;
+    }
     writeAccessoryBlock(ctx, acc.title, acc.steps);
   }
 
@@ -429,14 +440,29 @@ export async function buildPatternPdf(
   }
   ctx.y -= 70;
 
-  drawParagraph(ctx, "What you’ll make", { size: 12, bold: true });
+  drawParagraph(ctx, "What you'll make", { size: 12, bold: true });
   drawSpacer(ctx, 4);
   drawMakePathDiagram(ctx, pattern.content.components);
-  pattern.content.components.forEach((c, i) => {
+
+  const crocheted = pattern.content.components.filter(isCrochetedComponent);
+  crocheted.forEach((c, i) => {
     const { title: name } = cleanComponentDisplayName(c.name, c.make);
     const make = c.make && c.make > 1 ? c.make : 1;
     drawParagraph(ctx, `${i + 1}.  ${make} × ${name}`, { size: 10.5 });
   });
+
+  const detailLabels = overviewDetailLabels(
+    pattern.content.components,
+    pattern.content.assembly.length > 0
+  );
+  if (detailLabels.length) {
+    drawSpacer(ctx, 10);
+    drawParagraph(ctx, "Details & assembly", { size: 11, bold: true });
+    drawSpacer(ctx, 4);
+    detailLabels.forEach((label) => {
+      drawParagraph(ctx, `•  ${label}`, { size: 10.5 });
+    });
+  }
   drawSpacer(ctx, 16);
 
   // —— Materials ——

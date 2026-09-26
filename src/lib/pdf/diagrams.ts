@@ -16,6 +16,7 @@ import {
   stepLabelForMode,
   cleanComponentDisplayName,
   chartAxisLastRound,
+  formatStitchCountSummary,
 } from "@/lib/crochet/construction";
 import {
   ensureSpace,
@@ -210,13 +211,16 @@ export function drawStitchCountChart(
     borderWidth: 0.6,
   });
 
-  ctx.page.drawText("Stitch count", {
-    x: PDF_PAGE.margin + 10,
-    y: boxY + h + 2,
-    size: 8,
-    font: ctx.fonts.bodyBold,
-    color: PDF_THEME.muted,
-  });
+  ctx.page.drawText(
+    points.length <= 6 ? "Stitch count" : "Stitch count range",
+    {
+      x: PDF_PAGE.margin + 10,
+      y: boxY + h + 2,
+      size: 8,
+      font: ctx.fonts.bodyBold,
+      color: PDF_THEME.muted,
+    }
+  );
 
   const minY = Math.min(...points.map((p) => p.y));
   const maxY = Math.max(...points.map((p) => p.y));
@@ -268,9 +272,7 @@ export function drawStitchCountChart(
     });
   }
 
-  const rangeLabel = isEven
-    ? `${minY} sts each`
-    : `${minY} → ${maxY} sts`;
+  const rangeLabel = formatStitchCountSummary(points.map((p) => p.y));
   const rw = ctx.fonts.body.widthOfTextAtSize(rangeLabel, 8);
   ctx.page.drawText(rangeLabel, {
     x: PDF_PAGE.margin + w - 10 - rw,
