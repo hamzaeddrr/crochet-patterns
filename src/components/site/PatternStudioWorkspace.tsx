@@ -86,6 +86,13 @@ function buildSteps(piece: PatternComponent): Step[] {
   }));
 }
 
+function scrollToPiece(id: string) {
+  window.history.replaceState(null, "", `#part-${id}`);
+  document
+    .getElementById(`part-${id}`)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function ModeSwitcher({
   mode,
   onChange,
@@ -137,42 +144,44 @@ function ModeSwitcher({
   );
 }
 
-function PieceSwitcher({
+/** Sticky jump strip — scrolls to pieces; never hides them. */
+function PieceJumpNav({
   pieces,
-  pieceId,
-  onSelect,
+  activePieceId,
 }: {
   pieces: PatternComponent[];
-  pieceId: string;
-  onSelect: (id: string) => void;
+  activePieceId?: string;
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {pieces.map((p, i) => {
-        const { title } = cleanComponentDisplayName(p.name, p.make);
-        const on = p.id === pieceId;
-        return (
-          <button
-            key={p.id}
-            type="button"
-            id={`part-${p.id}`}
-            onClick={() => {
-              onSelect(p.id);
-              window.history.replaceState(null, "", `#part-${p.id}`);
-            }}
-            className={cn(
-              "scroll-mt-28 shrink-0 rounded-full px-3.5 py-2 text-sm font-bold transition",
-              on
-                ? "bg-apricot text-bone"
-                : "bg-elevated text-muted hover:text-ink"
-            )}
-          >
-            <span className="mr-1 opacity-70">{i + 1}.</span>
-            {title}
-          </button>
-        );
-      })}
-    </div>
+    <nav
+      aria-label="Pieces"
+      className="sticky top-[4.5rem] z-30 -mx-1 overflow-x-auto px-1 pb-1 sm:top-[5rem] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <div className="flex w-max gap-2 rounded-full border border-line/80 bg-bg/95 p-1.5 shadow-[0_8px_24px_rgba(43,37,34,0.06)] backdrop-blur-md">
+        {pieces.map((p, i) => {
+          const { title } = cleanComponentDisplayName(p.name, p.make);
+          const on = p.id === activePieceId;
+          return (
+            <a
+              key={p.id}
+              href={`#part-${p.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToPiece(p.id);
+              }}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition sm:text-sm",
+                on
+                  ? "bg-apricot text-bone"
+                  : "bg-elevated text-ink hover:bg-apricot/15"
+              )}
+            >
+              <span className="opacity-60">{i + 1}.</span> {title}
+            </a>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -196,7 +205,7 @@ function RoundRail({
       <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
         {title}
       </p>
-      <div className="flex max-h-[min(28rem,55vh)] flex-col gap-1 overflow-y-auto pr-1">
+      <div className="flex max-h-[min(22rem,45vh)] flex-col gap-1 overflow-y-auto pr-1">
         {steps.map((s) => {
           const on = s.index === focusIndex;
           const done = !s.fo && doneSet.has(s.round.round);
@@ -390,16 +399,23 @@ function VisualPanels({
   );
 }
 
-function ListPiecePanel({
+/** One piece block — always stacked; viewMode only changes layout inside. */
+function StudioPieceBlock({
   patternId,
   piece,
   pieceIndex,
   labels,
+  viewMode,
+  initialFocus,
+  onActivate,
 }: {
   patternId: string;
   piece: PatternComponent;
   pieceIndex: number;
   labels: StudioLabels;
+  viewMode: StudioViewMode;
+  initialFocus?: number;
+  onActivate?: () => void;
 }) {
   const mode = detectConstructionMode(piece);
   const stepLabel = stepLabelForMode(mode);
@@ -409,7 +425,12 @@ function ListPiecePanel({
   );
   const steps = useMemo(() => buildSteps(piece), [piece]);
   const trackable = steps.filter((s) => !s.fo);
+  const [focusIndex, setFocusIndex] = useState(
+    typeof initialFocus === "number" ? initialFocus : 0
+  );
   const [doneSet, setDoneSet] = useState<Set<number>>(new Set());
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("steps");
+
   const { accessories } = useMemo(
     () => partitionComponentRounds(piece.rounds || []),
     [piece]
@@ -423,7 +444,21 @@ function ListPiecePanel({
     return () => window.removeEventListener("loopcraft:progress", sync);
   }, [patternId, piece.id]);
 
+  useEffect(() => {
+    if (typeof initialFocus === "number" && initialFocus >= 0) {
+      setFocusIndex(initialFocus);
+    }
+  }, [initialFocus]);
+
+  const safeFocus = Math.min(focusIndex, Math.max(steps.length - 1, 0));
+  const current = steps[safeFocus];
+  const activeRoundNumber =
+    current && !current.fo ? current.round.round : undefined;
   const doneCount = trackable.filter((s) => doneSet.has(s.round.round)).length;
+  const progressPct =
+    trackable.length > 0
+      ? Math.round((doneCount / trackable.length) * 100)
+      : 0;
 
   const filteredAccessories = accessories.filter(
     (acc) =>
@@ -432,44 +467,95 @@ function ListPiecePanel({
       )
   );
 
+  function go(delta: number) {
+    onActivate?.();
+    setFocusIndex((i) =>
+      Math.max(0, Math.min(steps.length - 1, i + delta))
+    );
+  }
+
+  function selectStep(index: number) {
+    onActivate?.();
+    setFocusIndex(index);
+    setMobilePanel("steps");
+  }
+
+  function onDiagramRound(n: number) {
+    const idx = steps.findIndex((s) => !s.fo && s.round.round === n);
+    if (idx >= 0) {
+      onActivate?.();
+      setFocusIndex(idx);
+    }
+  }
+
+  function toggleDone(roundNum: number) {
+    onActivate?.();
+    const wasDone = doneSet.has(roundNum);
+    toggleRoundComplete(patternId, piece.id, roundNum);
+    if (!wasDone) {
+      const nextIdx = steps.findIndex(
+        (s, i) =>
+          i > safeFocus &&
+          !s.fo &&
+          !doneSet.has(s.round.round) &&
+          s.round.round !== roundNum
+      );
+      if (nextIdx >= 0) setFocusIndex(nextIdx);
+      else if (safeFocus < steps.length - 1) go(1);
+    }
+  }
+
   return (
     <article
       id={`part-${piece.id}`}
-      className="scroll-mt-28 overflow-hidden rounded-[1.35rem] border border-line bg-[#fffdf9] sm:scroll-mt-32"
+      className="scroll-mt-32 overflow-hidden rounded-[1.35rem] border border-line bg-[#fffdf9] shadow-[0_12px_32px_rgba(43,37,34,0.05)] sm:scroll-mt-36 sm:rounded-[1.75rem]"
     >
-      <div className="bg-apricot px-4 py-3.5 sm:px-5">
-        <h3 className="font-display text-xl text-bone">
-          <span className="mr-2 opacity-70">{pieceIndex + 1}.</span>
-          {pieceTitle}
-          {makeSuffix}
-        </h3>
+      <div className="bg-apricot px-4 py-3.5 sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-display text-xl text-bone sm:text-2xl">
+            <span className="mr-2 opacity-70">{pieceIndex + 1}.</span>
+            {pieceTitle}
+            {makeSuffix}
+          </h3>
+          {trackable.length > 0 ? (
+            <p className="text-xs font-semibold text-bone/90">
+              {formatProgress(
+                labels.progressTemplate,
+                doneCount,
+                trackable.length
+              )}
+            </p>
+          ) : null}
+        </div>
         {trackable.length > 0 ? (
-          <p className="mt-1 text-xs font-semibold text-bone/90">
-            {formatProgress(
-              labels.progressTemplate,
-              doneCount,
-              trackable.length
-            )}
-          </p>
+          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-bone/20">
+            <div
+              className="h-full rounded-full bg-bone transition-[width] duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
         ) : null}
       </div>
+
       {mode === "note" ? (
-        <div className="space-y-3 px-4 py-4 text-sm">
+        <div className="space-y-3 px-4 py-4 text-sm sm:px-6">
           {(piece.rounds || []).map((r) => (
             <p key={r.round}>{r.instructions}</p>
           ))}
         </div>
-      ) : (
+      ) : viewMode === "list" ? (
         <>
           <VisualPanels
             piece={piece}
             mode={mode}
             labels={labels}
-            onRoundChange={() => {}}
+            activeRoundNumber={activeRoundNumber}
+            onRoundChange={onDiagramRound}
           />
           <div className="space-y-2 px-3 py-4 sm:px-4">
             {steps.map((s) => {
               const done = !s.fo && doneSet.has(s.round.round);
+              const on = s.index === safeFocus;
               const anchor = roundAnchor(piece.id, s.round.round, s.fo);
               return (
                 <div
@@ -477,14 +563,25 @@ function ListPiecePanel({
                   id={anchor}
                   className={cn(
                     "scroll-mt-36 flex gap-2.5 rounded-2xl border px-3 py-3",
-                    done
-                      ? "border-celadon/30 bg-celadon/5"
-                      : "border-line/80 bg-bg/70"
+                    on
+                      ? "border-apricot/45 bg-apricot/5"
+                      : done
+                        ? "border-celadon/30 bg-celadon/5"
+                        : "border-line/80 bg-bg/70"
                   )}
                 >
-                  <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => selectStep(s.index)}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <div className="flex gap-2.5">
-                      <span className="shrink-0 font-display text-lg text-gold">
+                      <span
+                        className={cn(
+                          "shrink-0 font-display text-lg",
+                          on ? "text-apricot" : "text-gold"
+                        )}
+                      >
                         {s.fo ? "FO" : s.round.round}
                       </span>
                       <span className="text-sm leading-relaxed text-ink">
@@ -498,13 +595,11 @@ function ListPiecePanel({
                         {s.round.result} sts
                       </span>
                     ) : null}
-                  </div>
+                  </button>
                   {!s.fo ? (
                     <button
                       type="button"
-                      onClick={() =>
-                        toggleRoundComplete(patternId, piece.id, s.round.round)
-                      }
+                      onClick={() => toggleDone(s.round.round)}
                       className={cn(
                         "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold",
                         done
@@ -539,6 +634,230 @@ function ListPiecePanel({
             </div>
           ) : null}
         </>
+      ) : viewMode === "focus" ? (
+        <div>
+          {steps.length > 0 ? (
+            <div className="flex gap-1.5 overflow-x-auto border-b border-line px-3 py-2.5 sm:px-5">
+              {steps.map((s) => {
+                const on = s.index === safeFocus;
+                const done = !s.fo && doneSet.has(s.round.round);
+                return (
+                  <button
+                    key={`${s.round.round}-${s.index}`}
+                    type="button"
+                    onClick={() => selectStep(s.index)}
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold",
+                      on
+                        ? "bg-apricot text-bone"
+                        : done
+                          ? "bg-celadon/20 text-celadon"
+                          : "bg-elevated text-ink"
+                    )}
+                  >
+                    {s.fo ? "FO" : `${stepLabel}${s.round.round}`}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {current ? (
+            <div className="border-b border-line p-4 sm:p-6">
+              <InstructionCard
+                current={current}
+                stepLabel={stepLabel}
+                safeFocus={safeFocus}
+                stepsLength={steps.length}
+                doneSet={doneSet}
+                labels={labels}
+                onToggle={() => toggleDone(current.round.round)}
+                onPrev={() => go(-1)}
+                onNext={() => go(1)}
+              />
+            </div>
+          ) : null}
+          <div className="space-y-4 p-3 sm:p-5">
+            <VisualPanels
+              piece={piece}
+              mode={mode}
+              labels={labels}
+              activeRoundNumber={activeRoundNumber}
+              onRoundChange={onDiagramRound}
+            />
+          </div>
+        </div>
+      ) : (
+        /* Dashboard layout inside this piece */
+        <div>
+          <div className="flex gap-1 border-b border-line p-2 lg:hidden">
+            {(
+              [
+                ["steps", labels.panelSteps],
+                ["graph", labels.panelGraph],
+                ["chart", labels.panelChart],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setMobilePanel(id)}
+                className={cn(
+                  "flex-1 rounded-full px-2 py-2 text-xs font-bold transition",
+                  mobilePanel === id
+                    ? "bg-ink text-bone"
+                    : "bg-elevated text-muted"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="lg:grid lg:grid-cols-[10.5rem_minmax(0,1.1fr)_minmax(0,0.95fr)] lg:items-stretch">
+            <aside
+              className={cn(
+                "border-b border-line p-3 sm:p-4 lg:border-b-0 lg:border-r",
+                mobilePanel !== "steps" && "hidden lg:block"
+              )}
+            >
+              <RoundRail
+                steps={steps}
+                stepLabel={stepLabel}
+                focusIndex={safeFocus}
+                doneSet={doneSet}
+                onSelect={selectStep}
+                title={labels.roundsNav}
+              />
+            </aside>
+
+            <div
+              className={cn(
+                "space-y-4 border-b border-line p-3 sm:p-5 lg:border-b-0 lg:border-r",
+                mobilePanel !== "steps" && "hidden lg:block"
+              )}
+            >
+              {current ? (
+                <InstructionCard
+                  current={current}
+                  stepLabel={stepLabel}
+                  safeFocus={safeFocus}
+                  stepsLength={steps.length}
+                  doneSet={doneSet}
+                  labels={labels}
+                  onToggle={() => toggleDone(current.round.round)}
+                  onPrev={() => go(-1)}
+                  onNext={() => go(1)}
+                  compact
+                />
+              ) : null}
+
+              <div className="space-y-2">
+                {steps.map((s) => {
+                  const on = s.index === safeFocus;
+                  const done = !s.fo && doneSet.has(s.round.round);
+                  const anchor = roundAnchor(piece.id, s.round.round, s.fo);
+                  return (
+                    <div
+                      key={anchor}
+                      id={anchor}
+                      className={cn(
+                        "flex gap-2 rounded-xl border px-3 py-2.5",
+                        on
+                          ? "border-apricot/45 bg-apricot/5"
+                          : done
+                            ? "border-celadon/25 bg-celadon/5"
+                            : "border-line/70 bg-bg/60"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => selectStep(s.index)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span
+                          className={cn(
+                            "mr-2 font-display text-base",
+                            on ? "text-apricot" : "text-gold"
+                          )}
+                        >
+                          {s.fo ? "FO" : s.round.round}
+                        </span>
+                        <span className="text-sm text-ink">
+                          {s.round.instructions}
+                        </span>
+                      </button>
+                      {!s.fo ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleDone(s.round.round)}
+                          className={cn(
+                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                            done
+                              ? "bg-celadon text-bone"
+                              : "bg-elevated text-muted"
+                          )}
+                        >
+                          {done ? "✓" : "○"}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredAccessories.length > 0 ? (
+                <div className="rounded-xl border border-line bg-bg/50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                    {labels.accessories}
+                  </p>
+                  {filteredAccessories.map((acc) => (
+                    <div key={acc.title} className="mt-2">
+                      <p className="font-display text-sm text-ink">
+                        {acc.title}
+                      </p>
+                      <ul className="mt-1 space-y-1 text-xs text-muted">
+                        {acc.steps.map((step, i) => (
+                          <li key={`${acc.title}-${i}`}>
+                            • {step.instructions}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="space-y-3 p-3 sm:p-4">
+              <div
+                className={cn(mobilePanel !== "graph" && "hidden lg:block")}
+              >
+                <VisualPanels
+                  piece={piece}
+                  mode={mode}
+                  labels={labels}
+                  activeRoundNumber={activeRoundNumber}
+                  onRoundChange={onDiagramRound}
+                  showGraph
+                  showChart={false}
+                />
+              </div>
+              <div
+                className={cn(mobilePanel !== "chart" && "hidden lg:block")}
+              >
+                <VisualPanels
+                  piece={piece}
+                  mode={mode}
+                  labels={labels}
+                  activeRoundNumber={activeRoundNumber}
+                  onRoundChange={onDiagramRound}
+                  showGraph={false}
+                  showChart
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </article>
   );
@@ -559,13 +878,11 @@ export function PatternStudioWorkspace({
   );
 
   const [viewMode, setViewMode] = useState<StudioViewMode>("dashboard");
-  const [pieceId, setPieceId] = useState(pieces[0]?.id || "");
-  const [focusIndex, setFocusIndex] = useState(0);
-  const [doneSet, setDoneSet] = useState<Set<number>>(new Set());
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("steps");
-
-  const piece =
-    pieces.find((p) => p.id === pieceId) || pieces[0] || null;
+  const [activePieceId, setActivePieceId] = useState(pieces[0]?.id || "");
+  const [hashFocus, setHashFocus] = useState<{
+    pieceId: string;
+    stepIndex: number;
+  } | null>(null);
 
   useEffect(() => {
     setViewMode(getStudioViewMode());
@@ -573,27 +890,14 @@ export function PatternStudioWorkspace({
   }, []);
 
   useEffect(() => {
-    setFocusIndex(0);
-  }, [pieceId]);
-
-  useEffect(() => {
-    if (!piece) return;
-    const sync = () =>
-      setDoneSet(new Set(getCompletedRounds(patternId, piece.id)));
-    sync();
-    window.addEventListener("loopcraft:progress", sync);
-    return () => window.removeEventListener("loopcraft:progress", sync);
-  }, [patternId, piece]);
-
-  // Hash deep-links
-  useEffect(() => {
     if (typeof window === "undefined") return;
     const applyHash = () => {
       const hash = window.location.hash.replace(/^#/, "");
       if (!hash) return;
       const partMatch = hash.match(/^part-(.+)$/);
       if (partMatch && pieces.some((p) => p.id === partMatch[1])) {
-        setPieceId(partMatch[1]);
+        setActivePieceId(partMatch[1]);
+        setHashFocus({ pieceId: partMatch[1], stepIndex: 0 });
         return;
       }
       const roundMatch = hash.match(/^r-(.+)-(\d+|fo)$/);
@@ -601,7 +905,7 @@ export function PatternStudioWorkspace({
         const [, cid, token] = roundMatch;
         const p = pieces.find((x) => x.id === cid);
         if (!p) return;
-        setPieceId(cid);
+        setActivePieceId(cid);
         const steps = buildSteps(p);
         const idx =
           token === "fo"
@@ -609,7 +913,10 @@ export function PatternStudioWorkspace({
             : steps.findIndex(
                 (s) => !s.fo && s.round.round === Number(token)
               );
-        if (idx >= 0) setFocusIndex(idx);
+        setHashFocus({
+          pieceId: cid,
+          stepIndex: idx >= 0 ? idx : 0,
+        });
       }
     };
     applyHash();
@@ -617,85 +924,15 @@ export function PatternStudioWorkspace({
     return () => window.removeEventListener("hashchange", applyHash);
   }, [pieces]);
 
-  if (!piece) return null;
-
-  const mode = detectConstructionMode(piece);
-  const stepLabel = stepLabelForMode(mode);
-  const { title: pieceTitle, makeSuffix } = cleanComponentDisplayName(
-    piece.name,
-    piece.make
-  );
-  const steps = buildSteps(piece);
-  const trackable = steps.filter((s) => !s.fo);
-  const safeFocus = Math.min(focusIndex, Math.max(steps.length - 1, 0));
-  const current = steps[safeFocus];
-  const activeRoundNumber =
-    current && !current.fo ? current.round.round : undefined;
-  const doneCount = trackable.filter((s) => doneSet.has(s.round.round)).length;
-  const progressPct =
-    trackable.length > 0
-      ? Math.round((doneCount / trackable.length) * 100)
-      : 0;
-
-  const { accessories } = partitionComponentRounds(piece.rounds || []);
-  const filteredAccessories = accessories.filter(
-    (acc) =>
-      !acc.steps.every((s) =>
-        /\bassembl\w*|sew together|closing\b/i.test(s.instructions || "")
-      )
-  );
+  if (!pieces.length) return null;
 
   function changeMode(next: StudioViewMode) {
     setViewMode(next);
     setStudioViewMode(next);
   }
 
-  function go(delta: number) {
-    setFocusIndex((i) =>
-      Math.max(0, Math.min(steps.length - 1, i + delta))
-    );
-  }
-
-  function selectStep(index: number) {
-    setFocusIndex(index);
-    setMobilePanel("steps");
-    const s = steps[index];
-    if (!s || !piece) return;
-    if (viewMode === "list") {
-      document
-        .getElementById(roundAnchor(piece.id, s.round.round, s.fo))
-        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }
-
-  function onDiagramRound(n: number) {
-    const idx = steps.findIndex((s) => !s.fo && s.round.round === n);
-    if (idx >= 0) setFocusIndex(idx);
-  }
-
-  function toggleDone(roundNum: number) {
-    if (!piece) return;
-    const wasDone = doneSet.has(roundNum);
-    toggleRoundComplete(patternId, piece.id, roundNum);
-    if (!wasDone) {
-      const nextIdx = steps.findIndex(
-        (s, i) =>
-          i > safeFocus &&
-          !s.fo &&
-          !doneSet.has(s.round.round) &&
-          s.round.round !== roundNum
-      );
-      if (nextIdx >= 0) setFocusIndex(nextIdx);
-      else if (safeFocus < steps.length - 1) go(1);
-    }
-  }
-
   const hint =
-    viewMode === "dashboard"
-      ? labels.modeHint
-      : viewMode === "focus"
-        ? labels.focusHint
-        : labels.modeHint;
+    viewMode === "focus" ? labels.focusHint : labels.modeHint;
 
   return (
     <section className="mt-12 sm:mt-16" id="instructions">
@@ -713,310 +950,29 @@ export function PatternStudioWorkspace({
         />
       </div>
 
-      {viewMode === "list" ? (
-        <div className="mt-6 space-y-6">
-          <PieceSwitcher
-            pieces={pieces}
-            pieceId={pieceId}
-            onSelect={(id) => {
-              setPieceId(id);
-              document
-                .getElementById(`part-${id}`)
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
+      <div className="mt-5">
+        <PieceJumpNav pieces={pieces} activePieceId={activePieceId} />
+      </div>
+
+      {/* Every piece stacked: Head, Body, Belly… */}
+      <div className="mt-5 space-y-6 sm:mt-6 sm:space-y-8">
+        {pieces.map((piece, i) => (
+          <StudioPieceBlock
+            key={piece.id}
+            patternId={patternId}
+            piece={piece}
+            pieceIndex={i}
+            labels={labels}
+            viewMode={viewMode}
+            initialFocus={
+              hashFocus?.pieceId === piece.id
+                ? hashFocus.stepIndex
+                : undefined
+            }
+            onActivate={() => setActivePieceId(piece.id)}
           />
-          {pieces.map((p, i) => (
-            <ListPiecePanel
-              key={p.id}
-              patternId={patternId}
-              piece={p}
-              pieceIndex={i}
-              labels={labels}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-line bg-[#fffdf9] shadow-[0_14px_36px_rgba(43,37,34,0.06)] sm:mt-6 sm:rounded-[1.75rem]">
-          {/* Header */}
-          <div className="bg-apricot px-4 py-3.5 sm:px-6 sm:py-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-xl text-bone sm:text-2xl">
-                {pieceTitle}
-                {makeSuffix}
-              </h3>
-              {trackable.length > 0 ? (
-                <p className="text-xs font-semibold text-bone/90">
-                  {formatProgress(
-                    labels.progressTemplate,
-                    doneCount,
-                    trackable.length
-                  )}
-                </p>
-              ) : null}
-            </div>
-            {trackable.length > 0 ? (
-              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-bone/20">
-                <div
-                  className="h-full rounded-full bg-bone transition-[width] duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="border-b border-line px-3 py-3 sm:px-5">
-            <PieceSwitcher
-              pieces={pieces}
-              pieceId={piece.id}
-              onSelect={setPieceId}
-            />
-          </div>
-
-          {mode === "note" ? (
-            <div className="space-y-3 px-4 py-5 text-sm sm:px-6">
-              {(piece.rounds || []).map((r) => (
-                <p key={r.round}>{r.instructions}</p>
-              ))}
-            </div>
-          ) : viewMode === "focus" ? (
-            <div className="space-y-0">
-              {steps.length > 0 ? (
-                <div className="sticky top-[4.5rem] z-20 flex gap-1.5 overflow-x-auto border-b border-line bg-[#fffdf9]/95 px-3 py-2.5 backdrop-blur-md sm:top-[5rem] sm:px-5">
-                  {steps.map((s) => {
-                    const on = s.index === safeFocus;
-                    const done = !s.fo && doneSet.has(s.round.round);
-                    return (
-                      <button
-                        key={`${s.round.round}-${s.index}`}
-                        type="button"
-                        onClick={() => selectStep(s.index)}
-                        className={cn(
-                          "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold",
-                          on
-                            ? "bg-apricot text-bone"
-                            : done
-                              ? "bg-celadon/20 text-celadon"
-                              : "bg-elevated text-ink"
-                        )}
-                      >
-                        {s.fo ? "FO" : `${stepLabel}${s.round.round}`}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-              {current ? (
-                <div className="border-b border-line p-4 sm:p-6">
-                  <InstructionCard
-                    current={current}
-                    stepLabel={stepLabel}
-                    safeFocus={safeFocus}
-                    stepsLength={steps.length}
-                    doneSet={doneSet}
-                    labels={labels}
-                    onToggle={() => toggleDone(current.round.round)}
-                    onPrev={() => go(-1)}
-                    onNext={() => go(1)}
-                  />
-                </div>
-              ) : null}
-              <div className="space-y-4 p-3 sm:p-5">
-                <VisualPanels
-                  piece={piece}
-                  mode={mode}
-                  labels={labels}
-                  activeRoundNumber={activeRoundNumber}
-                  onRoundChange={onDiagramRound}
-                />
-              </div>
-            </div>
-          ) : (
-            /* Dashboard */
-            <div>
-              {/* Mobile panel tabs */}
-              <div className="flex gap-1 border-b border-line p-2 lg:hidden">
-                {(
-                  [
-                    ["steps", labels.panelSteps],
-                    ["graph", labels.panelGraph],
-                    ["chart", labels.panelChart],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setMobilePanel(id)}
-                    className={cn(
-                      "flex-1 rounded-full px-2 py-2 text-xs font-bold transition",
-                      mobilePanel === id
-                        ? "bg-ink text-bone"
-                        : "bg-elevated text-muted"
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="lg:grid lg:grid-cols-[11.5rem_minmax(0,1.1fr)_minmax(0,0.95fr)] lg:items-stretch">
-                {/* Rounds rail — desktop always; mobile when steps */}
-                <aside
-                  className={cn(
-                    "border-b border-line p-3 sm:p-4 lg:border-b-0 lg:border-r",
-                    mobilePanel !== "steps" && "hidden lg:block"
-                  )}
-                >
-                  <RoundRail
-                    steps={steps}
-                    stepLabel={stepLabel}
-                    focusIndex={safeFocus}
-                    doneSet={doneSet}
-                    onSelect={selectStep}
-                    title={labels.roundsNav}
-                  />
-                </aside>
-
-                {/* Instructions */}
-                <div
-                  className={cn(
-                    "space-y-4 border-b border-line p-3 sm:p-5 lg:border-b-0 lg:border-r",
-                    mobilePanel !== "steps" && "hidden lg:block"
-                  )}
-                >
-                  {current ? (
-                    <InstructionCard
-                      current={current}
-                      stepLabel={stepLabel}
-                      safeFocus={safeFocus}
-                      stepsLength={steps.length}
-                      doneSet={doneSet}
-                      labels={labels}
-                      onToggle={() => toggleDone(current.round.round)}
-                      onPrev={() => go(-1)}
-                      onNext={() => go(1)}
-                      compact
-                    />
-                  ) : null}
-
-                  <div className="space-y-2">
-                    {steps.map((s) => {
-                      const on = s.index === safeFocus;
-                      const done = !s.fo && doneSet.has(s.round.round);
-                      const anchor = roundAnchor(
-                        piece.id,
-                        s.round.round,
-                        s.fo
-                      );
-                      return (
-                        <div
-                          key={anchor}
-                          id={anchor}
-                          className={cn(
-                            "flex gap-2 rounded-xl border px-3 py-2.5",
-                            on
-                              ? "border-apricot/45 bg-apricot/5"
-                              : done
-                                ? "border-celadon/25 bg-celadon/5"
-                                : "border-line/70 bg-bg/60"
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => selectStep(s.index)}
-                            className="min-w-0 flex-1 text-left"
-                          >
-                            <span
-                              className={cn(
-                                "mr-2 font-display text-base",
-                                on ? "text-apricot" : "text-gold"
-                              )}
-                            >
-                              {s.fo ? "FO" : s.round.round}
-                            </span>
-                            <span className="text-sm text-ink">
-                              {s.round.instructions}
-                            </span>
-                          </button>
-                          {!s.fo ? (
-                            <button
-                              type="button"
-                              onClick={() => toggleDone(s.round.round)}
-                              className={cn(
-                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold",
-                                done
-                                  ? "bg-celadon text-bone"
-                                  : "bg-elevated text-muted"
-                              )}
-                            >
-                              {done ? "✓" : "○"}
-                            </button>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {filteredAccessories.length > 0 ? (
-                    <div className="rounded-xl border border-line bg-bg/50 p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
-                        {labels.accessories}
-                      </p>
-                      {filteredAccessories.map((acc) => (
-                        <div key={acc.title} className="mt-2">
-                          <p className="font-display text-sm text-ink">
-                            {acc.title}
-                          </p>
-                          <ul className="mt-1 space-y-1 text-xs text-muted">
-                            {acc.steps.map((step, i) => (
-                              <li key={`${acc.title}-${i}`}>
-                                • {step.instructions}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Visuals column */}
-                <div className="space-y-3 p-3 sm:p-4">
-                  <div
-                    className={cn(
-                      mobilePanel !== "graph" && "hidden lg:block"
-                    )}
-                  >
-                    <VisualPanels
-                      piece={piece}
-                      mode={mode}
-                      labels={labels}
-                      activeRoundNumber={activeRoundNumber}
-                      onRoundChange={onDiagramRound}
-                      showGraph
-                      showChart={false}
-                    />
-                  </div>
-                  <div
-                    className={cn(
-                      mobilePanel !== "chart" && "hidden lg:block"
-                    )}
-                  >
-                    <VisualPanels
-                      piece={piece}
-                      mode={mode}
-                      labels={labels}
-                      activeRoundNumber={activeRoundNumber}
-                      onRoundChange={onDiagramRound}
-                      showGraph={false}
-                      showChart
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        ))}
+      </div>
     </section>
   );
 }
