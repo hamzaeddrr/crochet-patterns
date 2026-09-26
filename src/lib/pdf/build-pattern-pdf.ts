@@ -9,6 +9,12 @@ import {
 } from "@/lib/crochet/construction";
 import { embedPdfFonts } from "./fonts";
 import {
+  drawComponentVisuals,
+  drawMakePathDiagram,
+  drawSymbolLegend,
+  collectComponentSymbolKinds,
+} from "./diagrams";
+import {
   drawChip,
   drawComponentBanner,
   drawContentHeader,
@@ -30,6 +36,7 @@ import {
   colorFromName,
   contentWidth,
 } from "./theme";
+import type { ChartSymbolKind } from "@/lib/crochet/stitch-symbols";
 
 function capitalize(s: string): string {
   if (!s) return s;
@@ -251,6 +258,9 @@ function writeComponent(ctx: LayoutCtx, component: PatternComponent): void {
     drawSpacer(ctx, 6);
   }
 
+  // Visual stitch chart + diagrams before the written table
+  drawComponentVisuals(ctx, component);
+
   const stepW = 58;
   const countW = 48;
   drawTableHeader(ctx, [
@@ -350,6 +360,7 @@ export async function buildPatternPdf(
 
   drawParagraph(ctx, "What you’ll make", { size: 12, bold: true });
   drawSpacer(ctx, 4);
+  drawMakePathDiagram(ctx, pattern.content.components);
   pattern.content.components.forEach((c, i) => {
     const { title: name } = cleanComponentDisplayName(c.name, c.make);
     const make = c.make && c.make > 1 ? c.make : 1;
@@ -509,7 +520,21 @@ export async function buildPatternPdf(
     }
     ctx.y -= 15;
   }
-  drawSpacer(ctx, 16);
+  drawSpacer(ctx, 10);
+
+  // Global crochet symbol key (visual)
+  const allKinds: ChartSymbolKind[] = [];
+  for (const c of pattern.content.components) {
+    allKinds.push(...collectComponentSymbolKinds(c));
+  }
+  drawSectionHeading(ctx, "Crochet symbol key");
+  drawParagraph(ctx, "Standard chart symbols used in this pattern.", {
+    size: 9.5,
+    color: PDF_THEME.muted,
+  });
+  drawSpacer(ctx, 4);
+  drawSymbolLegend(ctx, allKinds.length ? allKinds : ["mr", "sc", "inc", "dec", "ch", "fo"], "How to read the charts");
+  drawSpacer(ctx, 12);
 
   // —— Components ——
   drawSectionHeading(ctx, "Instructions");
