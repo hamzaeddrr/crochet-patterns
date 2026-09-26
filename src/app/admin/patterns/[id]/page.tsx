@@ -8,9 +8,13 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import {
   centsToDollarInput,
   dollarsToCents,
+  emptyLocalized,
+  type Category,
   type CrochetPattern,
+  type LocalizedString,
   type PatternStatus,
 } from "@/types";
+import type { Locale } from "@/i18n/routing";
 
 const IMAGE_PROGRESS_HINTS = [
   "Reading pattern steps…",
@@ -20,23 +24,41 @@ const IMAGE_PROGRESS_HINTS = [
   "Saving new image to storage…",
 ];
 
+const LOCALES: { code: Locale; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "es", label: "Español" },
+];
+
 function withCacheBust(url: string | undefined, version: string | number) {
   if (!url) return "";
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}v=${encodeURIComponent(String(version))}`;
 }
 
+function asLocalized(value?: LocalizedString): LocalizedString {
+  return {
+    en: value?.en || "",
+    fr: value?.fr || "",
+    es: value?.es || "",
+  };
+}
+
 export default function AdminPatternDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [pattern, setPattern] = useState<CrochetPattern | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [titleEn, setTitleEn] = useState("");
-  const [summaryEn, setSummaryEn] = useState("");
-  const [seoTitleEn, setSeoTitleEn] = useState("");
-  const [seoDescEn, setSeoDescEn] = useState("");
+  const [localeTab, setLocaleTab] = useState<Locale>("en");
+  const [title, setTitle] = useState<LocalizedString>(emptyLocalized());
+  const [summary, setSummary] = useState<LocalizedString>(emptyLocalized());
+  const [seoTitle, setSeoTitle] = useState<LocalizedString>(emptyLocalized());
+  const [seoDescription, setSeoDescription] =
+    useState<LocalizedString>(emptyLocalized());
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [priceUsd, setPriceUsd] = useState("4.99");
   const [featured, setFeatured] = useState(false);
   const [free, setFree] = useState(false);
@@ -47,25 +69,36 @@ export default function AdminPatternDetailPage() {
   const [imageVersion, setImageVersion] = useState(0);
   const imageElapsedRef = useRef(0);
 
+  function applyPatternForm(p: CrochetPattern) {
+    setPattern(p);
+    setTitle(asLocalized(p.content.title));
+    setSummary(asLocalized(p.content.summary));
+    setSeoTitle(asLocalized(p.content.seoTitle));
+    setSeoDescription(asLocalized(p.content.seoDescription));
+    setCategoryIds(p.categoryIds || []);
+    setPriceUsd(centsToDollarInput(p.priceCents ?? 499));
+    setFeatured(Boolean(p.featured));
+    setFree(Boolean(p.free));
+    setStatus(p.status);
+    setImageVersion(Date.parse(p.updatedAt) || Date.now());
+  }
+
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Not found");
-        const p = data.pattern as CrochetPattern;
-        setPattern(p);
-        setTitleEn(p.content.title.en);
-        setSummaryEn(p.content.summary.en);
-        setSeoTitleEn(p.content.seoTitle.en);
-        setSeoDescEn(p.content.seoDescription.en);
-        setPriceUsd(centsToDollarInput(p.priceCents ?? 499));
-        setFeatured(Boolean(p.featured));
-        setFree(Boolean(p.free));
-        setStatus(p.status);
-        setImageVersion(Date.parse(p.updatedAt) || Date.now());
+        applyPatternForm(data.pattern as CrochetPattern);
       })
       .catch((e) => setError(e.message));
   }, [id]);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => setCategories([]));
+  }, []);
 
   useEffect(() => {
     if (!imageBusy) return;
@@ -91,6 +124,14 @@ export default function AdminPatternDetailPage() {
 
   const busy = saving || imageBusy;
 
+  function toggleCategory(catId: string) {
+    setCategoryIds((prev) =>
+      prev.includes(catId)
+        ? prev.filter((c) => c !== catId)
+        : [...prev, catId]
+    );
+  }
+
   async function patch(body: Record<string, unknown>) {
     setSaving(true);
     setMessage("");
@@ -107,10 +148,7 @@ export default function AdminPatternDetailPage() {
         return null;
       }
       const p = data.pattern as CrochetPattern;
-      setPattern(p);
-      setFeatured(Boolean(p.featured));
-      setFree(Boolean(p.free));
-      setStatus(p.status);
+      applyPatternForm(p);
       setMessage("Saved");
       return p;
     } catch (e) {
@@ -129,12 +167,13 @@ export default function AdminPatternDetailPage() {
       status,
       priceCents: dollarsToCents(Number(priceUsd)),
       currency: "usd",
+      categoryIds,
       content: {
         ...pattern.content,
-        title: { ...pattern.content.title, en: titleEn },
-        summary: { ...pattern.content.summary, en: summaryEn },
-        seoTitle: { ...pattern.content.seoTitle, en: seoTitleEn },
-        seoDescription: { ...pattern.content.seoDescription, en: seoDescEn },
+        title,
+        summary,
+        seoTitle,
+        seoDescription,
       },
     });
     if (saved && featured && saved.status !== "published") {
@@ -292,6 +331,10 @@ export default function AdminPatternDetailPage() {
   }
 
   const previewSrc = withCacheBust(pattern.imagePath, imageVersion);
+  const selectedCategoryNames = categories
+    .filter((c) => categoryIds.includes(c.id))
+    .map((c) => c.name.en)
+    .join(", ");
 
   return (
     <AdminShell title={pattern.content.title.en}>
@@ -376,6 +419,35 @@ export default function AdminPatternDetailPage() {
               ))}
             </select>
           </label>
+          <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+            <p className="text-sm font-medium text-slate-300">Categories</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {selectedCategoryNames || "None selected"}
+            </p>
+            <div className="mt-3 flex flex-col gap-2">
+              {categories.map((c) => (
+                <label
+                  key={c.id}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-slate-300"
+                >
+                  <input
+                    type="checkbox"
+                    checked={categoryIds.includes(c.id)}
+                    disabled={busy}
+                    onChange={() => toggleCategory(c.id)}
+                  />
+                  <span>
+                    {c.icon} {c.name.en}
+                  </span>
+                </label>
+              ))}
+              {categories.length === 0 && (
+                <p className="text-xs text-slate-500">
+                  No categories yet. Create some under Categories.
+                </p>
+              )}
+            </div>
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
@@ -494,37 +566,79 @@ export default function AdminPatternDetailPage() {
 
         <div className="space-y-6">
           <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h2 className="font-semibold text-white">Copy & SEO (EN)</h2>
-            <input
-              value={titleEn}
-              onChange={(e) => setTitleEn(e.target.value)}
-              placeholder="Title"
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            />
-            <textarea
-              value={summaryEn}
-              onChange={(e) => setSummaryEn(e.target.value)}
-              rows={3}
-              placeholder="Summary"
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            />
-            <input
-              value={seoTitleEn}
-              onChange={(e) => setSeoTitleEn(e.target.value)}
-              placeholder="SEO title"
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            />
-            <textarea
-              value={seoDescEn}
-              onChange={(e) => setSeoDescEn(e.target.value)}
-              rows={2}
-              placeholder="SEO description"
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold text-white">Copy & meta tags</h2>
+              <div className="flex gap-1">
+                {LOCALES.map((loc) => (
+                  <button
+                    key={loc.code}
+                    type="button"
+                    onClick={() => setLocaleTab(loc.code)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      localeTab === loc.code
+                        ? "bg-rose-500 text-white"
+                        : "bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {loc.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <p className="text-xs text-slate-500">
-              FR: {pattern.content.title.fr || "—"} · ES:{" "}
-              {pattern.content.title.es || "—"}
+              Editing {LOCALES.find((l) => l.code === localeTab)?.label}. Meta
+              title and description are used for search engines and social
+              previews.
             </p>
+            <label className="block text-sm text-slate-400">
+              Title
+              <input
+                value={title[localeTab]}
+                onChange={(e) =>
+                  setTitle({ ...title, [localeTab]: e.target.value })
+                }
+                placeholder={`Title (${localeTab})`}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Summary
+              <textarea
+                value={summary[localeTab]}
+                onChange={(e) =>
+                  setSummary({ ...summary, [localeTab]: e.target.value })
+                }
+                rows={3}
+                placeholder={`Summary (${localeTab})`}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Meta title
+              <input
+                value={seoTitle[localeTab]}
+                onChange={(e) =>
+                  setSeoTitle({ ...seoTitle, [localeTab]: e.target.value })
+                }
+                placeholder={`Meta title (${localeTab})`}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Meta description
+              <textarea
+                value={seoDescription[localeTab]}
+                onChange={(e) =>
+                  setSeoDescription({
+                    ...seoDescription,
+                    [localeTab]: e.target.value,
+                  })
+                }
+                rows={2}
+                placeholder={`Meta description (${localeTab})`}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
           </section>
 
           <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">

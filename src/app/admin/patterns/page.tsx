@@ -6,7 +6,10 @@ import { readSiteContent } from "@/lib/data/store";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPatternsPage() {
-  const { patterns } = await readSiteContent();
+  const { patterns, categories } = await readSiteContent();
+  const categoryNameById = new Map(
+    categories.map((c) => [c.id, c.name.en] as const)
+  );
 
   return (
     <AdminShell title="Pattern library">
@@ -23,6 +26,7 @@ export default async function AdminPatternsPage() {
           <thead className="bg-slate-900 text-slate-400">
             <tr>
               <th className="px-4 py-3">Pattern</th>
+              <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Validation</th>
               <th className="px-4 py-3">Confidence</th>
@@ -30,57 +34,65 @@ export default async function AdminPatternsPage() {
             </tr>
           </thead>
           <tbody>
-            {patterns.map((p) => (
-              <tr key={p.id} className="border-t border-slate-800">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-slate-800">
-                      {p.thumbnailPath && (
-                        <Image
-                          src={p.thumbnailPath}
-                          alt=""
-                          fill
-                          className="object-cover"
-                        />
-                      )}
+            {patterns.map((p) => {
+              const names = (p.categoryIds || [])
+                .map((id) => categoryNameById.get(id) || id)
+                .filter(Boolean);
+              return (
+                <tr key={p.id} className="border-t border-slate-800">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-slate-800">
+                        {p.thumbnailPath && (
+                          <Image
+                            src={p.thumbnailPath}
+                            alt=""
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {p.content.title.en}
+                        </p>
+                        <p className="text-xs text-slate-500">{p.slug}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-white">
-                        {p.content.title.en}
-                      </p>
-                      <p className="text-xs text-slate-500">{p.slug}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 capitalize text-slate-300">
-                  {p.status}
-                </td>
-                <td className="px-4 py-3">
-                  {p.validation.ok ? (
-                    <span className="text-emerald-400">OK</span>
-                  ) : (
-                    <span className="text-amber-400">
-                      {p.validation.issues.length} issues
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 capitalize text-slate-300">
-                  {p.confidence}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/patterns/${p.id}`}
-                    className="text-rose-300 hover:text-rose-200"
-                  >
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">
+                    {names.length ? names.join(", ") : "—"}
+                  </td>
+                  <td className="px-4 py-3 capitalize text-slate-300">
+                    {p.status}
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.validation.ok ? (
+                      <span className="text-emerald-400">OK</span>
+                    ) : (
+                      <span className="text-amber-400">
+                        {p.validation.issues.length} issues
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 capitalize text-slate-300">
+                    {p.confidence}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin/patterns/${p.id}`}
+                      className="text-rose-300 hover:text-rose-200"
+                    >
+                      Open
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
             {patterns.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-4 py-10 text-center text-slate-500"
                 >
                   No patterns yet. Generate one from AI Generate.

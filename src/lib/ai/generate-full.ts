@@ -13,11 +13,7 @@ import {
 } from "@/lib/crochet/validator";
 import { normalizePatternComponents } from "@/lib/crochet/construction";
 import { buildPatternPdf } from "@/lib/pdf/build-pattern-pdf";
-import {
-  readSiteContent,
-  saveSiteContent,
-  upsertPattern,
-} from "@/lib/data/store";
+import { readSiteContent, saveSiteContent } from "@/lib/data/store";
 import { readAdminSettings } from "@/lib/admin/settings-store";
 import { slugify } from "@/lib/utils";
 import { withAiUsageRun } from "@/lib/ai/usage-log";
@@ -108,7 +104,6 @@ async function generateFullPatternInner(
     const created = await ensureCategoryFromSpec(designSpec, site.categories);
     if (created) {
       site.categories = created.categories;
-      await saveSiteContent(site);
       if (!categoryIds.includes(created.id)) categoryIds.push(created.id);
     }
   }
@@ -157,8 +152,12 @@ async function generateFullPatternInner(
     }
   }
 
+  // Single write so new categories are not lost by a later upsertPattern re-read
   if (input.save !== false) {
-    pattern = await upsertPattern(pattern);
+    const idx = site.patterns.findIndex((p) => p.id === pattern.id);
+    if (idx >= 0) site.patterns[idx] = pattern;
+    else site.patterns.unshift(pattern);
+    await saveSiteContent(site);
   }
 
   return pattern;
