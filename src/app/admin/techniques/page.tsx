@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Crop,
   GraduationCap,
+  Layers,
   Plus,
   Sparkles,
   Trash2,
@@ -53,6 +54,7 @@ export default function AdminTechniquesPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [batchSheets, setBatchSheets] = useState<1 | 2 | 3>(3);
 
   const selected = useMemo(
     () => list.find((t) => t.id === selectedId) || null,
@@ -174,6 +176,46 @@ export default function AdminTechniquesPage() {
       setMsg("Sheet uploaded — set cols/rows, then Crop to steps");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function batchIllustrate() {
+    setBusy("batch");
+    setMsg(
+      `Batch illustrating with up to ${batchSheets} AI sheet(s) — packing multiple techniques per image…`
+    );
+    try {
+      const res = await fetch("/api/admin/techniques/batch-illustrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maxSheets: batchSheets,
+          cols: 4,
+          rows: 3,
+          onlyMissing: true,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { error?: string }).error ||
+            `Batch failed (${res.status})`
+        );
+      }
+      if (Array.isArray(data.techniques)) {
+        setList(data.techniques);
+        if (selectedId) {
+          const still = data.techniques.find(
+            (t: Technique) => t.id === selectedId
+          );
+          if (still) setForm(still);
+        }
+      }
+      setMsg(data.message || "Batch illustrations ready");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Batch illustration failed");
     } finally {
       setBusy(null);
     }
@@ -325,11 +367,64 @@ export default function AdminTechniquesPage() {
 
   return (
     <AdminShell title="Technique tutorials">
-      <p className="mb-6 max-w-3xl text-sm text-slate-400">
-        Build a stitch library like a brand guide: generate one multi-panel AI
-        sheet per technique, crop panels into steps, add captions and optional
-        YouTube. Published techniques appear on /learn and in Pattern Studio.
+      <p className="mb-4 max-w-3xl text-sm text-slate-400">
+        Build a stitch library like a brand guide. Use{" "}
+        <span className="text-slate-300">Batch illustrate</span> to fill many
+        techniques from only 1–3 AI images (much cheaper), or create art for one
+        technique at a time below.
       </p>
+
+      <section className="mb-6 space-y-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-100">
+              <Layers className="h-4 w-4" />
+              Batch illustrate (low cost)
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-slate-400">
+              Packs several techniques into shared 4×3 storyboard sheets, crops
+              each panel, and assigns them to the right steps. Only techniques
+              still missing step art. Run again for the next batch if some were
+              skipped.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-xs text-slate-400">
+              Max AI images
+              <select
+                value={batchSheets}
+                onChange={(e) =>
+                  setBatchSheets(Number(e.target.value) as 1 | 2 | 3)
+                }
+                className="mt-1 block rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white"
+              >
+                <option value={1}>1 sheet</option>
+                <option value={2}>2 sheets</option>
+                <option value={3}>3 sheets</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={batchIllustrate}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              <Layers className="h-4 w-4" />
+              {busy === "batch"
+                ? "Batch running…"
+                : `Batch fill (≤${batchSheets} images)`}
+            </button>
+          </div>
+        </div>
+        {msg && busy === "batch" ? (
+          <p className="text-sm text-emerald-200">{msg}</p>
+        ) : null}
+        {msg && !busy && /sheet|batch|panel|techniques updated/i.test(msg) ? (
+          <p className="rounded-lg bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200">
+            {msg}
+          </p>
+        ) : null}
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="space-y-2">

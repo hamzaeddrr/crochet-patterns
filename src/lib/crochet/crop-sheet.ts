@@ -14,10 +14,28 @@ export async function cropSheetToStepImages(opts: {
   rows: number;
   stepCount: number;
 }): Promise<string[]> {
+  return cropSheetCells({
+    sheetPath: opts.sheetPath,
+    cols: opts.cols,
+    rows: opts.rows,
+    count: opts.stepCount,
+    pathForIndex: (i, stamp) =>
+      `techniques/${opts.techniqueId}/step-${i + 1}-${stamp}.webp`,
+  });
+}
+
+/** Crop N cells from a grid sheet into saved webp assets. */
+export async function cropSheetCells(opts: {
+  sheetPath: string;
+  cols: number;
+  rows: number;
+  count: number;
+  pathForIndex: (index: number, stamp: number) => string;
+}): Promise<string[]> {
   const cols = Math.max(1, Math.floor(opts.cols));
   const rows = Math.max(1, Math.floor(opts.rows));
   const cells = cols * rows;
-  const count = Math.min(Math.max(1, opts.stepCount), cells);
+  const count = Math.min(Math.max(1, opts.count), cells);
 
   let raw: Buffer;
   try {
@@ -33,7 +51,6 @@ export async function cropSheetToStepImages(opts: {
     throw new Error("Sheet image is empty");
   }
 
-  // Normalize EXIF orientation + decode before measuring
   const normalized = await sharp(raw, { failOn: "none" })
     .rotate()
     .ensureAlpha()
@@ -76,7 +93,7 @@ export async function cropSheetToStepImages(opts: {
       .toBuffer();
 
     const path = await savePublicAsset(
-      `techniques/${opts.techniqueId}/step-${i + 1}-${stamp}.webp`,
+      opts.pathForIndex(i, stamp),
       cropped,
       "image/webp"
     );

@@ -106,6 +106,22 @@ export async function generateTechniqueSheet(
     opts?.customPrompt?.trim() ||
     buildTechniqueSheetPrompt(technique, cols, rows, opts?.qaFeedback);
 
+  return generateStoryboardSheet({
+    prompt: promptUsed,
+    assetPath: `techniques/${technique.id}/sheet-${Date.now()}.webp`,
+    usageLabel: "technique-sheet",
+    patternId: technique.id,
+  });
+}
+
+/** Low-level: one AI storyboard → saved webp (used by single + batch). */
+export async function generateStoryboardSheet(opts: {
+  prompt: string;
+  assetPath: string;
+  usageLabel?: string;
+  patternId?: string;
+}): Promise<{ sheetPath: string; promptUsed: string; model: string }> {
+  const promptUsed = opts.prompt;
   const openai = await getOpenAI();
   const model = await resolveImageModel();
   const { quality, size } = resolveSafeImageParams(
@@ -146,11 +162,11 @@ export async function generateTechniqueSheet(
     const { logImageUsage } = await import("@/lib/ai/usage-log");
     await logImageUsage({
       model,
-      label: "technique-sheet",
+      label: opts.usageLabel || "technique-sheet",
       usage: (result.usage as never) || null,
       quality,
       size,
-      patternId: technique.id,
+      patternId: opts.patternId,
     });
   } catch (err) {
     console.warn("technique sheet usage log skipped:", err);
@@ -177,7 +193,7 @@ export async function generateTechniqueSheet(
     .toBuffer();
 
   const sheetPath = await savePublicAsset(
-    `techniques/${technique.id}/sheet-${Date.now()}.webp`,
+    opts.assetPath,
     sheetBuf,
     "image/webp"
   );
