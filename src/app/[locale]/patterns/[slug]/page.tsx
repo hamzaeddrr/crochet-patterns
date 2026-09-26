@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -30,7 +31,23 @@ import { Reveal } from "@/components/site/Reveal";
 import { SavePatternButton } from "@/components/site/SavePatternButton";
 import { TrackRecentView } from "@/components/site/TrackRecentView";
 import { PatternStudioWorkspace } from "@/components/site/PatternStudioWorkspace";
+
 export const dynamic = "force-dynamic";
+
+const Pattern3DAssembly = nextDynamic(
+  () =>
+    import("@/components/site/Pattern3DAssembly").then(
+      (m) => m.Pattern3DAssembly
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex aspect-[16/10] items-center justify-center rounded-[1.5rem] border border-line bg-[#f3ebe0] text-sm text-muted">
+        Loading 3D studio…
+      </div>
+    ),
+  }
+);
 
 export async function generateMetadata({
   params,
@@ -305,6 +322,25 @@ export default async function PatternDetailPage({
         />
       </Reveal>
 
+      <Reveal className="mt-6 sm:mt-8" delay={40}>
+        <Pattern3DAssembly
+          components={pattern.content.components}
+          colors={pattern.designSpec.colors || []}
+          objectLabel={pattern.designSpec.object.replace(/_/g, " ")}
+          labels={{
+            title: t("assembly3dTitle"),
+            subtitle: t("assembly3dSubtitle"),
+            stepOf: String(t.raw("assembly3dStepOf")),
+            finalResult: t("assembly3dFinal"),
+            play: t("assembly3dPlay"),
+            pause: t("assembly3dPause"),
+            reset: t("assembly3dReset"),
+            dragHint: t("assembly3dDrag"),
+            loading: t("assembly3dLoading"),
+          }}
+        />
+      </Reveal>
+
       <div className="mt-6 grid gap-5 lg:mt-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
         <Reveal delay={60}>
           <PatternPartsDiagram
@@ -320,6 +356,7 @@ export default async function PatternDetailPage({
           <PatternColorLegend
             colors={pattern.designSpec.colors || []}
             title={t("colorPalette")}
+            note={t("colorPaletteNote")}
           />
           {pattern.imagePath ? (
             <div className="overflow-hidden rounded-[1.25rem] border border-line bg-[#fffdf9] sm:rounded-[1.35rem]">

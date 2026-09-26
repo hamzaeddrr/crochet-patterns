@@ -360,9 +360,11 @@ export function PatternPartsDiagram({
 export function PatternColorLegend({
   colors,
   title,
+  note,
 }: {
   colors: string[];
   title: string;
+  note?: string;
 }) {
   if (!colors.length) return null;
   return (
@@ -385,6 +387,9 @@ export function PatternColorLegend({
           </li>
         ))}
       </ul>
+      {note ? (
+        <p className="mt-3 text-sm leading-relaxed text-muted">{note}</p>
+      ) : null}
     </div>
   );
 }
