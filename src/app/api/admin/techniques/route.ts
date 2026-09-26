@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
       title: body.title || emptyLocalized(body.slug || "Technique"),
       tip: body.tip || emptyLocalized(""),
       youtubeUrl: body.youtubeUrl || "",
+      youtubeStartSeconds:
+        typeof body.youtubeStartSeconds === "number"
+          ? body.youtubeStartSeconds
+          : undefined,
+      youtubeEndSeconds:
+        typeof body.youtubeEndSeconds === "number"
+          ? body.youtubeEndSeconds
+          : undefined,
       sheetCols: body.sheetCols ?? 2,
       sheetRows: body.sheetRows ?? 2,
       steps: body.steps as TechniqueStep[] | undefined,

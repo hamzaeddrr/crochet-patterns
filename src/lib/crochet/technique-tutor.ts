@@ -1,21 +1,9 @@
 import type { PatternRound, StitchOpType } from "@/types";
 import { isFastenOffRound } from "@/lib/crochet/construction";
+import { detectionRules } from "@/lib/crochet/technique-catalog";
 
-/** Technique keys with visual beginner tutorials. */
-export type TechniqueKey =
-  | "magic_ring"
-  | "sc"
-  | "inc"
-  | "dec"
-  | "fo";
-
-const ORDER: TechniqueKey[] = [
-  "magic_ring",
-  "sc",
-  "inc",
-  "dec",
-  "fo",
-];
+/** Technique keys used by studio tips + /learn. */
+export type TechniqueKey = string;
 
 function hasOp(round: PatternRound, type: StitchOpType): boolean {
   return (round.operations || []).some((op) => {
@@ -27,30 +15,59 @@ function hasOp(round: PatternRound, type: StitchOpType): boolean {
   });
 }
 
-/** Detect which beginner technique cards apply to this round. */
+const CORE_ORDER = [
+  "magic_ring",
+  "chain",
+  "slst",
+  "sc",
+  "hdc",
+  "dc",
+  "inc",
+  "dec",
+  "blo",
+  "flo",
+  "fo",
+];
+
+/** Detect which technique cards apply to this round (max 3). */
 export function techniquesForRound(round: PatternRound): TechniqueKey[] {
   const found = new Set<TechniqueKey>();
   const instr = (round.instructions || "").toLowerCase();
 
-  if (hasOp(round, "magic_ring") || /\b(mr|magic\s*ring)\b/.test(instr)) {
-    found.add("magic_ring");
-  }
-  if (hasOp(round, "inc") || /\binc\b/.test(instr)) {
-    found.add("inc");
-  }
-  if (hasOp(round, "dec") || /\bdec\b|sc2tog/.test(instr)) {
-    found.add("dec");
-  }
-  if (isFastenOffRound(round) || hasOp(round, "fasten_off") || /\bfasten\s*off\b|\bfo\b/.test(instr)) {
+  if (isFastenOffRound(round) || hasOp(round, "fasten_off")) {
     found.add("fo");
   }
-  // sc tip when the round actually works single crochet (not only FO notes)
-  if (
-    !found.has("fo") &&
-    (hasOp(round, "sc") || /\bsc\b/.test(instr))
-  ) {
-    found.add("sc");
+
+  for (const rule of detectionRules()) {
+    const opHit = rule.ops.some((op) => hasOp(round, op as StitchOpType));
+    const textHit = rule.pattern ? rule.pattern.test(instr) : false;
+    if (opHit || textHit) found.add(rule.key);
   }
 
-  return ORDER.filter((k) => found.has(k)).slice(0, 3);
+  // Extra free-text detections for catalog keys without ops
+  if (/\b(slip\s*knot)\b/i.test(instr)) found.add("slip_knot");
+  if (/\b(blo)\b/i.test(instr)) found.add("blo");
+  if (/\b(flo)\b/i.test(instr)) found.add("flo");
+  if (/\b(bobble|puff|popcorn|crab|dc2tog|hdc2tog|tr2tog|dc3tog|weave|fsc|fhdc)\b/i.test(instr)) {
+    if (/\bbobble\b/i.test(instr)) found.add("bobble");
+    if (/\bpuff\b/i.test(instr)) found.add("puff");
+    if (/\bpopcorn\b/i.test(instr)) found.add("popcorn");
+    if (/\bcrab\b/i.test(instr)) found.add("crab");
+    if (/\bdc2tog\b/i.test(instr)) found.add("dc2tog");
+    if (/\bhdc2tog\b/i.test(instr)) found.add("hdc2tog");
+    if (/\btr2tog\b/i.test(instr)) found.add("tr2tog");
+    if (/\bdc3tog\b/i.test(instr)) found.add("dc3tog");
+    if (/\bweave\b/i.test(instr)) found.add("weave_ends");
+    if (/\bfsc\b/i.test(instr)) found.add("fsc");
+    if (/\bfhdc\b/i.test(instr)) found.add("fhdc");
+  }
+  if (/\b(color\s*change|change\s*colou?r|new\s*ball)\b/i.test(instr)) {
+    found.add("color_change");
+  }
+
+  const ordered = [
+    ...CORE_ORDER.filter((k) => found.has(k)),
+    ...[...found].filter((k) => !CORE_ORDER.includes(k)),
+  ];
+  return ordered.slice(0, 3);
 }

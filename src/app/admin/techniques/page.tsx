@@ -32,6 +32,8 @@ function emptyTechnique(): Technique {
     title: emptyLocalized(""),
     tip: emptyLocalized(""),
     youtubeUrl: "",
+    youtubeStartSeconds: undefined,
+    youtubeEndSeconds: undefined,
     sheetCols: 2,
     sheetRows: 2,
     steps: [
@@ -117,6 +119,8 @@ export default function AdminTechniquesPage() {
                 title: form.title,
                 tip: form.tip,
                 youtubeUrl: form.youtubeUrl,
+                youtubeStartSeconds: form.youtubeStartSeconds,
+                youtubeEndSeconds: form.youtubeEndSeconds,
                 sheetCols: form.sheetCols,
                 sheetRows: form.sheetRows,
                 steps: form.steps,
@@ -444,6 +448,46 @@ export default function AdminTechniquesPage() {
                 placeholder="https://www.youtube.com/watch?v=…"
               />
             </label>
+            <label className="block text-sm text-slate-400">
+              Start (seconds)
+              <input
+                type="number"
+                min={0}
+                value={form.youtubeStartSeconds ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    youtubeStartSeconds: e.target.value
+                      ? Math.max(0, Number(e.target.value))
+                      : undefined,
+                  })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                placeholder="e.g. 45 — skip intro"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              End (seconds)
+              <input
+                type="number"
+                min={0}
+                value={form.youtubeEndSeconds ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    youtubeEndSeconds: e.target.value
+                      ? Math.max(0, Number(e.target.value))
+                      : undefined,
+                  })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                placeholder="e.g. 180 — stop before outro"
+              />
+            </label>
+            <p className="sm:col-span-2 text-xs text-slate-500">
+              Official YouTube embed only. Start/end skip bumpers — do not
+              re-upload trimmed copies of other creators&apos; videos.
+            </p>
             <label className="flex items-center gap-2 text-sm text-slate-300">
               <input
                 type="checkbox"

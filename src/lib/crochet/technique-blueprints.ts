@@ -1,8 +1,10 @@
 /**
  * Pedagogical blueprints for Loopcraft technique art.
  * Structure inspired by brand step-guides (e.g. DMC SBS) — original wording & checks.
- * Used for image prompts + automatic vision QA. Not a copy of any third-party art.
+ * Used for image prompts + automatic refine. Not a copy of any third-party art.
  */
+
+import { TECHNIQUE_CATALOG } from "@/lib/crochet/technique-catalog";
 
 export interface TechniquePanelBlueprint {
   /** Short English caption for the panel. */
@@ -268,11 +270,40 @@ const BLUEPRINTS: Record<string, TechniqueBlueprint> = {
 export function getTechniqueBlueprint(
   key: string
 ): TechniqueBlueprint | undefined {
-  return BLUEPRINTS[key];
+  if (BLUEPRINTS[key]) return BLUEPRINTS[key];
+  const c = TECHNIQUE_CATALOG.find((t) => t.key === key);
+  if (!c) return undefined;
+  return {
+    key: c.key,
+    title: c.title.en,
+    tip: c.tip.en,
+    preferredCols: c.sheetCols,
+    preferredRows: c.sheetRows,
+    panels: c.steps.map((s) => ({
+      caption: s.caption.en,
+      action: s.body.en,
+      mustShow: [
+        `Clearly illustrate: ${s.caption.en}`,
+        "Readable silver hook tip and yarn path",
+        "Plausible hand pose for this motion",
+      ],
+      rejectIf: [
+        "Unreadable scribble of yarn",
+        "Wrong number of loops on the hook for this step",
+        "Hook floating with no connection to the fabric or ring",
+      ],
+    })),
+  };
 }
 
 export function listTechniqueBlueprints(): TechniqueBlueprint[] {
-  return Object.values(BLUEPRINTS);
+  const keys = new Set([
+    ...Object.keys(BLUEPRINTS),
+    ...TECHNIQUE_CATALOG.map((c) => c.key),
+  ]);
+  return [...keys]
+    .map((k) => getTechniqueBlueprint(k))
+    .filter((b): b is TechniqueBlueprint => Boolean(b));
 }
 
 /** Build a strict image-prompt block from a blueprint. */

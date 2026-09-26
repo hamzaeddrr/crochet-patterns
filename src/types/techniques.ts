@@ -35,6 +35,10 @@ export interface Technique {
   tip: LocalizedString;
   /** Full YouTube URL or 11-char id — optional. */
   youtubeUrl?: string;
+  /** Skip intro bumper (seconds from start). */
+  youtubeStartSeconds?: number;
+  /** Stop before end cards (seconds from start). */
+  youtubeEndSeconds?: number;
   /** Multi-panel storyboard before cropping. */
   sheetPath?: string;
   sheetCols: number;
@@ -58,6 +62,8 @@ export type TechniquePublic = Pick<
   | "title"
   | "tip"
   | "youtubeUrl"
+  | "youtubeStartSeconds"
+  | "youtubeEndSeconds"
   | "sheetPath"
   | "sheetCols"
   | "sheetRows"

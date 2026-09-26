@@ -29,7 +29,10 @@ export default async function LearnTechniquePage({
 
   if (!technique || !technique.published) notFound();
 
-  const embed = youtubeEmbedUrl(technique.youtubeUrl);
+  const embed = youtubeEmbedUrl(technique.youtubeUrl, {
+    startSeconds: technique.youtubeStartSeconds,
+    endSeconds: technique.youtubeEndSeconds,
+  });
   const others = (await getPublishedTechniques()).filter(
     (x) => x.id !== technique.id
   );
