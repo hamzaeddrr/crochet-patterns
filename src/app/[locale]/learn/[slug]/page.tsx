@@ -37,7 +37,6 @@ export default async function LearnTechniquePage({
   const showSheet = Boolean(
     technique.showSheetOnPage && technique.sheetPath
   );
-  const hasMediaPair = Boolean(embed && showSheet);
   const others = (await getPublishedTechniques()).filter(
     (x) => x.id !== technique.id
   );
@@ -62,48 +61,42 @@ export default async function LearnTechniquePage({
         </p>
       </header>
 
-      {embed || showSheet ? (
-        <div
+      {embed ? (
+        <div className="mt-8 mx-auto max-w-4xl overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
+          <div className="aspect-video w-full">
+            <iframe
+              src={embed}
+              title={pickLocalized(technique.title, locale)}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+          <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+        </div>
+      ) : null}
+
+      {showSheet ? (
+        <figure
           className={cn(
-            "mt-8 gap-5",
-            hasMediaPair
-              ? "grid lg:grid-cols-[1.15fr_0.85fr] lg:items-start"
-              : "grid"
+            "overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]",
+            embed ? "mt-6" : "mt-8"
           )}
         >
-          {embed ? (
-            <div className="overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
-              <div className="aspect-video w-full">
-                <iframe
-                  src={embed}
-                  title={pickLocalized(technique.title, locale)}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
-              </div>
-              <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
-            </div>
-          ) : null}
-
-          {showSheet ? (
-            <figure className="overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={technique.sheetPath!}
-                alt={t("sheetAlt", {
-                  title: pickLocalized(technique.title, locale),
-                })}
-                className="mx-auto max-h-[min(70vh,520px)] w-full object-contain p-2 sm:p-3"
-              />
-              <figcaption className="border-t border-line/70 px-4 py-2 text-xs text-muted">
-                {t("sheetCaption")}
-              </figcaption>
-            </figure>
-          ) : null}
-        </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={technique.sheetPath!}
+            alt={t("sheetAlt", {
+              title: pickLocalized(technique.title, locale),
+            })}
+            className="mx-auto block h-auto w-full max-h-[min(92vh,1100px)] object-contain object-top"
+          />
+          <figcaption className="border-t border-line/70 px-4 py-2.5 text-center text-xs text-muted sm:text-sm">
+            {t("sheetCaption")}
+          </figcaption>
+        </figure>
       ) : null}
 
       {technique.steps.length > 0 ? (
