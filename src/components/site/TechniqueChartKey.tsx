@@ -32,8 +32,6 @@ export function TechniqueChartKey({
     ? pickLocalized(chartSymbolNote, locale).trim()
     : "";
   const hasCustom = Boolean(chartSymbolPath);
-  if (!hasCustom && !kind) return null;
-
   const abbr = kind ? SYMBOL_LABELS[kind] : null;
 
   return (
@@ -53,7 +51,14 @@ export function TechniqueChartKey({
           />
         ) : kind ? (
           <ChartSymbolGlyph kind={kind} size={36} />
-        ) : null}
+        ) : (
+          <span
+            className="font-display text-lg text-muted/70"
+            aria-hidden
+          >
+            ?
+          </span>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gold">

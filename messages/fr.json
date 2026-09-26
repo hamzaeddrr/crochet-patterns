@@ -33,7 +33,7 @@
     "chartsCardTitle": "Lire les diagrammes",
     "chartsCardBody": "Apprenez les symboles une fois — vous les reconnaîtrez ensuite partout.",
     "chartKeyEyebrow": "Légende",
-    "chartKeyDefault": "Le symbole de ce point dans les diagrammes. Ouvrez le guide si vous débutez.",
+    "chartKeyDefault": "Dans les diagrammes, ce point est représenté par le symbole à gauche.",
     "chartGuideLink": "Nouveau aux diagrammes ? Commencez ici →"
   },
   "learnCharts": {

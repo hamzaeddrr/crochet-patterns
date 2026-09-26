@@ -11,7 +11,6 @@ import type { Locale } from "@/i18n/routing";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TechniqueChartKey } from "@/components/site/TechniqueChartKey";
-import { chartKindForTechniqueKey } from "@/components/site/ChartSymbolGlyph";
 
 export const dynamic = "force-dynamic";
 
@@ -67,21 +66,18 @@ export default async function LearnTechniquePage({
         </p>
       </header>
 
-      {technique.chartSymbolPath ||
-      chartKindForTechniqueKey(String(technique.key)) ? (
-        <TechniqueChartKey
-          className="mt-8 max-w-3xl"
-          techniqueKey={String(technique.key)}
-          chartSymbolPath={technique.chartSymbolPath}
-          chartSymbolNote={technique.chartSymbolNote}
-          locale={locale}
-          labels={{
-            eyebrow: t("chartKeyEyebrow"),
-            defaultNote: t("chartKeyDefault"),
-            guideLink: t("chartGuideLink"),
-          }}
-        />
-      ) : null}
+      <TechniqueChartKey
+        className="mt-8 max-w-3xl"
+        techniqueKey={String(technique.key)}
+        chartSymbolPath={technique.chartSymbolPath}
+        chartSymbolNote={technique.chartSymbolNote}
+        locale={locale}
+        labels={{
+          eyebrow: t("chartKeyEyebrow"),
+          defaultNote: t("chartKeyDefault"),
+          guideLink: t("chartGuideLink"),
+        }}
+      />
 
       {/* Landscape tutorial — full width when present */}
       {embed ? (
