@@ -42,12 +42,16 @@ export interface Technique {
    * Used by AI to generate step captions + bodies.
    */
   referenceText?: string;
-  /** Full YouTube URL or 11-char id — optional. */
+  /** Full YouTube URL or 11-char id — optional landscape tutorial. */
   youtubeUrl?: string;
   /** Skip intro bumper (seconds from start). */
   youtubeStartSeconds?: number;
   /** Stop before end cards (seconds from start). */
   youtubeEndSeconds?: number;
+  /** Optional second video — shown in Shorts / vertical (9:16) frame. */
+  youtubeShortUrl?: string;
+  youtubeShortStartSeconds?: number;
+  youtubeShortEndSeconds?: number;
   /** Multi-panel storyboard before cropping. */
   sheetPath?: string;
   /** Show the full storyboard sheet on the public /learn page. */
@@ -81,6 +85,9 @@ export type TechniquePublic = Pick<
   | "youtubeUrl"
   | "youtubeStartSeconds"
   | "youtubeEndSeconds"
+  | "youtubeShortUrl"
+  | "youtubeShortStartSeconds"
+  | "youtubeShortEndSeconds"
   | "sheetPath"
   | "showSheetOnPage"
   | "sheetCols"

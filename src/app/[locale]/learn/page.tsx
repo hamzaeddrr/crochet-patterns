@@ -69,7 +69,9 @@ export default async function LearnPage({
                     </p>
                     <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-gold">
                       {tech.steps.length} {t("steps")}
-                      {tech.youtubeUrl ? ` · ${t("hasVideo")}` : ""}
+                      {(tech.youtubeUrl || tech.youtubeShortUrl)
+                        ? ` · ${t("hasVideo")}`
+                        : ""}
                     </p>
                   </div>
                 </Link>

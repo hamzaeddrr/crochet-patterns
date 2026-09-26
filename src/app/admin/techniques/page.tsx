@@ -37,6 +37,9 @@ function emptyTechnique(): Technique {
     youtubeUrl: "",
     youtubeStartSeconds: undefined,
     youtubeEndSeconds: undefined,
+    youtubeShortUrl: "",
+    youtubeShortStartSeconds: undefined,
+    youtubeShortEndSeconds: undefined,
     sheetCols: 2,
     sheetRows: 2,
     showSheetOnPage: false,
@@ -126,6 +129,9 @@ export default function AdminTechniquesPage() {
                 youtubeUrl: form.youtubeUrl,
                 youtubeStartSeconds: form.youtubeStartSeconds,
                 youtubeEndSeconds: form.youtubeEndSeconds,
+                youtubeShortUrl: form.youtubeShortUrl,
+                youtubeShortStartSeconds: form.youtubeShortStartSeconds,
+                youtubeShortEndSeconds: form.youtubeShortEndSeconds,
                 sheetCols: form.sheetCols,
                 sheetRows: form.sheetRows,
                 steps: form.steps,
@@ -776,7 +782,7 @@ export default function AdminTechniquesPage() {
               />
             </label>
             <label className="block text-sm text-slate-400 sm:col-span-2">
-              YouTube URL (optional embed)
+              YouTube URL — main video (landscape)
               <input
                 value={form.youtubeUrl || ""}
                 onChange={(e) =>
@@ -822,9 +828,55 @@ export default function AdminTechniquesPage() {
                 placeholder="e.g. 180 — stop before outro"
               />
             </label>
+            <label className="block text-sm text-slate-400 sm:col-span-2">
+              YouTube Shorts URL — 2nd video (optional, vertical)
+              <input
+                value={form.youtubeShortUrl || ""}
+                onChange={(e) =>
+                  setForm({ ...form, youtubeShortUrl: e.target.value })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                placeholder="https://www.youtube.com/shorts/… or watch URL"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Short start (seconds)
+              <input
+                type="number"
+                min={0}
+                value={form.youtubeShortStartSeconds ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    youtubeShortStartSeconds: e.target.value
+                      ? Math.max(0, Number(e.target.value))
+                      : undefined,
+                  })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Short end (seconds)
+              <input
+                type="number"
+                min={0}
+                value={form.youtubeShortEndSeconds ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    youtubeShortEndSeconds: e.target.value
+                      ? Math.max(0, Number(e.target.value))
+                      : undefined,
+                  })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              />
+            </label>
             <p className="sm:col-span-2 text-xs text-slate-500">
-              Official YouTube embed only. Start/end skip bumpers — do not
-              re-upload trimmed copies of other creators&apos; videos.
+              Official YouTube embeds only. Main video is 16:9; Shorts show in a
+              9:16 frame. Start/end skip bumpers — do not re-upload trimmed
+              copies of other creators&apos; videos.
             </p>
             <label className="block text-sm text-slate-400 sm:col-span-2">
               Status

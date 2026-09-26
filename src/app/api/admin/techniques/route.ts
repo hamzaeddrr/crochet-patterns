@@ -95,6 +95,15 @@ export async function POST(request: NextRequest) {
         typeof body.youtubeEndSeconds === "number"
           ? body.youtubeEndSeconds
           : undefined,
+      youtubeShortUrl: body.youtubeShortUrl || "",
+      youtubeShortStartSeconds:
+        typeof body.youtubeShortStartSeconds === "number"
+          ? body.youtubeShortStartSeconds
+          : undefined,
+      youtubeShortEndSeconds:
+        typeof body.youtubeShortEndSeconds === "number"
+          ? body.youtubeShortEndSeconds
+          : undefined,
       sheetCols: body.sheetCols ?? 2,
       sheetRows: body.sheetRows ?? 2,
       steps: body.steps as TechniqueStep[] | undefined,

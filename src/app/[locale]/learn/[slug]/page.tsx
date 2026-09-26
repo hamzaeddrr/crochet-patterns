@@ -34,9 +34,14 @@ export default async function LearnTechniquePage({
     startSeconds: technique.youtubeStartSeconds,
     endSeconds: technique.youtubeEndSeconds,
   });
+  const shortEmbed = youtubeEmbedUrl(technique.youtubeShortUrl, {
+    startSeconds: technique.youtubeShortStartSeconds,
+    endSeconds: technique.youtubeShortEndSeconds,
+  });
   const showSheet = Boolean(
     technique.showSheetOnPage && technique.sheetPath
   );
+  const hasBothVideos = Boolean(embed && shortEmbed);
   const others = (await getPublishedTechniques()).filter(
     (x) => x.id !== technique.id
   );
@@ -61,20 +66,60 @@ export default async function LearnTechniquePage({
         </p>
       </header>
 
-      {embed ? (
-        <div className="mt-8 mx-auto max-w-4xl overflow-hidden rounded-[1.25rem] border border-line bg-ink/5">
-          <div className="aspect-video w-full">
-            <iframe
-              src={embed}
-              title={pickLocalized(technique.title, locale)}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
-          <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+      {embed || shortEmbed ? (
+        <div
+          className={cn(
+            "mt-8 gap-5",
+            hasBothVideos
+              ? "grid items-start lg:grid-cols-[1.2fr_0.55fr]"
+              : "grid"
+          )}
+        >
+          {embed ? (
+            <div
+              className={cn(
+                "overflow-hidden rounded-[1.25rem] border border-line bg-ink/5",
+                !hasBothVideos && "mx-auto w-full max-w-4xl"
+              )}
+            >
+              <div className="aspect-video w-full">
+                <iframe
+                  src={embed}
+                  title={pickLocalized(technique.title, locale)}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
+              <p className="px-4 py-2 text-xs text-muted">{t("videoCredit")}</p>
+            </div>
+          ) : null}
+
+          {shortEmbed ? (
+            <div
+              className={cn(
+                "mx-auto w-full max-w-[320px] overflow-hidden rounded-[1.25rem] border border-line bg-ink/5 lg:mx-0 lg:max-w-none",
+                !embed && "justify-self-center"
+              )}
+            >
+              <div className="mx-auto aspect-[9/16] w-full max-h-[min(78vh,640px)]">
+                <iframe
+                  src={shortEmbed}
+                  title={`${pickLocalized(technique.title, locale)} — Short`}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
+              <p className="px-4 py-2 text-center text-xs text-muted">
+                {t("shortsCredit")}
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -82,7 +127,7 @@ export default async function LearnTechniquePage({
         <figure
           className={cn(
             "overflow-hidden rounded-[1.25rem] border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)]",
-            embed ? "mt-6" : "mt-8"
+            embed || shortEmbed ? "mt-6" : "mt-8"
           )}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
