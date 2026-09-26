@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { getPublishedTechniques } from "@/lib/data/techniques-store";
 import { pickLocalized } from "@/types";
 import type { Locale } from "@/i18n/routing";
-import { GraduationCap } from "lucide-react";
+import { BookOpen, GraduationCap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,23 @@ export default async function LearnPage({
           {t("subtitle")}
         </p>
       </header>
+
+      <Link
+        href="/learn/charts"
+        className="mt-8 flex max-w-2xl items-start gap-4 border-y border-line py-5 transition hover:border-apricot/40"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-line bg-[linear-gradient(165deg,#fffdf9,#f3ebe0)] text-apricot">
+          <BookOpen className="h-5 w-5" strokeWidth={2} />
+        </span>
+        <span className="min-w-0">
+          <span className="block font-display text-xl text-ink">
+            {t("chartsCardTitle")}
+          </span>
+          <span className="mt-1 block text-sm text-muted">
+            {t("chartsCardBody")}
+          </span>
+        </span>
+      </Link>
 
       {techniques.length === 0 ? (
         <p className="mt-12 text-muted">{t("empty")}</p>

@@ -68,6 +68,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true, imagePath, technique: updated });
       }
 
+      if (kind === "chart-symbol") {
+        const chartSymbolPath = await savePublicAsset(
+          `techniques/${techniqueId}/chart-symbol-${randomUUID().slice(0, 8)}.${ext}`,
+          buf,
+          file.type || "image/jpeg"
+        );
+        const updated = await upsertTechnique({
+          id: techniqueId,
+          chartSymbolPath,
+        });
+        return NextResponse.json({
+          ok: true,
+          chartSymbolPath,
+          technique: updated,
+        });
+      }
+
       const sheetPath = await savePublicAsset(
         `techniques/${techniqueId}/sheet-upload-${randomUUID().slice(0, 8)}.${ext}`,
         buf,
@@ -108,6 +125,8 @@ export async function POST(request: NextRequest) {
       sheetRows: body.sheetRows ?? 2,
       steps: body.steps as TechniqueStep[] | undefined,
       bonusImages: body.bonusImages,
+      chartSymbolPath: body.chartSymbolPath,
+      chartSymbolNote: body.chartSymbolNote,
     });
     return NextResponse.json({ technique: created });
   } catch (error) {

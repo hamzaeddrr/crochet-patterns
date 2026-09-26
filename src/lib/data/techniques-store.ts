@@ -124,6 +124,8 @@ export function toPublic(t: Technique): TechniquePublic {
     sheetRows: t.sheetRows,
     steps: t.steps,
     bonusImages: t.bonusImages,
+    chartSymbolPath: t.chartSymbolPath,
+    chartSymbolNote: t.chartSymbolNote,
     professionallyReady: t.professionallyReady ?? t.technicallyApproved,
     technicallyApproved: t.technicallyApproved,
   };
@@ -166,6 +168,14 @@ export async function upsertTechnique(
         input.referenceText !== undefined
           ? input.referenceText
           : prev.referenceText,
+      chartSymbolPath:
+        input.chartSymbolPath !== undefined
+          ? input.chartSymbolPath || undefined
+          : prev.chartSymbolPath,
+      chartSymbolNote:
+        input.chartSymbolNote !== undefined
+          ? input.chartSymbolNote
+          : prev.chartSymbolNote,
       updatedAt: now,
     };
     doc.techniques[existingIdx] = next;
@@ -194,6 +204,8 @@ export async function upsertTechnique(
     sheetRows: Math.max(1, input.sheetRows ?? 2),
     steps: input.steps?.length ? input.steps : [],
     bonusImages: input.bonusImages || [],
+    chartSymbolPath: input.chartSymbolPath || undefined,
+    chartSymbolNote: input.chartSymbolNote,
     updatedAt: now,
   };
   doc.techniques.push(created);

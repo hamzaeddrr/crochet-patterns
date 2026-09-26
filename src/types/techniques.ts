@@ -64,6 +64,13 @@ export interface Technique {
    * Can be promoted into a step later.
    */
   bonusImages?: string[];
+  /**
+   * Optional custom chart-key image (overrides the built-in SVG glyph).
+   * Keep small — one symbol, not a full pattern chart.
+   */
+  chartSymbolPath?: string;
+  /** One-line “In charts, this means…” for the learn chart key. */
+  chartSymbolNote?: LocalizedString;
   updatedAt: string;
 }
 
@@ -94,6 +101,8 @@ export type TechniquePublic = Pick<
   | "sheetRows"
   | "steps"
   | "bonusImages"
+  | "chartSymbolPath"
+  | "chartSymbolNote"
   | "professionallyReady"
   | "technicallyApproved"
 >;

@@ -45,6 +45,8 @@ function emptyTechnique(): Technique {
     showSheetOnPage: false,
     steps: [],
     bonusImages: [],
+    chartSymbolPath: undefined,
+    chartSymbolNote: emptyLocalized(""),
     updatedAt: "",
   };
 }
@@ -136,6 +138,8 @@ export default function AdminTechniquesPage() {
                 sheetRows: form.sheetRows,
                 steps: form.steps,
                 bonusImages: form.bonusImages || [],
+                chartSymbolPath: form.chartSymbolPath,
+                chartSymbolNote: form.chartSymbolNote,
               }
             : form
         ),
@@ -240,6 +244,54 @@ export default function AdminTechniquesPage() {
       );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function uploadChartSymbol(file: File) {
+    if (!form.id) {
+      setMsg("Save the technique first, then upload a chart symbol");
+      return;
+    }
+    setBusy("chart-symbol");
+    setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("techniqueId", form.id);
+      fd.append("kind", "chart-symbol");
+      fd.append("file", file);
+      const res = await fetch("/api/admin/techniques", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      applyTechnique(data.technique);
+      setMsg("Chart symbol uploaded — shown on the learn chart key");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function clearChartSymbol() {
+    if (!form.id) return;
+    setBusy("chart-symbol");
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/techniques", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: form.id, chartSymbolPath: "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Clear failed");
+      applyTechnique(data.technique);
+      setMsg("Custom chart symbol cleared — built-in glyph will be used");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Clear failed");
     } finally {
       setBusy(null);
     }
@@ -781,6 +833,76 @@ export default function AdminTechniquesPage() {
                 placeholder="magic_ring | sc | inc | dec | fo"
               />
             </label>
+
+            <div className="sm:col-span-2 space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+              <div>
+                <p className="text-sm font-medium text-slate-200">
+                  Chart key (learn page)
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Small symbol + one line for beginners. Leave image empty to use
+                  the built-in SVG for this studio key. Do not upload full
+                  pattern charts.
+                </p>
+              </div>
+              <label className="block text-sm text-slate-400">
+                In charts, this means… ({locale})
+                <input
+                  value={form.chartSymbolNote?.[locale] || ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      chartSymbolNote: {
+                        ...(form.chartSymbolNote || emptyLocalized("")),
+                        [locale]: e.target.value,
+                      },
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                  placeholder="e.g. An oval = chain (ch)"
+                />
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 hover:bg-slate-800">
+                  <Upload className="h-4 w-4" />
+                  Upload symbol image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={!!busy || !form.id}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadChartSymbol(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {form.chartSymbolPath ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={form.chartSymbolPath}
+                      alt=""
+                      className="h-14 w-14 rounded-lg border border-slate-700 bg-white object-contain p-1"
+                    />
+                    <button
+                      type="button"
+                      disabled={!!busy}
+                      onClick={clearChartSymbol}
+                      className="text-xs font-medium text-rose-300 hover:text-rose-200"
+                    >
+                      Clear custom image
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-slate-500">
+                    Using built-in glyph when key matches (sc, dc, mr…)
+                  </span>
+                )}
+              </div>
+            </div>
+
             <label className="block text-sm text-slate-400 sm:col-span-2">
               Normal video URL (landscape 16:9)
               <input
