@@ -8,6 +8,7 @@ import type {
 } from "@/types";
 import { emptyLocalized } from "@/types";
 import { readJsonDocument, writeJsonDocument } from "@/lib/storage/json-store";
+import { normalizePatternComponents } from "@/lib/crochet/construction";
 
 const DOC = "site-content";
 
@@ -157,6 +158,7 @@ function defaultContent(): SiteContent {
 }
 
 function normalizePattern(p: CrochetPattern): CrochetPattern {
+  const components = normalizePatternComponents(p.content?.components || []);
   return {
     ...p,
     free: p.free === true,
@@ -164,6 +166,9 @@ function normalizePattern(p: CrochetPattern): CrochetPattern {
     currency: p.currency || "usd",
     featured: Boolean(p.featured),
     categoryIds: p.categoryIds || [],
+    content: p.content
+      ? { ...p.content, components }
+      : p.content,
   };
 }
 

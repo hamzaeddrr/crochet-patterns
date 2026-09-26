@@ -5,6 +5,7 @@ import type {
   ValidationIssue,
   ValidationResult,
 } from "@/types";
+import { isAccessoryOrNoteRound } from "@/lib/crochet/construction";
 
 function opDelta(op: StitchOperation): number | null {
   switch (op.type) {
@@ -243,7 +244,18 @@ export function repairPatternComponents(
     let prev = 0;
     const rounds = component.rounds.map((round) => {
       let result = round.result;
-      const parsed = parseResultFromInstructions(round.instructions || "");
+      const instr = round.instructions || "";
+
+      if (isAccessoryOrNoteRound(round)) {
+        fixed += typeof result === "number" && result > 0 ? 1 : 0;
+        return {
+          ...round,
+          result: 0,
+          operations: [{ type: "text" as const, text: instr }],
+        };
+      }
+
+      const parsed = parseResultFromInstructions(instr);
       if (parsed !== null && parsed !== result) {
         result = parsed;
         fixed += 1;

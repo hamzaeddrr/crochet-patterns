@@ -5,11 +5,14 @@ import type { PatternComponent, PatternRound } from "@/types";
 import {
   collapseSymbolRuns,
   expandOperationsToSymbols,
-  operationsHaveChartableSymbols,
   SYMBOL_LABELS,
   type ChartSymbol,
   type ChartSymbolKind,
 } from "@/lib/crochet/stitch-symbols";
+import {
+  detectConstructionMode,
+  diagramRounds,
+} from "@/lib/crochet/construction";
 
 const INK = "#2b2522";
 const ACCENT = "#d96b52";
@@ -142,24 +145,7 @@ function SymbolGlyph({
 
 /** True for flat / row-worked pieces (not amigurumi in the round). */
 export function isFlatConstruction(component: PatternComponent): boolean {
-  const c = `${component.construction} ${component.name}`.toLowerCase();
-  if (/amigurumi|in[- ]?the[- ]?round|magic.?ring|circular/.test(c)) {
-    return false;
-  }
-  if (/flat|panel|strap|gusset|flap|row|strip|pocket/.test(c)) return true;
-
-  const firstOps = component.rounds[0]?.operations || [];
-  const hasMr = firstOps.some((o) => o.type === "magic_ring");
-  if (hasMr) return false;
-
-  const hasTurn = component.rounds.some((r) =>
-    (r.operations || []).some((o) => o.type === "turn")
-  );
-  const hasChain = firstOps.some((o) => o.type === "chain");
-  const instr = (component.rounds[0]?.instructions || "").toLowerCase();
-  if (hasTurn || /\bturn\b|\bacross\b|foundation ch/.test(instr)) return true;
-  if (hasChain && !hasMr) return true;
-  return false;
+  return detectConstructionMode(component) === "row";
 }
 
 function FlatRowChart({
@@ -299,7 +285,8 @@ function CircularRoundChart({
         textAnchor="middle"
         style={{ fontSize: 11, fontWeight: 700, fill: "#6e655e" }}
       >
-        R{roundNumber} · {result} sts
+        R{roundNumber}
+        {result > 0 ? ` · ${result} sts` : symbols.some((s) => s.kind === "fo") ? " · FO" : ""}
       </text>
 
       {shown.map((sym, i) => {
@@ -409,22 +396,20 @@ export function CrochetStitchDiagram({
   rowLabel?: string;
   writtenOrderLabel: string;
   legendLabel: string;
-  emptyLabel?: string;
   previewOnly?: boolean;
 }) {
-  const chartableRounds = useMemo(
-    () =>
-      component.rounds.filter((r) =>
-        operationsHaveChartableSymbols(r.operations)
-      ),
-    [component.rounds]
-  );
-
-  const flat = isFlatConstruction(component);
+  const mode = detectConstructionMode(component);
+  const flat = mode === "row";
   const stepLabel = flat ? rowLabel || "Row" : roundLabel;
 
+  const chartableRounds = useMemo(
+    () =>
+      mode === "note" ? [] : diagramRounds(component.rounds || []),
+    [component.rounds, mode]
+  );
+
   const [activeRound, setActiveRound] = useState(
-    chartableRounds[0]?.round ?? component.rounds[0]?.round ?? 1
+    () => chartableRounds[0]?.round ?? component.rounds[0]?.round ?? 1
   );
 
   const round: PatternRound | undefined =
@@ -435,8 +420,8 @@ export function CrochetStitchDiagram({
     [round]
   );
 
-  // Hide for fabric / embroidery / pompom-style steps
-  if (!chartableRounds.length || !round) {
+  // No customer-facing empty/debug message — hide the section entirely
+  if (mode === "note" || !chartableRounds.length || !round) {
     return null;
   }
 

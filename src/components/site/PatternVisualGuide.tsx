@@ -1,4 +1,11 @@
 import type { PatternComponent } from "@/types";
+import {
+  cleanComponentDisplayName,
+  isCrochetedComponent,
+  stitchBearingRounds,
+  stepLabelForMode,
+  detectConstructionMode,
+} from "@/lib/crochet/construction";
 
 const ACCENTS = [
   "#d96b52",
@@ -31,19 +38,25 @@ export function PatternMakePath({
   interactive: boolean;
 }) {
     const steps: { id: string; label: string; meta?: string; href?: string }[] =
-    components.map((c) => ({
-      id: c.id,
-      label: c.name,
-      meta:
-        c.rounds.length > 0
-          ? `R1–${c.rounds[c.rounds.length - 1]?.round ?? c.rounds.length}${
-              c.make && c.make > 1 ? ` · ×${c.make}` : ""
-            }`
-          : c.make && c.make > 1
-            ? `×${c.make}`
-            : undefined,
-      href: interactive ? `#part-${c.id}` : undefined,
-    }));
+    components.map((c) => {
+      const { title } = cleanComponentDisplayName(c.name, c.make);
+      const mode = detectConstructionMode(c);
+      const step = stepLabelForMode(mode);
+      const last = c.rounds[c.rounds.length - 1]?.round ?? c.rounds.length;
+      return {
+        id: c.id,
+        label: title,
+        meta:
+          c.rounds.length > 0 && mode !== "note"
+            ? `${step}1–${last}${
+                c.make && c.make > 1 ? ` · ×${c.make}` : ""
+              }`
+            : c.make && c.make > 1
+              ? `×${c.make}`
+              : undefined,
+        href: interactive ? `#part-${c.id}` : undefined,
+      };
+    });
 
   if (hasAssembly) {
     steps.push({
@@ -137,7 +150,7 @@ export function PatternPartsDiagram({
   finishedLabel: string;
   interactive: boolean;
 }) {
-  const parts = components.slice(0, 8);
+  const parts = components.filter(isCrochetedComponent);
   const n = Math.max(parts.length, 1);
   const cx = 200;
   const cy = 168;
@@ -220,9 +233,15 @@ export function PatternPartsDiagram({
                     textAnchor="middle"
                     style={{ fontSize: 11, fontWeight: 600, fill: "#2b2522" }}
                   >
-                    {part.name.length > 14
-                      ? `${part.name.slice(0, 12)}…`
-                      : part.name}
+                    {(() => {
+                      const { title } = cleanComponentDisplayName(
+                        part.name,
+                        part.make
+                      );
+                      return title.length > 14
+                        ? `${title.slice(0, 12)}…`
+                        : title;
+                    })()}
                   </text>
                 </g>
               );
@@ -233,6 +252,12 @@ export function PatternPartsDiagram({
         <ul className="flex flex-col justify-center gap-2">
           {parts.map((part, i) => {
             const color = ACCENTS[i % ACCENTS.length];
+            const { title, makeSuffix } = cleanComponentDisplayName(
+              part.name,
+              part.make
+            );
+            const mode = detectConstructionMode(part);
+            const step = stepLabelForMode(mode);
             const rounds = part.rounds.length;
             const content = (
               <>
@@ -244,11 +269,13 @@ export function PatternPartsDiagram({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-ink">
-                    {part.name}
+                    {title}
                   </span>
                   <span className="text-xs text-muted">
-                    {rounds > 0 ? `${rounds} rnds` : part.construction}
-                    {part.make && part.make > 1 ? ` · make ${part.make}` : ""}
+                    {rounds > 0
+                      ? `${rounds} ${step === "Row" ? "rows" : "rnds"}`
+                      : part.construction}
+                    {makeSuffix}
                   </span>
                 </span>
               </>
@@ -345,17 +372,19 @@ function guessCssColor(name: string): string {
 export function StitchCountChart({
   component,
   title,
-  emptyLabel,
 }: {
   component: PatternComponent;
   title: string;
-  emptyLabel: string;
 }) {
-  const points = component.rounds
-    .filter((r) => typeof r.result === "number" && r.result > 0)
-    .map((r) => ({ x: r.round, y: r.result }));
+  const mode = detectConstructionMode(component);
+  if (mode === "note") return null;
 
-  // Hide for fabric / embroidery / single non-stitch steps
+  const points = stitchBearingRounds(component.rounds || []).map((r) => ({
+    x: r.round,
+    y: r.result,
+  }));
+
+  // Hide when there isn't a real stitch progression to chart
   if (points.length < 2) {
     return null;
   }
@@ -389,6 +418,8 @@ export function StitchCountChart({
   const area =
     path +
     ` L ${coords[coords.length - 1].px.toFixed(1)} ${(h - padY).toFixed(1)} L ${coords[0].px.toFixed(1)} ${(h - padY).toFixed(1)} Z`;
+
+  const axisLabel = mode === "row" ? "Row" : "R";
 
   return (
     <div className="border-t border-line bg-elevated/40 px-4 py-3 sm:px-5">
@@ -435,7 +466,8 @@ export function StitchCountChart({
           );
         })}
         <text x={padX} y={h - 4} style={{ fontSize: 9, fill: "#9a938a" }}>
-          R{minX}
+          {axisLabel}
+          {minX}
         </text>
         <text
           x={w - padX}
@@ -443,11 +475,10 @@ export function StitchCountChart({
           textAnchor="end"
           style={{ fontSize: 9, fill: "#9a938a" }}
         >
-          R{maxX}
+          {axisLabel}
+          {maxX}
         </text>
       </svg>
-      {/* keep emptyLabel referenced for API compat */}
-      <span className="sr-only">{emptyLabel}</span>
     </div>
   );
 }

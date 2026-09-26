@@ -1,6 +1,12 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { CrochetPattern, PatternComponent } from "@/types";
 import { readPublicAsset, savePublicAsset } from "@/lib/storage/assets";
+import {
+  cleanComponentDisplayName,
+  detectConstructionMode,
+  isAccessoryOrNoteRound,
+  stepLabelForMode,
+} from "@/lib/crochet/construction";
 
 function wrapText(
   text: string,
@@ -250,7 +256,13 @@ export async function buildPatternPdf(
 
   // —— Components ——
   const writeComponent = (component: PatternComponent) => {
-    drawHeading(component.name);
+    const mode = detectConstructionMode(component);
+    const step = stepLabelForMode(mode);
+    const { title } = cleanComponentDisplayName(
+      component.name,
+      component.make
+    );
+    drawHeading(title);
     if (component.make && component.make > 1) {
       drawParagraph(`Make ${component.make}.`, 11, true);
     }
@@ -259,14 +271,21 @@ export async function buildPatternPdf(
       drawSpacer(4);
     }
     for (const r of component.rounds) {
-      const instr = cleanInstructions(r.instructions, r.result);
+      const accessory = isAccessoryOrNoteRound(r) || mode === "note";
+      const instr = cleanInstructions(
+        r.instructions,
+        accessory ? undefined : r.result
+      );
       const count =
-        typeof r.result === "number" && r.result > 0 ? ` (${r.result})` : "";
-      const prefix = component.construction === "flat" || /turn/i.test(instr)
-        ? `Row ${r.round}`
-        : `Rnd ${r.round}`;
+        !accessory && typeof r.result === "number" && r.result > 0
+          ? ` (${r.result})`
+          : "";
+      const prefix =
+        mode === "note"
+          ? `Step ${r.round}`
+          : `${step} ${r.round}`;
       // If instructions already start with Rnd/Row, don't double-prefix awkwardly
-      const body = /^(rnd|row|round)\s*\d+/i.test(instr)
+      const body = /^(rnd|row|round|step)\s*\d+/i.test(instr)
         ? `${instr}${count}`
         : `${prefix}: ${instr}${count}`;
       drawParagraph(body);

@@ -51,17 +51,21 @@ Return ONLY JSON:
 
 Rules:
 - US crochet terms only in instructions.
-- Every round MUST include instructions, operations[], and accurate numeric result.
+- Every crochet round/row MUST include instructions, operations[], and accurate numeric result (active stitch count on that piece).
 - The number in parentheses at the end of instructions MUST equal "result". Write the count once only, e.g. "inc x6 (12)" not "(12) (12)".
-- operations MUST mathematically produce the same "result". If a step is embroidery, appliqué loops, or hard to encode, use operations: [{"type":"text","text":"..."}] and set result to the stated count.
+- operations MUST mathematically produce the same "result". If a step is embroidery, appliqué loops, or hard to encode, use operations: [{"type":"text","text":"..."}] and set result to 0 for non-stitch steps.
 - After "fasten off", result may be 0; include {"type":"fasten_off"}.
 - For foundation rows (ch N, sc across), result is stitches worked (usually N-1), NOT ch + sc.
 - Stitch math must be consistent round-to-round for amigurumi bodies.
+- construction: use "amigurumi" / "in-the-round" for circular magic-ring pieces; use "flat" for row-worked pieces with turn. Never mark a magic-ring piece as flat.
+- Label rounds vs rows correctly in your own reasoning: magic ring / worked in the round → round numbers; turn / foundation chain across → row numbers. Do NOT put "make N" in the component name when make is already a field — name is "Wings (teal)", make: 2.
+- ACCESSORY / non-stitch steps (drawstring chains, hanging loops, embroidery, safety-eye placement, fabric cuts) must NOT inflate stitch counts. Put them in a separate component OR as a round with result: 0 and operations: [{"type":"text","text":"..."}]. Example: "ch 30 for drawstring" → result 0 (the pouch still has 18 sts). Example: "ch 15 for hanging loop" → result 0 (mask still has 12 sts).
 - Prefer clear beginner wording when difficulty is beginner/easy.
 - Include ALL components from the design specification with enough rounds to form the shape.
 - operations.type: magic_ring, chain, sc, hdc, dc, slst, inc, dec, repeat, skip, join, fasten_off, blo, flo, turn, text
 - For (sc, inc) x 6 use: [{"type":"repeat","repeat":6,"of":[{"type":"sc","stitches":1},{"type":"inc","repeat":1}]}]
-- Assembly and finishing must be concrete shop-quality steps. Do not number steps yourself with "1." prefixes if avoidable.`,
+- Assembly and finishing must be concrete shop-quality steps. Do not number steps yourself with "1." prefixes if avoidable.
+- Do not invent fake crochet rounds for embroidery/assembly — put those in assembly/finishing or a note component with result 0.`,
       },
       {
         role: "user",

@@ -20,6 +20,11 @@ import {
   StitchCountChart,
 } from "@/components/site/PatternVisualGuide";
 import { CrochetStitchDiagram } from "@/components/site/CrochetStitchDiagram";
+import {
+  cleanComponentDisplayName,
+  detectConstructionMode,
+  stepLabelForMode,
+} from "@/lib/crochet/construction";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 import { Reveal } from "@/components/site/Reveal";
@@ -269,15 +274,18 @@ export default async function PatternDetailPage({
               </div>
               {unlocked ? (
                 <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
-                  {pattern.content.components.slice(0, 4).map((c, i) => (
+                  {pattern.content.components.slice(0, 4).map((c, i) => {
+                    const { title } = cleanComponentDisplayName(c.name, c.make);
+                    return (
                     <a
                       key={c.id}
                       href={`#part-${c.id}`}
                       className="rounded-full bg-elevated px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-apricot hover:text-bone"
                     >
-                      {i + 1}. {c.name}
+                      {i + 1}. {title}
                     </a>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -334,7 +342,15 @@ export default async function PatternDetailPage({
           <section className="mt-16" id="instructions">
             <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
             <div className="mt-6 space-y-6">
-              {pattern.content.components.map((component) => (
+              {pattern.content.components.map((component) => {
+                const mode = detectConstructionMode(component);
+                const stepLabel = stepLabelForMode(mode);
+                const { title, makeSuffix } = cleanComponentDisplayName(
+                  component.name,
+                  component.make
+                );
+                const showCharts = mode !== "note";
+                return (
                 <div
                   key={component.id}
                   id={`part-${component.id}`}
@@ -342,42 +358,53 @@ export default async function PatternDetailPage({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 bg-apricot px-5 py-4">
                     <h3 className="font-display text-xl text-bone">
-                      {component.name}
-                      {component.make && component.make > 1
-                        ? ` · make ${component.make}`
-                        : ""}
+                      {title}
+                      {makeSuffix}
                     </h3>
-                    <a
-                      href="#instructions"
-                      className="text-xs font-bold uppercase tracking-wider text-bone/80 hover:text-bone"
-                    >
-                      {t("jumpToRounds")}
-                    </a>
+                    {showCharts ? (
+                      <a
+                        href="#instructions"
+                        className="text-xs font-bold uppercase tracking-wider text-bone/80 hover:text-bone"
+                      >
+                        {t("jumpToRounds")}
+                      </a>
+                    ) : null}
                   </div>
-                  <StitchCountChart
-                    component={component}
-                    title={t("stitchChart")}
-                    emptyLabel={t("stitchChartEmpty")}
-                  />
-                  <CrochetStitchDiagram
-                    component={component}
-                    title={t("stitchDiagramTitle")}
-                    subtitle={t("stitchDiagramSubtitle")}
-                    flatSubtitle={t("stitchDiagramFlatSubtitle")}
-                    roundLabel={t("stitchDiagramRound")}
-                    rowLabel={t("stitchDiagramRow")}
-                    writtenOrderLabel={t("stitchDiagramWritten")}
-                    legendLabel={t("stitchDiagramLegend")}
-                  />
+                  {showCharts ? (
+                    <>
+                      <StitchCountChart
+                        component={component}
+                        title={
+                          mode === "row"
+                            ? t("stitchChartRows")
+                            : t("stitchChart")
+                        }
+                      />
+                      <CrochetStitchDiagram
+                        component={component}
+                        title={t("stitchDiagramTitle")}
+                        subtitle={t("stitchDiagramSubtitle")}
+                        flatSubtitle={t("stitchDiagramFlatSubtitle")}
+                        roundLabel={t("stitchDiagramRound")}
+                        rowLabel={t("stitchDiagramRow")}
+                        writtenOrderLabel={t("stitchDiagramWritten")}
+                        legendLabel={t("stitchDiagramLegend")}
+                      />
+                    </>
+                  ) : null}
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                       <thead className="bg-elevated text-muted">
                         <tr>
-                          <th className="px-5 py-3 font-semibold">Rnd</th>
+                          <th className="px-5 py-3 font-semibold">
+                            {stepLabel}
+                          </th>
                           <th className="px-5 py-3 font-semibold">
                             Instructions
                           </th>
-                          <th className="px-5 py-3 font-semibold">Count</th>
+                          {showCharts ? (
+                            <th className="px-5 py-3 font-semibold">Count</th>
+                          ) : null}
                         </tr>
                       </thead>
                       <tbody>
@@ -387,14 +414,21 @@ export default async function PatternDetailPage({
                               {r.round}
                             </td>
                             <td className="px-5 py-3">{r.instructions}</td>
-                            <td className="px-5 py-3 font-bold">{r.result}</td>
+                            {showCharts ? (
+                              <td className="px-5 py-3 font-bold">
+                                {typeof r.result === "number" && r.result > 0
+                                  ? r.result
+                                  : "—"}
+                              </td>
+                            ) : null}
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
