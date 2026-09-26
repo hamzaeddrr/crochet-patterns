@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import type { Locale } from "@/i18n/routing";
 
 type Cat = {
   id: string;
@@ -10,6 +11,12 @@ type Cat = {
   description: { en: string; fr: string; es: string };
   icon: string;
 };
+
+const LOCALES: { code: Locale; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "es", label: "Español" },
+];
 
 const empty = (): Omit<Cat, "id"> & { id?: string } => ({
   slug: "",
@@ -22,7 +29,10 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Cat[]>([]);
   const [form, setForm] = useState(empty());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [locale, setLocale] = useState<Locale>("en");
   const [msg, setMsg] = useState("");
+
+  const localeLabel = LOCALES.find((l) => l.code === locale)?.label || locale;
 
   async function load() {
     const res = await fetch("/api/admin/categories");
@@ -76,65 +86,102 @@ export default function AdminCategoriesPage() {
   function edit(c: Cat) {
     setEditingId(c.id);
     setForm(c);
+    setLocale("en");
   }
 
   return (
     <AdminShell title="Categories">
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h2 className="font-semibold text-white">
-            {editingId ? "Edit category" : "Add category"}
-          </h2>
-          <input
-            placeholder="Icon"
-            value={form.icon}
-            onChange={(e) => setForm({ ...form, icon: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-          />
-          <input
-            placeholder="Slug"
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-          />
-          {(["en", "fr", "es"] as const).map((loc) => (
-            <div key={loc} className="space-y-2">
-              <p className="text-xs uppercase text-slate-500">{loc}</p>
+        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-white">
+                {editingId ? "Edit category" : "Add category"}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {editingId
+                  ? "Update icon, slug, and translations"
+                  : "Create a new category for patterns"}
+              </p>
+            </div>
+            <LocaleTabs locale={locale} onChange={setLocale} />
+          </div>
+
+          <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/60 p-4">
+            <h3 className="text-sm font-medium text-slate-300">
+              Basics
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-[100px_1fr]">
+              <label className="block text-sm text-slate-400">
+                Icon
+                <input
+                  value={form.icon}
+                  onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-center text-lg"
+                />
+              </label>
+              <label className="block text-sm text-slate-400">
+                Slug
+                <input
+                  placeholder="e.g. amigurumi"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/60 p-4">
+            <div>
+              <h3 className="text-sm font-medium text-slate-300">
+                Name & description
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Editing in {localeLabel}
+              </p>
+            </div>
+            <label className="block text-sm text-slate-400">
+              Name
               <input
-                placeholder={`Name (${loc})`}
-                value={form.name[loc]}
+                placeholder={`Category name · ${localeLabel}`}
+                value={form.name[locale]}
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    name: { ...form.name, [loc]: e.target.value },
+                    name: { ...form.name, [locale]: e.target.value },
                   })
                 }
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
+            </label>
+            <label className="block text-sm text-slate-400">
+              Description
               <textarea
-                placeholder={`Description (${loc})`}
-                value={form.description[loc]}
+                placeholder={`Short description · ${localeLabel}`}
+                value={form.description[locale]}
                 onChange={(e) =>
                   setForm({
                     ...form,
                     description: {
                       ...form.description,
-                      [loc]: e.target.value,
+                      [locale]: e.target.value,
                     },
                   })
                 }
-                rows={2}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
-            </div>
-          ))}
-          <div className="flex gap-2">
+            </label>
+          </section>
+
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={save}
-              className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white"
+              className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400"
             >
-              Save
+              {editingId ? "Save changes" : "Add category"}
             </button>
             {editingId && (
               <button
@@ -143,7 +190,7 @@ export default function AdminCategoriesPage() {
                   setEditingId(null);
                   setForm(empty());
                 }}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-950"
               >
                 Cancel
               </button>
@@ -153,30 +200,61 @@ export default function AdminCategoriesPage() {
         </div>
 
         <div className="space-y-3">
+          <h2 className="text-sm font-medium text-slate-400">
+            {categories.length} categor{categories.length === 1 ? "y" : "ies"}
+          </h2>
           {categories.map((c) => (
             <div
               key={c.id}
               className="rounded-xl border border-slate-800 bg-slate-900 p-4"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-2xl">{c.icon}</p>
-                  <p className="mt-1 font-semibold text-white">{c.name.en}</p>
-                  <p className="text-sm text-slate-400">{c.description.en}</p>
-                  <p className="mt-1 text-xs text-slate-500">/{c.slug}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{c.icon}</span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-white">
+                        {c.name.en || c.slug}
+                      </p>
+                      <p className="text-xs text-slate-500">/{c.slug}</p>
+                    </div>
+                  </div>
+                  {c.description.en && (
+                    <p className="mt-2 text-sm text-slate-400">
+                      {c.description.en}
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {LOCALES.map((loc) => {
+                      const hasName = Boolean(c.name[loc.code]?.trim());
+                      return (
+                        <span
+                          key={loc.code}
+                          className={`rounded-md px-2 py-0.5 ${
+                            hasName
+                              ? "bg-emerald-500/15 text-emerald-300"
+                              : "bg-slate-800 text-slate-500"
+                          }`}
+                        >
+                          {loc.label}
+                          {hasName ? "" : " —"}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex gap-2 text-xs">
+                <div className="flex shrink-0 gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => edit(c)}
-                    className="text-rose-300"
+                    className="rounded-md bg-slate-800 px-2.5 py-1 text-rose-300 hover:bg-slate-700"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(c.id)}
-                    className="text-slate-500"
+                    className="rounded-md px-2.5 py-1 text-slate-500 hover:text-rose-300"
                   >
                     Delete
                   </button>
@@ -184,8 +262,40 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
           ))}
+          {categories.length === 0 && (
+            <p className="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-sm text-slate-500">
+              No categories yet. Add one on the left.
+            </p>
+          )}
         </div>
       </div>
     </AdminShell>
+  );
+}
+
+function LocaleTabs({
+  locale,
+  onChange,
+}: {
+  locale: Locale;
+  onChange: (loc: Locale) => void;
+}) {
+  return (
+    <div className="flex gap-1 rounded-lg bg-slate-950 p-1">
+      {LOCALES.map((loc) => (
+        <button
+          key={loc.code}
+          type="button"
+          onClick={() => onChange(loc.code)}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+            locale === loc.code
+              ? "bg-rose-500 text-white"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          {loc.label}
+        </button>
+      ))}
+    </div>
   );
 }

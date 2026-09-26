@@ -18,11 +18,10 @@ import { readAdminSettings } from "@/lib/admin/settings-store";
 import { slugify } from "@/lib/utils";
 import { withAiUsageRun } from "@/lib/ai/usage-log";
 import {
-  emptyLocalized,
-  type Category,
-  type CrochetPattern,
-  type DesignSpec,
-} from "@/types";
+  ensureCategoryFromSpec,
+  guessCategoryIds,
+} from "@/lib/categories/ensure";
+import type { CrochetPattern } from "@/types";
 
 export interface GenerateFullPatternInput {
   prompt?: string;
@@ -161,68 +160,4 @@ async function generateFullPatternInner(
   }
 
   return pattern;
-}
-
-async function ensureCategoryFromSpec(
-  spec: DesignSpec,
-  existing: Category[]
-): Promise<{ id: string; categories: Category[] } | null> {
-  const slug = slugify(
-    spec.suggested_category_slug ||
-      spec.suggested_category_name ||
-      spec.construction ||
-      ""
-  );
-  if (!slug) return null;
-  const found = existing.find((c) => c.slug === slug || c.id === slug);
-  if (found) return { id: found.id, categories: existing };
-
-  const nameEn =
-    spec.suggested_category_name ||
-    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const descEn =
-    spec.suggested_category_description ||
-    `Crochet patterns in the ${nameEn} category.`;
-
-  const category: Category = {
-    id: slug,
-    slug,
-    name: emptyLocalized(nameEn),
-    description: emptyLocalized(descEn),
-    icon: "🧶",
-  };
-
-  // Best-effort translate category labels
-  try {
-    const { translateLocalizedField } = await import("./translate");
-    category.name = await translateLocalizedField(nameEn);
-    category.description = await translateLocalizedField(descEn);
-  } catch {
-    /* keep EN */
-  }
-
-  return { id: category.id, categories: [...existing, category] };
-}
-
-function guessCategoryIds(
-  construction: string,
-  object: string,
-  available: string[]
-): string[] {
-  const text = `${construction} ${object}`.toLowerCase();
-  if (text.includes("amigurumi") || /frog|bunny|bear|duck|dragon/.test(text)) {
-    if (available.includes("amigurumi")) return ["amigurumi"];
-  }
-  if (/bag|scarf|hat|beanie|mittens/.test(text)) {
-    if (available.includes("accessories")) return ["accessories"];
-  }
-  if (/blanket|cushion|pillow|basket/.test(text)) {
-    if (available.includes("home")) return ["home"];
-  }
-  if (/christmas|halloween|easter|valentine/.test(text)) {
-    if (available.includes("seasonal")) return ["seasonal"];
-  }
-  return available.includes("amigurumi")
-    ? ["amigurumi"]
-    : available.slice(0, 1);
 }

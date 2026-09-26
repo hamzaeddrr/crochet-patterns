@@ -9,6 +9,10 @@ import type {
 import { emptyLocalized } from "@/types";
 import { readJsonDocument, writeJsonDocument } from "@/lib/storage/json-store";
 import { normalizePatternComponents } from "@/lib/crochet/construction";
+import {
+  ensureCategoryFromSpec,
+  guessCategoryIds,
+} from "@/lib/categories/ensure";
 
 const DOC = "site-content";
 
@@ -252,6 +256,76 @@ export async function upsertCategory(category: Category): Promise<Category> {
   else content.categories.push(category);
   await saveSiteContent(content);
   return category;
+}
+
+/**
+ * Recreate a missing category from the pattern design spec and assign it.
+ * Handles patterns whose category was lost by the old two-write race.
+ */
+export async function recoverPatternCategory(patternId: string): Promise<{
+  pattern: CrochetPattern;
+  category: Category;
+  created: boolean;
+} | null> {
+  const content = await readSiteContent();
+  const idx = content.patterns.findIndex((p) => p.id === patternId);
+  if (idx < 0) return null;
+
+  const pattern = content.patterns[idx];
+  const known = new Set(content.categories.map((c) => c.id));
+  const orphanIds = (pattern.categoryIds || []).filter((id) => !known.has(id));
+  const hasValid = (pattern.categoryIds || []).some((id) => known.has(id));
+
+  // Prefer restoring the orphan id the pattern still points at
+  const preferredId = orphanIds[0];
+  const ensured = await ensureCategoryFromSpec(
+    pattern.designSpec,
+    content.categories,
+    preferredId
+  );
+
+  let category: Category | undefined;
+  let created = false;
+  let categoryId: string | undefined;
+
+  if (ensured) {
+    content.categories = ensured.categories;
+    categoryId = ensured.id;
+    created = ensured.created;
+    category = content.categories.find((c) => c.id === ensured.id);
+  }
+
+  if (!categoryId) {
+    const guessed = guessCategoryIds(
+      pattern.designSpec.construction,
+      pattern.designSpec.object,
+      content.categories.map((c) => c.id)
+    );
+    categoryId = guessed[0];
+    category = content.categories.find((c) => c.id === categoryId);
+  }
+
+  if (!category || !categoryId) return null;
+
+  // Keep any still-valid ids; replace orphans / empty with recovered id
+  const nextIds = hasValid
+    ? [
+        ...new Set([
+          ...(pattern.categoryIds || []).filter((id) => known.has(id)),
+          categoryId,
+        ]),
+      ]
+    : [categoryId];
+
+  const updated: CrochetPattern = {
+    ...normalizePattern(pattern),
+    categoryIds: nextIds,
+    updatedAt: new Date().toISOString(),
+  };
+  content.patterns[idx] = updated;
+  await saveSiteContent(content);
+
+  return { pattern: updated, category, created };
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {

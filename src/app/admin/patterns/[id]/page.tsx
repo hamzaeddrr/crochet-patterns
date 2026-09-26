@@ -124,14 +124,6 @@ export default function AdminPatternDetailPage() {
 
   const busy = saving || imageBusy;
 
-  function toggleCategory(catId: string) {
-    setCategoryIds((prev) =>
-      prev.includes(catId)
-        ? prev.filter((c) => c !== catId)
-        : [...prev, catId]
-    );
-  }
-
   async function patch(body: Record<string, unknown>) {
     setSaving(true);
     setMessage("");
@@ -263,6 +255,41 @@ export default function AdminPatternDetailPage() {
     await patch({ action: "retranslate" });
   }
 
+  async function recoverCategory() {
+    setSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/patterns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "recoverCategory" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not recover category");
+        return;
+      }
+      const p = data.pattern as CrochetPattern;
+      applyPatternForm(p);
+      if (data.category) {
+        setCategories((prev) => {
+          if (prev.some((c) => c.id === data.category.id)) return prev;
+          return [...prev, data.category as Category];
+        });
+      }
+      setMessage(
+        data.created
+          ? `Category restored: ${data.category?.name?.en || data.category?.id}`
+          : `Category assigned: ${data.category?.name?.en || data.category?.id}`
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not recover category");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function regenImage() {
     setImageBusy(true);
     setMessage("");
@@ -331,10 +358,14 @@ export default function AdminPatternDetailPage() {
   }
 
   const previewSrc = withCacheBust(pattern.imagePath, imageVersion);
-  const selectedCategoryNames = categories
-    .filter((c) => categoryIds.includes(c.id))
-    .map((c) => c.name.en)
-    .join(", ");
+  const assignedCategories = categories.filter((c) =>
+    categoryIds.includes(c.id)
+  );
+  const orphanCategoryIds = categoryIds.filter(
+    (cid) => !categories.some((c) => c.id === cid)
+  );
+  const needsCategoryRecover =
+    assignedCategories.length === 0 || orphanCategoryIds.length > 0;
 
   return (
     <AdminShell title={pattern.content.title.en}>
@@ -420,33 +451,32 @@ export default function AdminPatternDetailPage() {
             </select>
           </label>
           <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-            <p className="text-sm font-medium text-slate-300">Categories</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {selectedCategoryNames || "None selected"}
-            </p>
-            <div className="mt-3 flex flex-col gap-2">
-              {categories.map((c) => (
-                <label
-                  key={c.id}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-slate-300"
-                >
-                  <input
-                    type="checkbox"
-                    checked={categoryIds.includes(c.id)}
-                    disabled={busy}
-                    onChange={() => toggleCategory(c.id)}
-                  />
-                  <span>
+            <p className="text-sm font-medium text-slate-300">Category</p>
+            {assignedCategories.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-sm text-white">
+                {assignedCategories.map((c) => (
+                  <li key={c.id}>
                     {c.icon} {c.name.en}
-                  </span>
-                </label>
-              ))}
-              {categories.length === 0 && (
-                <p className="text-xs text-slate-500">
-                  No categories yet. Create some under Categories.
-                </p>
-              )}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-amber-300">
+                {orphanCategoryIds.length
+                  ? `Missing category (${orphanCategoryIds.join(", ")})`
+                  : "No category assigned"}
+              </p>
+            )}
+            {needsCategoryRecover && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={recoverCategory}
+                className="mt-3 w-full rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+              >
+                Recover category from design spec
+              </button>
+            )}
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
             <input

@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import {
   deletePattern,
   getPatternById,
+  recoverPatternCategory,
   upsertPattern,
 } from "@/lib/data/store";
 import { translatePatternContent } from "@/lib/ai/translate";
@@ -24,6 +25,10 @@ function revalidatePatternPages(slug: string) {
   revalidatePath(`/fr/patterns/${slug}`);
   revalidatePath(`/es/patterns/${slug}`);
   revalidatePath("/admin/patterns");
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  revalidatePath("/fr/categories");
+  revalidatePath("/es/categories");
 }
 
 export async function GET(
@@ -59,6 +64,22 @@ export async function PATCH(
       }
     );
     return NextResponse.json({ pattern: saved });
+  }
+
+  if (body.action === "recoverCategory") {
+    const result = await recoverPatternCategory(id);
+    if (!result) {
+      return NextResponse.json(
+        { error: "Could not recover category from design spec" },
+        { status: 400 }
+      );
+    }
+    revalidatePatternPages(result.pattern.slug);
+    return NextResponse.json({
+      pattern: result.pattern,
+      category: result.category,
+      created: result.created,
+    });
   }
 
   if (body.action === "regenerateImage") {
