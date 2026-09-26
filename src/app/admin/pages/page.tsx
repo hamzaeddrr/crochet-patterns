@@ -244,7 +244,7 @@ export default function AdminPagesSeoPage() {
         </section>
 
         {/* Page content */}
-        {(showHeroTitle || key === "home" || showBody) && (
+        {(showHeroTitle || showBody) && (
           <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
             <div>
               <h3 className="font-semibold text-white">Page content</h3>
