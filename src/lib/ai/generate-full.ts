@@ -11,7 +11,7 @@ import {
   repairPatternComponents,
   validatePatternComponents,
 } from "@/lib/crochet/validator";
-import { normalizePatternComponents } from "@/lib/crochet/construction";
+import { normalizePatternContent } from "@/lib/crochet/construction";
 import { buildPatternPdf } from "@/lib/pdf/build-pattern-pdf";
 import { readSiteContent, saveSiteContent } from "@/lib/data/store";
 import { readAdminSettings } from "@/lib/admin/settings-store";
@@ -77,8 +77,10 @@ async function generateFullPatternInner(
 
   // Auto-fix unreliable AI stitch ops before validation / save
   const repaired = repairPatternComponents(finalContent.components);
-  const normalized = normalizePatternComponents(repaired.components);
-  finalContent = { ...finalContent, components: normalized };
+  finalContent = normalizePatternContent({
+    ...finalContent,
+    components: repaired.components,
+  });
   const validation = validatePatternComponents(finalContent.components);
   const confidence = confidenceFromSpec(designSpec);
 

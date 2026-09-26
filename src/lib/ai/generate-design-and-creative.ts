@@ -68,7 +68,7 @@ Return ONLY valid JSON:
   "suggested_category_name": "Amigurumi",
   "suggested_category_description": "short EN description"
 }
-Break into crochet-able components. Prefer US crochet conventions. Category slug lowercase kebab-case.`,
+Break into crochet-able components only (head, body, wings, etc.). Do NOT list assembly, finishing, embroidery, or eye-details as components — those belong in assembly/finishing later. Prefer US crochet conventions. Category slug lowercase kebab-case.`,
       },
       {
         role: "user",

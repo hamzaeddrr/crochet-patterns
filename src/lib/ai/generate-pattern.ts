@@ -54,18 +54,23 @@ Rules:
 - Every crochet round/row MUST include instructions, operations[], and accurate numeric result (active stitch count on that piece).
 - The number in parentheses at the end of instructions MUST equal "result". Write the count once only, e.g. "inc x6 (12)" not "(12) (12)".
 - operations MUST mathematically produce the same "result". If a step is embroidery, appliqué loops, or hard to encode, use operations: [{"type":"text","text":"..."}] and set result to 0 for non-stitch steps.
-- After "fasten off", result may be 0; include {"type":"fasten_off"}.
-- For foundation rows (ch N, sc across), result is stitches worked (usually N-1), NOT ch + sc.
+- After "fasten off", result may be 0; include {"type":"fasten_off"}. Put FO as its own final stitch step of the piece (result 0).
+- For foundation rows (ch N, sc across), result is stitches worked (usually N-1), NOT ch + sc. These are ROWS (construction: "flat"), never call them rounds.
+- Flat / row-worked pieces (panels, masks, beaks, straps, flaps): construction "flat"; include turn; number them as rows in your reasoning. Circular / magic-ring pieces: construction "amigurumi" or "in-the-round".
 - Stitch math must be consistent round-to-round for amigurumi bodies.
-- construction: use "amigurumi" / "in-the-round" for circular magic-ring pieces; use "flat" for row-worked pieces with turn. Never mark a magic-ring piece as flat.
-- Label rounds vs rows correctly in your own reasoning: magic ring / worked in the round → round numbers; turn / foundation chain across → row numbers. Do NOT put "make N" in the component name when make is already a field — name is "Wings (teal)", make: 2.
-- ACCESSORY / non-stitch steps (drawstring chains, hanging loops, embroidery, safety-eye placement, fabric cuts) must NOT inflate stitch counts. Put them in a separate component OR as a round with result: 0 and operations: [{"type":"text","text":"..."}]. Example: "ch 30 for drawstring" → result 0 (the pouch still has 18 sts). Example: "ch 15 for hanging loop" → result 0 (mask still has 12 sts).
+- Do NOT put "make N" in the component name when make is already a field — name is "Wings (teal)", make: 2.
+- NON-STITCH OPERATIONS (critical): drawstring chains, hanging loops, cords, embroidery, safety-eye placement, fabric cuts are NOT stitch rounds/rows.
+  - Never give them a stitch count like (30) or (15). Always result: 0 and operations: [{"type":"text","text":"..."}].
+  - Prefer AFTER fasten off of the piece, as a separate note round OR a separate detail component named "Drawstring" / "Hanging loop".
+  - Example pouch: Rnds keep count at 18; FO; then a note step "ch 30 for drawstring" with result 0 — do NOT write "Rnd 8 — ch 30 (30)".
+  - Example mask: Rows stay at 12 sts; FO; then "ch 15 for hanging loop" with result 0 — do NOT write "Row 5 — ch 15 (15)".
+- ASSEMBLY is never a crochet round. Put assembly text only in the top-level "assembly" array. Do NOT create a component named "Assembly" with "Rnd 1 — Assemble pieces…".
+- Eye details / embroidery: either "finishing" / "assembly" arrays, OR a note component with construction "note" and result 0 rounds — never fake Rnd tables with stitch counts.
 - Prefer clear beginner wording when difficulty is beginner/easy.
-- Include ALL components from the design specification with enough rounds to form the shape.
+- Include ALL crocheted components from the design specification with enough rounds/rows to form the shape. Do not invent crochet rounds for assembly/embroidery.
 - operations.type: magic_ring, chain, sc, hdc, dc, slst, inc, dec, repeat, skip, join, fasten_off, blo, flo, turn, text
 - For (sc, inc) x 6 use: [{"type":"repeat","repeat":6,"of":[{"type":"sc","stitches":1},{"type":"inc","repeat":1}]}]
-- Assembly and finishing must be concrete shop-quality steps. Do not number steps yourself with "1." prefixes if avoidable.
-- Do not invent fake crochet rounds for embroidery/assembly — put those in assembly/finishing or a note component with result 0.`,
+- Assembly and finishing must be concrete shop-quality steps. Do not number steps yourself with "1." prefixes if avoidable.`,
       },
       {
         role: "user",

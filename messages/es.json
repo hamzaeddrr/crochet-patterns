@@ -10,7 +10,8 @@
     "blog": "Blog",
     "about": "Acerca de",
     "contact": "Contacto",
-    "browse": "Ver patrones"
+    "browse": "Ver patrones",
+    "library": "Mi biblioteca"
   },
   "home": {
     "eyebrow": "Patrones de crochet para crear",
@@ -54,6 +55,8 @@
     "makePathTitle": "Cómo se hace",
     "makePathSubtitle": "Sigue la ruta desde la primera pieza hasta el proyecto terminado. Toca un paso para saltar.",
     "makePathEyebrow": "Ruta",
+    "makePathCrocheted": "Piezas a crochet",
+    "makePathDetails": "Detalles y acabados",
     "partsTitle": "Piezas a crochet",
     "partsSubtitle": "Cada pieza numerada se teje aparte y luego se une al proyecto final.",
     "finishedPiece": "Listo",
@@ -70,7 +73,29 @@
     "stitchDiagramRow": "Fila",
     "stitchDiagramWritten": "Orden escrito",
     "stitchDiagramLegend": "Leyenda",
-    "stitchDiagramEmpty": "Aún no hay operaciones diagramables para esta pieza."
+    "stitchDiagramEmpty": "Aún no hay operaciones diagramables para esta pieza.",
+    "savePattern": "Guardar",
+    "savedPattern": "Guardado",
+    "jumpToRound": "Ir a la vuelta",
+    "progressSummary": "{done} / {total} vueltas hechas",
+    "progressCol": "Hecho",
+    "markComplete": "Marcar completo",
+    "markedComplete": "Completado",
+    "infoSize": "Tamaño final",
+    "infoHook": "Ganchillo",
+    "infoYarn": "Grosor del hilo",
+    "infoConstruction": "Construcción",
+    "infoTime": "Tiempo",
+    "infoGauge": "Tensión",
+    "infoTechniques": "Técnicas"
+  },
+  "library": {
+    "title": "Mi biblioteca",
+    "subtitle": "Patrones guardados y vistos recientemente en este dispositivo.",
+    "saved": "Guardados",
+    "recent": "Vistos recientemente",
+    "emptySaved": "Aún no hay patrones guardados. Toca Guardar en cualquier patrón.",
+    "emptyRecent": "Nada visto aún. Explora la colección para empezar."
   },
   "categories": {
     "title": "Categorías",

@@ -180,6 +180,26 @@ function validateComponent(component: PatternComponent): ValidationIssue[] {
       });
     }
 
+    // Accessories / assembly / FO are not stitch-count datapoints
+    if (isAccessoryOrNoteRound(round) || roundHasFastenOff(round)) {
+      if (
+        isAccessoryOrNoteRound(round) &&
+        typeof round.result === "number" &&
+        round.result > 0
+      ) {
+        issues.push({
+          componentId: component.id,
+          round: round.round,
+          expected: 0,
+          actual: round.result,
+          message:
+            "Non-stitch step (drawstring / loop / assembly) should have result 0, not a stitch count.",
+        });
+      }
+      if (roundHasFastenOff(round)) prev = 0;
+      continue;
+    }
+
     if (typeof round.result !== "number" || round.result < 0) {
       issues.push({
         componentId: component.id,
@@ -188,12 +208,6 @@ function validateComponent(component: PatternComponent): ValidationIssue[] {
         actual: round.result ?? null,
         message: "Round is missing a numeric stitch count (result).",
       });
-      continue;
-    }
-
-    // Fasten-off ending at 0 is intentional
-    if (roundHasFastenOff(round) && round.result === 0) {
-      prev = 0;
       continue;
     }
 
@@ -242,11 +256,17 @@ export function repairPatternComponents(
 
   const next = components.map((component) => {
     let prev = 0;
+    let sawFo = false;
     const rounds = component.rounds.map((round) => {
       let result = round.result;
       const instr = round.instructions || "";
 
-      if (isAccessoryOrNoteRound(round)) {
+      const postFoChain =
+        sawFo &&
+        !/\b(sc|hdc|dc|inc|dec|mr|magic\s*ring)\b/i.test(instr) &&
+        /\bch(?:ain)?\s+\d+/i.test(instr);
+
+      if (isAccessoryOrNoteRound(round) || postFoChain) {
         fixed += typeof result === "number" && result > 0 ? 1 : 0;
         return {
           ...round,
@@ -261,7 +281,8 @@ export function repairPatternComponents(
         fixed += 1;
       }
 
-      if (roundHasFastenOff(round) && (result === 0 || parsed === 0)) {
+      if (roundHasFastenOff(round)) {
+        sawFo = true;
         prev = 0;
         return {
           ...round,
@@ -278,7 +299,6 @@ export function repairPatternComponents(
         typeof result === "number" &&
         expected !== result
       ) {
-        // Keep maker text + result; drop conflicting machine ops
         fixed += 1;
         prev = result;
         return {

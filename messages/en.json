@@ -10,7 +10,8 @@
     "blog": "Blog",
     "about": "About",
     "contact": "Contact",
-    "browse": "Browse patterns"
+    "browse": "Browse patterns",
+    "library": "My library"
   },
   "home": {
     "eyebrow": "Crochet patterns made to make",
@@ -52,8 +53,10 @@
     "lockedBody": "You can see the project photo, summary, make path, parts diagram, and a sample stitch chart. Buy once to unlock every round, full stitch diagrams, assembly steps, and the printable PDF.",
     "lockedTeaser": "…full yarn list after unlock",
     "makePathTitle": "How you’ll make it",
-    "makePathSubtitle": "Follow the path from first piece to finished project. Tap a step to jump to that section.",
+    "makePathSubtitle": "Follow the path from the first piece to the finished project. Tap a step to jump to that section.",
     "makePathEyebrow": "Make path",
+    "makePathCrocheted": "Crocheted components",
+    "makePathDetails": "Details & finishing",
     "partsTitle": "Crocheted components",
     "partsSubtitle": "Each numbered piece is crocheted separately, then joined into the finished make.",
     "finishedPiece": "Finished",
@@ -70,7 +73,29 @@
     "stitchDiagramRow": "Row",
     "stitchDiagramWritten": "Written order",
     "stitchDiagramLegend": "Symbol key",
-    "stitchDiagramEmpty": "No chartable stitch operations for this piece yet."
+    "stitchDiagramEmpty": "No chartable stitch operations for this piece yet.",
+    "savePattern": "Save pattern",
+    "savedPattern": "Saved",
+    "jumpToRound": "Jump to round",
+    "progressSummary": "{done} / {total} rounds done",
+    "progressCol": "Done",
+    "markComplete": "Mark complete",
+    "markedComplete": "Completed",
+    "infoSize": "Finished size",
+    "infoHook": "Hook",
+    "infoYarn": "Yarn weight",
+    "infoConstruction": "Construction",
+    "infoTime": "Time",
+    "infoGauge": "Gauge",
+    "infoTechniques": "Techniques"
+  },
+  "library": {
+    "title": "My library",
+    "subtitle": "Saved patterns and recently viewed projects on this device.",
+    "saved": "Saved",
+    "recent": "Recently viewed",
+    "emptySaved": "No saved patterns yet. Tap Save pattern on any pattern page.",
+    "emptyRecent": "Nothing viewed yet. Browse the collection to get started."
   },
   "categories": {
     "title": "Categories",

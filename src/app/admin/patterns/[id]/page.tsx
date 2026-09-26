@@ -15,6 +15,14 @@ import {
   type PatternStatus,
 } from "@/types";
 import type { Locale } from "@/i18n/routing";
+import {
+  detectConstructionMode,
+  isAccessoryOrNoteRound,
+  isFastenOffRound,
+  isRedundantNoteComponent,
+  partitionComponentRounds,
+  stepLabelForMode,
+} from "@/lib/crochet/construction";
 
 const IMAGE_PROGRESS_HINTS = [
   "Reading pattern steps…",
@@ -771,27 +779,94 @@ export default function AdminPatternDetailPage() {
       {/* Pattern preview */}
       {tab === "pattern" && (
         <div className="space-y-4">
-          {pattern.content.components.map((c) => (
-            <section
-              key={c.id}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-5"
-            >
-              <h2 className="font-semibold text-rose-200">{c.name}</h2>
-              <ul className="mt-3 space-y-1.5 text-sm text-slate-300">
-                {c.rounds.map((r) => (
-                  <li key={r.round} className="flex gap-2">
-                    <span className="w-10 shrink-0 font-mono text-slate-500">
-                      R{r.round}
-                    </span>
-                    <span>
-                      {r.instructions}{" "}
-                      <span className="text-slate-500">({r.result})</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          {pattern.content.components.map((c) => {
+            if (isRedundantNoteComponent(c)) {
+              return (
+                <section
+                  key={c.id}
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-5"
+                >
+                  <h2 className="font-semibold text-slate-400">
+                    {c.name}{" "}
+                    <span className="text-xs font-normal">(folded into Assembly)</span>
+                  </h2>
+                </section>
+              );
+            }
+            const mode = detectConstructionMode(c);
+            const step = stepLabelForMode(mode);
+            const { main, accessories } = partitionComponentRounds(
+              c.rounds || []
+            );
+            return (
+              <section
+                key={c.id}
+                className="rounded-xl border border-slate-800 bg-slate-900 p-5"
+              >
+                <h2 className="font-semibold text-rose-200">
+                  {c.name}{" "}
+                  <span className="text-xs font-normal text-slate-500">
+                    · {mode === "note" ? "note" : step}
+                  </span>
+                </h2>
+                {mode === "note" ? (
+                  <ul className="mt-3 space-y-1.5 text-sm text-slate-300">
+                    {(c.rounds || []).map((r, i) => (
+                      <li key={i}>{r.instructions}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <>
+                    <ul className="mt-3 space-y-1.5 text-sm text-slate-300">
+                      {main.map((r, i) => {
+                        const fo = isFastenOffRound(r);
+                        return (
+                          <li key={`m-${i}`} className="flex gap-2">
+                            <span className="w-14 shrink-0 font-mono text-slate-500">
+                              {fo ? "FO" : `${step} ${r.round}`}
+                            </span>
+                            <span>
+                              {r.instructions}
+                              {!fo &&
+                              typeof r.result === "number" &&
+                              r.result > 0 ? (
+                                <span className="text-slate-500">
+                                  {" "}
+                                  ({r.result})
+                                </span>
+                              ) : null}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {accessories
+                      .filter(
+                        (acc) =>
+                          !acc.steps.every((s) =>
+                            isAccessoryOrNoteRound(s) &&
+                            /\bassembl\w*|sew together|closing\b/i.test(
+                              s.instructions || ""
+                            )
+                          )
+                      )
+                      .map((acc) => (
+                        <div key={acc.title} className="mt-4">
+                          <h3 className="text-sm font-semibold text-amber-200">
+                            {acc.title}
+                          </h3>
+                          <ul className="mt-1 space-y-1 text-sm text-slate-400">
+                            {acc.steps.map((s, i) => (
+                              <li key={i}>• {s.instructions}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                  </>
+                )}
+              </section>
+            );
+          })}
         </div>
       )}
 

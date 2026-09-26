@@ -10,7 +10,8 @@
     "blog": "Blog",
     "about": "À propos",
     "contact": "Contact",
-    "browse": "Voir les modèles"
+    "browse": "Voir les modèles",
+    "library": "Ma bibliothèque"
   },
   "home": {
     "eyebrow": "Des modèles au crochet à réaliser",
@@ -54,6 +55,8 @@
     "makePathTitle": "Comment le réaliser",
     "makePathSubtitle": "Suivez le parcours de la première pièce au projet fini. Touchez une étape pour y aller.",
     "makePathEyebrow": "Parcours",
+    "makePathCrocheted": "Pièces crochetées",
+    "makePathDetails": "Détails & finitions",
     "partsTitle": "Pièces crochetées",
     "partsSubtitle": "Chaque pièce numérotée se crochète à part, puis s’assemble.",
     "finishedPiece": "Fini",
@@ -70,7 +73,29 @@
     "stitchDiagramRow": "Rang",
     "stitchDiagramWritten": "Ordre écrit",
     "stitchDiagramLegend": "Légende",
-    "stitchDiagramEmpty": "Pas d’opérations diagrammables pour cette pièce."
+    "stitchDiagramEmpty": "Pas d’opérations diagrammables pour cette pièce.",
+    "savePattern": "Enregistrer",
+    "savedPattern": "Enregistré",
+    "jumpToRound": "Aller au rang",
+    "progressSummary": "{done} / {total} rangs terminés",
+    "progressCol": "Fait",
+    "markComplete": "Marquer terminé",
+    "markedComplete": "Terminé",
+    "infoSize": "Taille finie",
+    "infoHook": "Crochet",
+    "infoYarn": "Fil",
+    "infoConstruction": "Construction",
+    "infoTime": "Temps",
+    "infoGauge": "Échantillon",
+    "infoTechniques": "Techniques"
+  },
+  "library": {
+    "title": "Ma bibliothèque",
+    "subtitle": "Modèles enregistrés et récemment consultés sur cet appareil.",
+    "saved": "Enregistrés",
+    "recent": "Récemment vus",
+    "emptySaved": "Aucun modèle enregistré. Touchez Enregistrer sur une page modèle.",
+    "emptyRecent": "Rien de consulté pour l’instant. Parcourez la collection."
   },
   "categories": {
     "title": "Catégories",

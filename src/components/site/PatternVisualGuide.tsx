@@ -2,12 +2,13 @@ import type { PatternComponent } from "@/types";
 import {
   cleanComponentDisplayName,
   isCrochetedComponent,
-  isRedundantNoteComponent,
+  isDetailComponent,
   stitchBearingRounds,
   stepLabelForMode,
   detectConstructionMode,
   chartAxisLastRound,
   formatStitchCountSummary,
+  partitionComponentRounds,
 } from "@/lib/crochet/construction";
 
 const ACCENTS = [
@@ -28,6 +29,8 @@ export function PatternMakePath({
   jumpLabel,
   assembleLabel,
   finishLabel,
+  crochetedLabel,
+  detailsLabel,
   interactive,
 }: {
   components: PatternComponent[];
@@ -38,44 +41,114 @@ export function PatternMakePath({
   jumpLabel: string;
   assembleLabel: string;
   finishLabel: string;
+  crochetedLabel: string;
+  detailsLabel: string;
   interactive: boolean;
 }) {
-    const steps: { id: string; label: string; meta?: string; href?: string }[] =
-    components
-      .filter((c) => !isRedundantNoteComponent(c))
-      .map((c) => {
-      const { title } = cleanComponentDisplayName(c.name, c.make);
-      const mode = detectConstructionMode(c);
-      const step = stepLabelForMode(mode);
-      const last = c.rounds[c.rounds.length - 1]?.round ?? c.rounds.length;
-      return {
-        id: c.id,
-        label: title,
-        meta:
-          c.rounds.length > 0 && mode !== "note"
-            ? `${step}1–${last}${
-                c.make && c.make > 1 ? ` · ×${c.make}` : ""
-              }`
-            : c.make && c.make > 1
-              ? `×${c.make}`
-              : undefined,
-        href: interactive ? `#part-${c.id}` : undefined,
-      };
-    });
+  const crocheted = components.filter(isCrochetedComponent);
+  const details = components.filter(isDetailComponent);
+
+  const crochetSteps = crocheted.map((c) => {
+    const { title: name } = cleanComponentDisplayName(c.name, c.make);
+    const mode = detectConstructionMode(c);
+    const step = stepLabelForMode(mode);
+    const { main } = partitionComponentRounds(c.rounds || []);
+    const last =
+      main[main.length - 1]?.round ??
+      c.rounds[c.rounds.length - 1]?.round ??
+      c.rounds.length;
+    return {
+      id: c.id,
+      label: name,
+      meta:
+        main.length > 0
+          ? `${step}1–${last}${c.make && c.make > 1 ? ` · ×${c.make}` : ""}`
+          : c.make && c.make > 1
+            ? `×${c.make}`
+            : undefined,
+      href: interactive ? `#part-${c.id}` : undefined,
+    };
+  });
+
+  const detailSteps: {
+    id: string;
+    label: string;
+    meta?: string;
+    href?: string;
+  }[] = details.map((c) => {
+    const { title: name } = cleanComponentDisplayName(c.name, c.make);
+    return {
+      id: c.id,
+      label: name,
+      href: interactive ? `#part-${c.id}` : undefined,
+    };
+  });
 
   if (hasAssembly) {
-    steps.push({
+    detailSteps.push({
       id: "assembly",
       label: assembleLabel,
       href: interactive ? "#assembly" : undefined,
     });
   }
   if (hasFinishing) {
-    steps.push({
+    detailSteps.push({
       id: "finishing",
       label: finishLabel,
       href: interactive ? "#finishing" : undefined,
     });
+  }
+
+  function renderStrip(
+    steps: { id: string; label: string; meta?: string; href?: string }[]
+  ) {
+    return (
+      <ol className="flex min-w-max items-stretch gap-0">
+        {steps.map((step, i) => {
+          const color = ACCENTS[i % ACCENTS.length];
+          const inner = (
+            <>
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-bone"
+                style={{ background: color }}
+              >
+                {i + 1}
+              </span>
+              <span className="mt-2 max-w-[7.5rem] text-center font-display text-sm leading-snug text-ink">
+                {step.label}
+              </span>
+              {step.meta ? (
+                <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+                  {step.meta}
+                </span>
+              ) : null}
+            </>
+          );
+          return (
+            <li key={step.id} className="flex items-center">
+              {step.href ? (
+                <a
+                  href={step.href}
+                  className="flex w-[8.25rem] flex-col items-center rounded-2xl px-2 py-2 transition hover:bg-elevated/80"
+                >
+                  {inner}
+                </a>
+              ) : (
+                <div className="flex w-[8.25rem] flex-col items-center px-2 py-2">
+                  {inner}
+                </div>
+              )}
+              {i < steps.length - 1 ? (
+                <span
+                  aria-hidden
+                  className="mx-0.5 mb-6 h-px w-6 shrink-0 bg-line sm:w-8"
+                />
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    );
   }
 
   return (
@@ -89,53 +162,24 @@ export function PatternMakePath({
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">{subtitle}</p>
       </div>
-      <div className="overflow-x-auto px-4 py-5 sm:px-6">
-        <ol className="flex min-w-max items-stretch gap-0">
-          {steps.map((step, i) => {
-            const color = ACCENTS[i % ACCENTS.length];
-            const inner = (
-              <>
-                <span
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-bone"
-                  style={{ background: color }}
-                >
-                  {i + 1}
-                </span>
-                <span className="mt-2 max-w-[7.5rem] text-center font-display text-sm leading-snug text-ink">
-                  {step.label}
-                </span>
-                {step.meta ? (
-                  <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
-                    {step.meta}
-                  </span>
-                ) : null}
-              </>
-            );
-            return (
-              <li key={step.id} className="flex items-center">
-                {step.href ? (
-                  <a
-                    href={step.href}
-                    className="flex w-[8.25rem] flex-col items-center rounded-2xl px-2 py-2 transition hover:bg-elevated/80"
-                  >
-                    {inner}
-                  </a>
-                ) : (
-                  <div className="flex w-[8.25rem] flex-col items-center px-2 py-2">
-                    {inner}
-                  </div>
-                )}
-                {i < steps.length - 1 ? (
-                  <span
-                    aria-hidden
-                    className="mx-0.5 mb-6 h-px w-6 shrink-0 bg-line sm:w-8"
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+
+      {crochetSteps.length > 0 && (
+        <div className="border-b border-line px-4 py-5 sm:px-6">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+            {crochetedLabel}
+          </p>
+          <div className="overflow-x-auto">{renderStrip(crochetSteps)}</div>
+        </div>
+      )}
+
+      {detailSteps.length > 0 && (
+        <div className="px-4 py-5 sm:px-6">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+            {detailsLabel}
+          </p>
+          <div className="overflow-x-auto">{renderStrip(detailSteps)}</div>
+        </div>
+      )}
     </section>
   );
 }

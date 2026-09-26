@@ -23,14 +23,24 @@ import { CrochetStitchDiagram } from "@/components/site/CrochetStitchDiagram";
 import {
   cleanComponentDisplayName,
   detectConstructionMode,
+  isCrochetedComponent,
   isFastenOffRound,
   isRedundantNoteComponent,
   partitionComponentRounds,
   stepLabelForMode,
 } from "@/lib/crochet/construction";
+import { deriveTechniques } from "@/lib/crochet/techniques";
 import { siteUrl, versionedAssetUrl } from "@/lib/utils";
 import { isPatternUnlocked, UNLOCK_COOKIE } from "@/lib/billing/unlock";
 import { Reveal } from "@/components/site/Reveal";
+import { SavePatternButton } from "@/components/site/SavePatternButton";
+import { TrackRecentView } from "@/components/site/TrackRecentView";
+import {
+  RoundDoneButton,
+  RoundJumpBar,
+  buildJumpChips,
+  roundAnchor,
+} from "@/components/site/RoundJumpBar";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -131,9 +141,34 @@ export default async function PatternDetailPage({
       };
 
   const pdfHref = `/api/patterns/${pattern.slug}/pdf`;
+  const techniques = deriveTechniques(pattern.designSpec, pattern.content);
+
+  const jumpChips = unlocked
+    ? buildJumpChips(
+        pattern.content.components
+          .filter((c) => !isRedundantNoteComponent(c))
+          .map((c) => {
+            const mode = detectConstructionMode(c);
+            if (mode === "note") {
+              return { componentId: c.id, rounds: [], stepLabel: "Step" };
+            }
+            const stepLabel = stepLabelForMode(mode);
+            const { main } = partitionComponentRounds(c.rounds || []);
+            return {
+              componentId: c.id,
+              stepLabel,
+              rounds: main.map((r) => ({
+                round: r.round,
+                fo: isFastenOffRound(r),
+              })),
+            };
+          })
+      )
+    : [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-32 sm:px-6">
+      <TrackRecentView patternId={pattern.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -172,7 +207,7 @@ export default async function PatternDetailPage({
           <dl className="mt-8 grid grid-cols-2 gap-3 text-sm">
             <div className="soft-card p-4">
               <dt className="text-xs font-bold uppercase tracking-wider text-muted">
-                Size
+                {t("infoSize")}
               </dt>
               <dd className="mt-1 font-display text-2xl">
                 {pattern.designSpec.size_cm
@@ -182,7 +217,7 @@ export default async function PatternDetailPage({
             </div>
             <div className="soft-card p-4">
               <dt className="text-xs font-bold uppercase tracking-wider text-muted">
-                Hook
+                {t("infoHook")}
               </dt>
               <dd className="mt-1 font-display text-2xl">
                 {pattern.content.materials.hook ||
@@ -190,23 +225,83 @@ export default async function PatternDetailPage({
                   "—"}
               </dd>
             </div>
+            <div className="soft-card p-4">
+              <dt className="text-xs font-bold uppercase tracking-wider text-muted">
+                {t("infoYarn")}
+              </dt>
+              <dd className="mt-1 font-display text-xl capitalize">
+                {pattern.designSpec.yarn_weight || "—"}
+              </dd>
+            </div>
+            <div className="soft-card p-4">
+              <dt className="text-xs font-bold uppercase tracking-wider text-muted">
+                {t("infoConstruction")}
+              </dt>
+              <dd className="mt-1 font-display text-xl capitalize">
+                {pattern.designSpec.construction?.replace(/-/g, " ") || "—"}
+              </dd>
+            </div>
+            {pattern.designSpec.estimated_time ? (
+              <div className="soft-card p-4">
+                <dt className="text-xs font-bold uppercase tracking-wider text-muted">
+                  {t("infoTime")}
+                </dt>
+                <dd className="mt-1 font-display text-xl">
+                  {pattern.designSpec.estimated_time}
+                </dd>
+              </div>
+            ) : null}
+            {pattern.content.materials.gauge ? (
+              <div className="soft-card p-4">
+                <dt className="text-xs font-bold uppercase tracking-wider text-muted">
+                  {t("infoGauge")}
+                </dt>
+                <dd className="mt-1 text-sm font-semibold text-ink">
+                  {pattern.content.materials.gauge}
+                </dd>
+              </div>
+            ) : null}
           </dl>
 
-          {unlocked && pattern.pdfPath && (
-            <a href={pdfHref} className="btn-primary mt-8">
-              {t("download")} →
-            </a>
+          {techniques.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted">
+                {t("infoTechniques")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {techniques.map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-full bg-elevated px-3 py-1 text-xs font-bold text-ink"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
-          {!unlocked && (
-            <BuyPatternButton
-              className="mt-8"
-              slug={pattern.slug}
-              locale={locale}
-              priceCents={pattern.priceCents}
-              currency={pattern.currency}
-              label={t("buy")}
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            {unlocked && pattern.pdfPath && (
+              <a href={pdfHref} className="btn-primary">
+                {t("download")} →
+              </a>
+            )}
+            {!unlocked && (
+              <BuyPatternButton
+                slug={pattern.slug}
+                locale={locale}
+                priceCents={pattern.priceCents}
+                currency={pattern.currency}
+                label={t("buy")}
+              />
+            )}
+            <SavePatternButton
+              patternId={pattern.id}
+              saveLabel={t("savePattern")}
+              savedLabel={t("savedPattern")}
             />
-          )}
+          </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
             {categories
@@ -234,6 +329,8 @@ export default async function PatternDetailPage({
           jumpLabel={t("makePathEyebrow")}
           assembleLabel={t("assembly")}
           finishLabel={t("finishing")}
+          crochetedLabel={t("makePathCrocheted")}
+          detailsLabel={t("makePathDetails")}
           interactive={unlocked}
         />
       </Reveal>
@@ -277,18 +374,24 @@ export default async function PatternDetailPage({
               </div>
               {unlocked ? (
                 <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
-                  {pattern.content.components.slice(0, 4).map((c, i) => {
-                    const { title } = cleanComponentDisplayName(c.name, c.make);
-                    return (
-                    <a
-                      key={c.id}
-                      href={`#part-${c.id}`}
-                      className="rounded-full bg-elevated px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-apricot hover:text-bone"
-                    >
-                      {i + 1}. {title}
-                    </a>
-                    );
-                  })}
+                  {pattern.content.components
+                    .filter(isCrochetedComponent)
+                    .slice(0, 6)
+                    .map((c, i) => {
+                      const { title } = cleanComponentDisplayName(
+                        c.name,
+                        c.make
+                      );
+                      return (
+                        <a
+                          key={c.id}
+                          href={`#part-${c.id}`}
+                          className="rounded-full bg-elevated px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-apricot hover:text-bone"
+                        >
+                          {i + 1}. {title}
+                        </a>
+                      );
+                    })}
                 </div>
               ) : null}
             </div>
@@ -344,7 +447,17 @@ export default async function PatternDetailPage({
         <>
           <section className="mt-16" id="instructions">
             <h2 className="font-display text-3xl text-ink">{t("instructions")}</h2>
-            <div className="mt-6 space-y-6">
+            <div className="mt-6">
+              <RoundJumpBar
+                chips={jumpChips}
+                patternId={pattern.id}
+                title={t("jumpToRound")}
+                progressLabel={(done, total) =>
+                  t("progressSummary", { done, total })
+                }
+              />
+            </div>
+            <div className="mt-2 space-y-6">
               {pattern.content.components.map((component) => {
                 if (isRedundantNoteComponent(component)) return null;
 
@@ -362,7 +475,7 @@ export default async function PatternDetailPage({
                 <div
                   key={component.id}
                   id={`part-${component.id}`}
-                  className="scroll-mt-28 overflow-hidden rounded-[1.5rem] border border-line bg-bg"
+                  className="scroll-mt-36 overflow-hidden rounded-[1.5rem] border border-line bg-bg"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 bg-apricot px-5 py-4">
                     <h3 className="font-display text-xl text-bone">
@@ -419,15 +532,24 @@ export default async function PatternDetailPage({
                                 Instructions
                               </th>
                               <th className="px-5 py-3 font-semibold">Count</th>
+                              <th className="px-5 py-3 font-semibold">
+                                {t("progressCol")}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {main.map((r, idx) => {
                               const fo = isFastenOffRound(r);
+                              const anchor = roundAnchor(
+                                component.id,
+                                r.round,
+                                fo
+                              );
                               return (
                                 <tr
                                   key={`main-${r.round}-${idx}`}
-                                  className="border-t border-line"
+                                  id={anchor}
+                                  className="scroll-mt-40 border-t border-line"
                                 >
                                   <td className="px-5 py-3 font-display text-lg text-gold">
                                     {fo ? "FO" : r.round}
@@ -442,13 +564,33 @@ export default async function PatternDetailPage({
                                       ? r.result
                                       : "—"}
                                   </td>
+                                  <td className="px-5 py-3">
+                                    {!fo ? (
+                                      <RoundDoneButton
+                                        patternId={pattern.id}
+                                        componentId={component.id}
+                                        round={r.round}
+                                        markLabel={t("markComplete")}
+                                        doneLabel={t("markedComplete")}
+                                      />
+                                    ) : null}
+                                  </td>
                                 </tr>
                               );
                             })}
                           </tbody>
                         </table>
                       </div>
-                      {accessories.map((acc) => (
+                      {accessories
+                        .filter(
+                          (acc) =>
+                            !acc.steps.every((s) =>
+                              /\bassembl\w*|sew together|closing\b/i.test(
+                                s.instructions || ""
+                              )
+                            )
+                        )
+                        .map((acc) => (
                         <div
                           key={acc.title}
                           className="border-t border-line px-5 py-4"

@@ -4,6 +4,7 @@ import {
   repairPatternComponents,
   validatePatternComponents,
 } from "@/lib/crochet/validator";
+import { normalizePatternContent } from "@/lib/crochet/construction";
 import { confidenceFromSpec } from "@/lib/ai/design-spec";
 
 export async function POST(
@@ -24,15 +25,18 @@ export async function POST(
     repair = false;
   }
 
-  let components = pattern.content.components;
+  let content = pattern.content;
   let fixed = 0;
   if (repair) {
-    const out = repairPatternComponents(components);
-    components = out.components;
+    const out = repairPatternComponents(content.components);
+    content = normalizePatternContent({
+      ...content,
+      components: out.components,
+    });
     fixed = out.fixed;
   }
 
-  const validation = validatePatternComponents(components);
+  const validation = validatePatternComponents(content.components);
   const confidence = validation.ok
     ? pattern.confidence === "low"
       ? "medium"
@@ -41,7 +45,7 @@ export async function POST(
 
   const saved = await upsertPattern({
     ...pattern,
-    content: { ...pattern.content, components },
+    content,
     validation,
     confidence,
     updatedAt: new Date().toISOString(),
