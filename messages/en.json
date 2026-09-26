@@ -83,7 +83,7 @@
     "markedComplete": "Completed",
     "studioNext": "Next",
     "studioPrevious": "Previous",
-    "studioFocusHint": "One piece at a time — jump rounds, mark progress, and keep the chart in sync.",
+    "studioFocusHint": "Scroll every piece, or jump with the chips. Highlighted round stays in sync with the chart.",
     "studioRoundOf": "Step {current} of {total}",
     "studioAccessories": "Details on this piece",
     "infoSize": "Finished size",

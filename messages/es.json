@@ -83,7 +83,7 @@
     "markedComplete": "Completado",
     "studioNext": "Siguiente",
     "studioPrevious": "Anterior",
-    "studioFocusHint": "Una pieza a la vez — salta vueltas, marca progreso y mantén el diagrama sincronizado.",
+    "studioFocusHint": "Desplázate por cada pieza, o salta con las pastillas. La vuelta resaltada sigue el diagrama.",
     "studioRoundOf": "Paso {current} de {total}",
     "studioAccessories": "Detalles de esta pieza",
     "infoSize": "Tamaño final",

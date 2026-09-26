@@ -68,7 +68,7 @@ export function SiteHeader({ locale }: { locale: string }) {
       >
         <Link href="/" className="flex items-center gap-2.5">
           <YarnMark className="h-9 w-9" />
-          <span className="font-display text-2xl tracking-tight text-ink">
+          <span className="font-display text-xl tracking-tight text-ink sm:text-2xl">
             {tm("siteName")}
           </span>
         </Link>

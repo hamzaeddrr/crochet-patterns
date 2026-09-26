@@ -492,7 +492,7 @@ export function StitchCountChart({
       </div>
       <svg
         viewBox={`0 0 ${w} ${h}`}
-        className="mt-1 h-auto w-full max-w-md"
+        className="mt-1 h-auto w-full"
         role="img"
         aria-label={title}
       >

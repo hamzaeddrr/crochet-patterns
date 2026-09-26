@@ -83,7 +83,7 @@
     "markedComplete": "Terminé",
     "studioNext": "Suivant",
     "studioPrevious": "Précédent",
-    "studioFocusHint": "Une pièce à la fois — sautez les rangs, suivez votre progression, diagramme synchronisé.",
+    "studioFocusHint": "Faites défiler chaque pièce, ou sautez avec les pastilles. Le rang surligné suit le diagramme.",
     "studioRoundOf": "Étape {current} sur {total}",
     "studioAccessories": "Détails de cette pièce",
     "infoSize": "Taille finie",
