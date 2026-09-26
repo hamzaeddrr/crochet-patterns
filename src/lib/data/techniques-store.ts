@@ -165,3 +165,32 @@ export async function patchTechnique(
   await saveTechniquesDoc(doc);
   return next;
 }
+
+/**
+ * Apply many technique patches in one read/write so Blob updates don't clobber each other.
+ */
+export async function applyTechniquePatches(
+  patches: Array<{ id: string; patch: Partial<Technique> }>
+): Promise<Technique[]> {
+  const doc = await readTechniquesDoc();
+  const now = new Date().toISOString();
+  const updated: Technique[] = [];
+
+  for (const { id, patch } of patches) {
+    const idx = doc.techniques.findIndex((t) => t.id === id);
+    if (idx < 0) continue;
+    const next: Technique = {
+      ...doc.techniques[idx],
+      ...patch,
+      id,
+      updatedAt: now,
+    };
+    doc.techniques[idx] = next;
+    updated.push(next);
+  }
+
+  if (updated.length) {
+    await saveTechniquesDoc(doc);
+  }
+  return updated;
+}

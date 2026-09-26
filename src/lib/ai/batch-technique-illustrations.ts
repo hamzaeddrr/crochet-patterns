@@ -1,8 +1,8 @@
 import { generateStoryboardSheet } from "@/lib/ai/generate-technique-sheet";
 import { cropSheetCells } from "@/lib/crochet/crop-sheet";
 import {
+  applyTechniquePatches,
   listTechniques,
-  upsertTechnique,
 } from "@/lib/data/techniques-store";
 import type { Technique } from "@/types/techniques";
 
@@ -26,11 +26,8 @@ export interface BatchIllustrateResult {
 }
 
 function needsArt(t: Technique): boolean {
-  if (t.professionallyReady || t.technicallyApproved) {
-    const filled = t.steps.filter((s) => s.imagePath).length;
-    return filled < t.steps.length;
-  }
-  return t.steps.some((s) => !s.imagePath);
+  const withImg = t.steps.filter((s) => s.imagePath).length;
+  return withImg < Math.max(1, t.steps.length);
 }
 
 /** Pack whole techniques into sheets (don't split a technique across sheets). */
@@ -42,77 +39,57 @@ export function packTechniquesIntoSheets(
   const sheets: BatchPanelSlot[][] = [];
   let current: BatchPanelSlot[] = [];
   const skipped: Technique[] = [];
+  const packedIds = new Set<string>();
 
   const sorted = [...techniques].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  function flush() {
+    if (!current.length) return;
+    if (sheets.length >= maxSheets) return;
+    sheets.push(current);
+    for (const p of current) packedIds.add(p.techniqueId);
+    current = [];
+  }
+
   for (const tech of sorted) {
-    const steps = tech.steps || [];
-    if (!steps.length) continue;
-    if (steps.length > cellsPerSheet) {
-      // Too many steps for one sheet — take first cellsPerSheet
-      const slots: BatchPanelSlot[] = steps
-        .slice(0, cellsPerSheet)
-        .map((s, i) => ({
-          techniqueId: tech.id,
-          techniqueKey: String(tech.key),
-          techniqueTitle: tech.title.en || tech.slug,
-          stepIndex: i,
-          caption: s.caption.en || `Step ${i + 1}`,
-          body: s.body.en || s.caption.en || "",
-        }));
-      if (current.length > 0) {
-        sheets.push(current);
-        current = [];
-        if (sheets.length >= maxSheets) {
-          skipped.push(tech);
-          continue;
-        }
-      }
-      sheets.push(slots);
-      if (sheets.length >= maxSheets) {
-        // remaining techniques skipped
-        const rest = sorted.slice(sorted.indexOf(tech) + 1);
-        skipped.push(...rest);
-        break;
-      }
+    if (sheets.length >= maxSheets && current.length === 0) {
+      skipped.push(tech);
       continue;
     }
 
-    if (current.length + steps.length > cellsPerSheet) {
-      sheets.push(current);
-      current = [];
+    const steps = tech.steps || [];
+    if (!steps.length) continue;
+
+    const useSteps = steps.slice(0, cellsPerSheet);
+    const slots: BatchPanelSlot[] = useSteps.map((s, i) => ({
+      techniqueId: tech.id,
+      techniqueKey: String(tech.key),
+      techniqueTitle: tech.title.en || tech.slug,
+      stepIndex: i,
+      caption: s.caption.en || `Step ${i + 1}`,
+      body: s.body.en || s.caption.en || "",
+    }));
+
+    if (current.length + slots.length > cellsPerSheet) {
+      flush();
       if (sheets.length >= maxSheets) {
         skipped.push(tech);
-        const rest = sorted.slice(sorted.indexOf(tech) + 1);
-        skipped.push(...rest);
-        break;
+        continue;
       }
     }
 
-    for (let i = 0; i < steps.length; i++) {
-      const s = steps[i];
-      current.push({
-        techniqueId: tech.id,
-        techniqueKey: String(tech.key),
-        techniqueTitle: tech.title.en || tech.slug,
-        stepIndex: i,
-        caption: s.caption.en || `Step ${i + 1}`,
-        body: s.body.en || s.caption.en || "",
-      });
+    current.push(...slots);
+  }
+
+  flush();
+
+  for (const tech of sorted) {
+    if (!packedIds.has(tech.id) && !skipped.some((s) => s.id === tech.id)) {
+      skipped.push(tech);
     }
   }
 
-  if (current.length > 0 && sheets.length < maxSheets) {
-    sheets.push(current);
-  } else if (current.length > 0) {
-    // leftover techniques in current that didn't fit
-    const ids = new Set(current.map((p) => p.techniqueId));
-    for (const tech of sorted) {
-      if (ids.has(tech.id) && !skipped.includes(tech)) skipped.push(tech);
-    }
-  }
-
-  return { sheets: sheets.slice(0, maxSheets), skipped };
+  return { sheets, skipped };
 }
 
 function buildBatchSheetPrompt(
@@ -156,7 +133,6 @@ export async function batchIllustrateTechniques(opts?: {
   techniqueIds?: string[];
 }): Promise<BatchIllustrateResult> {
   const maxSheets = Math.max(1, Math.min(3, opts?.maxSheets ?? 3));
-  // Dense but readable on 1536×1024
   const cols = Math.max(2, Math.min(5, opts?.cols ?? 4));
   const rows = Math.max(2, Math.min(4, opts?.rows ?? 3));
   const cells = cols * rows;
@@ -177,7 +153,8 @@ export async function batchIllustrateTechniques(opts?: {
       techniqueIds: [],
       skippedTechniqueIds: [],
       sheetPaths: [],
-      message: "Nothing to illustrate — all selected techniques already have step art.",
+      message:
+        "Nothing to illustrate — all selected techniques already have step art.",
     };
   }
 
@@ -196,8 +173,9 @@ export async function batchIllustrateTechniques(opts?: {
 
   const batchId = Date.now();
   const sheetPaths: string[] = [];
-  /** techniqueId → stepIndex → imagePath */
   const assignments = new Map<string, Map<number, string>>();
+  /** Prefer the sheet that belongs to each technique for preview */
+  const techSheetPath = new Map<string, string>();
 
   for (let s = 0; s < sheets.length; s++) {
     const panels = sheets[s];
@@ -227,30 +205,36 @@ export async function batchIllustrateTechniques(opts?: {
         assignments.set(slot.techniqueId, new Map());
       }
       assignments.get(slot.techniqueId)!.set(slot.stepIndex, path);
+      if (!techSheetPath.has(slot.techniqueId)) {
+        techSheetPath.set(slot.techniqueId, sheetPath);
+      }
     }
   }
 
-  const updatedIds: string[] = [];
+  const byId = new Map(all.map((t) => [t.id, t]));
+  const patches: Array<{ id: string; patch: Partial<Technique> }> = [];
+
   for (const [techId, stepMap] of assignments) {
-    const tech = all.find((t) => t.id === techId);
+    const tech = byId.get(techId);
     if (!tech) continue;
     const steps = tech.steps.map((step, i) => ({
       ...step,
       imagePath: stepMap.get(i) || step.imagePath,
     }));
     const allFilled = steps.every((s) => s.imagePath);
-    await upsertTechnique({
-      ...tech,
+    patches.push({
       id: tech.id,
-      steps,
-      sheetPath: sheetPaths[0],
-      sheetCols: cols,
-      sheetRows: rows,
-      professionallyReady: allFilled,
+      patch: {
+        steps,
+        sheetPath: techSheetPath.get(tech.id) || sheetPaths[0],
+        sheetCols: cols,
+        sheetRows: rows,
+        professionallyReady: allFilled,
+      },
     });
-    updatedIds.push(tech.id);
   }
 
+  const updated = await applyTechniquePatches(patches);
   const panelsFilled = [...assignments.values()].reduce(
     (n, m) => n + m.size,
     0
@@ -259,14 +243,14 @@ export async function batchIllustrateTechniques(opts?: {
   return {
     sheetsGenerated: sheetPaths.length,
     panelsFilled,
-    techniquesUpdated: updatedIds.length,
-    techniqueIds: updatedIds,
+    techniquesUpdated: updated.length,
+    techniqueIds: updated.map((t) => t.id),
     skippedTechniqueIds: skipped.map((t) => t.id),
     sheetPaths,
-    message: `Generated ${sheetPaths.length} AI sheet(s) → ${panelsFilled} step panels → ${updatedIds.length} techniques updated${
+    message: `Generated ${sheetPaths.length} AI sheet(s) → ${panelsFilled} step images → ${updated.length} techniques updated. Open a technique marked “ready” (or the first in the list) to see step thumbnails.${
       skipped.length
-        ? ` (${skipped.length} left for another batch run)`
+        ? ` ${skipped.length} techniques still need another batch run.`
         : ""
-    }.`,
+    }`,
   };
 }

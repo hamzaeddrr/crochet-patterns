@@ -55,6 +55,7 @@ export default function AdminTechniquesPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [batchSheets, setBatchSheets] = useState<1 | 2 | 3>(3);
+  const [batchSheetPaths, setBatchSheetPaths] = useState<string[]>([]);
 
   const selected = useMemo(
     () => list.find((t) => t.id === selectedId) || null,
@@ -183,6 +184,7 @@ export default function AdminTechniquesPage() {
 
   async function batchIllustrate() {
     setBusy("batch");
+    setBatchSheetPaths([]);
     setMsg(
       `Batch illustrating with up to ${batchSheets} AI sheet(s) — packing multiple techniques per image…`
     );
@@ -204,16 +206,36 @@ export default function AdminTechniquesPage() {
             `Batch failed (${res.status})`
         );
       }
-      if (Array.isArray(data.techniques)) {
-        setList(data.techniques);
-        if (selectedId) {
-          const still = data.techniques.find(
-            (t: Technique) => t.id === selectedId
-          );
-          if (still) setForm(still);
+      const techniques = (data.techniques || []) as Technique[];
+      if (techniques.length) {
+        setList(techniques);
+      } else {
+        await load({ keepForm: true });
+      }
+
+      const paths = Array.isArray(data.sheetPaths)
+        ? (data.sheetPaths as string[])
+        : [];
+      setBatchSheetPaths(paths);
+
+      const updatedIds = Array.isArray(data.techniqueIds)
+        ? (data.techniqueIds as string[])
+        : [];
+      const firstId = updatedIds[0] || selectedId;
+      if (firstId && techniques.length) {
+        const still = techniques.find((t) => t.id === firstId);
+        if (still) {
+          setSelectedId(still.id);
+          setForm(still);
         }
       }
-      setMsg(data.message || "Batch illustrations ready");
+
+      setMsg(
+        data.message ||
+          (updatedIds.length
+            ? `Updated ${updatedIds.length} techniques — select one in the list to see step images.`
+            : "Batch finished with no updates")
+      );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Batch illustration failed");
     } finally {
@@ -419,10 +441,30 @@ export default function AdminTechniquesPage() {
         {msg && busy === "batch" ? (
           <p className="text-sm text-emerald-200">{msg}</p>
         ) : null}
-        {msg && !busy && /sheet|batch|panel|techniques updated/i.test(msg) ? (
+        {msg && !busy && /sheet|batch|panel|techniques updated|Updated/i.test(msg) ? (
           <p className="rounded-lg bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200">
             {msg}
           </p>
+        ) : null}
+        {batchSheetPaths.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {batchSheetPaths.map((src, i) => (
+              <div
+                key={src}
+                className="overflow-hidden rounded-lg border border-slate-700 bg-slate-950"
+              >
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Batch sheet {i + 1}
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`Batch sheet ${i + 1}`}
+                  className="max-h-48 w-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
         ) : null}
       </section>
 
@@ -456,7 +498,9 @@ export default function AdminTechniquesPage() {
                   {t.key} · {t.published ? "live" : "draft"}
                   {t.professionallyReady || t.technicallyApproved
                     ? " · ready"
-                    : ""}
+                    : t.steps.some((s) => s.imagePath)
+                      ? " · has art"
+                      : ""}
                 </span>
               </span>
             </button>
