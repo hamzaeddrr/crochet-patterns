@@ -76,7 +76,21 @@ export async function buildChatParams(
   return base;
 }
 
-export async function chatCompletion(params: ChatParams) {
+export async function chatCompletion(
+  params: ChatParams & { usageLabel?: string }
+) {
   const openai = await getOpenAI();
-  return openai.chat.completions.create(await buildChatParams(params));
+  const built = await buildChatParams(params);
+  const completion = await openai.chat.completions.create(built);
+  try {
+    const { logChatUsage } = await import("@/lib/ai/usage-log");
+    await logChatUsage({
+      model: built.model,
+      label: params.usageLabel || "chat",
+      usage: completion.usage || null,
+    });
+  } catch (err) {
+    console.warn("chat usage log skipped:", err);
+  }
+  return completion;
 }

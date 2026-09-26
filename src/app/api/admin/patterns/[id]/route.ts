@@ -7,6 +7,7 @@ import {
 } from "@/lib/data/store";
 import { translatePatternContent } from "@/lib/ai/translate";
 import { generatePatternImage } from "@/lib/ai/generate-image";
+import { withAiUsageRun } from "@/lib/ai/usage-log";
 import type { PatternStatus } from "@/types";
 
 /** Image regen + translate can exceed default serverless limits. */
@@ -50,31 +51,42 @@ export async function PATCH(
   const next = { ...pattern, updatedAt: new Date().toISOString() };
 
   if (body.action === "retranslate") {
-    next.content = await translatePatternContent(next.content, true);
-    const saved = await upsertPattern(next);
+    const { result: saved } = await withAiUsageRun(
+      { patternId: id, label: "retranslate" },
+      async () => {
+        next.content = await translatePatternContent(next.content, true);
+        return upsertPattern(next);
+      }
+    );
     return NextResponse.json({ pattern: saved });
   }
 
   if (body.action === "regenerateImage") {
     try {
-      const img = await generatePatternImage(
-        next.id,
-        next.designSpec,
-        undefined,
-        next.content
+      const { result } = await withAiUsageRun(
+        { patternId: id, label: "regenerate-image" },
+        async () => {
+          const img = await generatePatternImage(
+            next.id,
+            next.designSpec,
+            undefined,
+            next.content
+          );
+          next.imagePath = img.imagePath;
+          next.thumbnailPath = img.thumbnailPath;
+          const saved = await upsertPattern(next);
+          revalidatePatternPages(saved.slug);
+          return {
+            pattern: saved,
+            image: {
+              model: img.model,
+              quality: img.quality,
+              size: img.size,
+            },
+          };
+        }
       );
-      next.imagePath = img.imagePath;
-      next.thumbnailPath = img.thumbnailPath;
-      const saved = await upsertPattern(next);
-      revalidatePatternPages(saved.slug);
-      return NextResponse.json({
-        pattern: saved,
-        image: {
-          model: img.model,
-          quality: img.quality,
-          size: img.size,
-        },
-      });
+      return NextResponse.json(result);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Image generation failed";

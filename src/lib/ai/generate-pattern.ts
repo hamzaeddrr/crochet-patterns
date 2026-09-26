@@ -9,6 +9,7 @@ export async function generatePatternContent(
 ): Promise<{ content: PatternContent; suggestedSlug: string }> {
   const completion = await chatCompletion({
     temperature: 0.25,
+    usageLabel: "pattern-content",
     response_format: { type: "json_object" },
     messages: [
       {

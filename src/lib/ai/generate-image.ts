@@ -102,6 +102,7 @@ export async function generatePatternImage(
 
   let result: {
     data?: Array<{ b64_json?: string | null; url?: string | null }>;
+    usage?: Record<string, unknown>;
   };
 
   try {
@@ -125,6 +126,20 @@ export async function generatePatternImage(
     result = (await openai.images.generate(
       fallback as unknown as Parameters<typeof openai.images.generate>[0]
     )) as typeof result;
+  }
+
+  try {
+    const { logImageUsage } = await import("@/lib/ai/usage-log");
+    await logImageUsage({
+      model,
+      label: "pattern-image",
+      usage: (result.usage as never) || null,
+      quality,
+      size,
+      patternId,
+    });
+  } catch (err) {
+    console.warn("image usage log skipped:", err);
   }
 
   const b64 = result.data?.[0]?.b64_json;

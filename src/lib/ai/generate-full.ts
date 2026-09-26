@@ -19,6 +19,7 @@ import {
 } from "@/lib/data/store";
 import { readAdminSettings } from "@/lib/admin/settings-store";
 import { slugify } from "@/lib/utils";
+import { withAiUsageRun } from "@/lib/ai/usage-log";
 import {
   emptyLocalized,
   type Category,
@@ -44,13 +45,24 @@ export interface GenerateFullPatternInput {
 export async function generateFullPattern(
   input: GenerateFullPatternInput
 ): Promise<CrochetPattern> {
+  const id = randomUUID();
+  const { result } = await withAiUsageRun(
+    { patternId: id, label: "full-generate" },
+    () => generateFullPatternInner(input, id)
+  );
+  return result;
+}
+
+async function generateFullPatternInner(
+  input: GenerateFullPatternInput,
+  id: string
+): Promise<CrochetPattern> {
   let prompt = (input.prompt || "").trim();
   if (!prompt || input.creative) {
     const invented = await inventCreativeSubject();
     prompt = prompt ? `${prompt}. ${invented}` : invented;
   }
 
-  const id = randomUUID();
   const settings = await readAdminSettings();
   const designSpec = await generateDesignSpec(prompt);
   const { content, suggestedSlug } = await generatePatternContent(

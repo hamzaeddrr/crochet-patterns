@@ -22,6 +22,7 @@ const designSpecSchema = z.object({
 export async function inventCreativeSubject(): Promise<string> {
   const completion = await chatCompletion({
     temperature: 0.95,
+    usageLabel: "invent-subject",
     messages: [
       {
         role: "system",
@@ -44,6 +45,7 @@ export async function inventCreativeSubject(): Promise<string> {
 export async function generateDesignSpec(prompt: string): Promise<DesignSpec> {
   const completion = await chatCompletion({
     temperature: 0.4,
+    usageLabel: "design-spec",
     response_format: { type: "json_object" },
     messages: [
       {

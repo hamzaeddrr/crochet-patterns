@@ -10,6 +10,7 @@ async function translateText(
   const lang = target === "fr" ? "French" : "Spanish";
   const completion = await chatCompletion({
     temperature: 0.2,
+    usageLabel: `translate-${target}`,
     messages: [
       {
         role: "system",
