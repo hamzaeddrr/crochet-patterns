@@ -280,8 +280,8 @@ export default function AdminPatternDetailPage() {
       }
       setMessage(
         data.created
-          ? `Category restored: ${data.category?.name?.en || data.category?.id}`
-          : `Category assigned: ${data.category?.name?.en || data.category?.id}`
+          ? `Category saved: ${data.category?.name?.en || data.category?.id}`
+          : `Category linked: ${data.category?.name?.en || data.category?.id}`
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not recover category");
@@ -468,14 +468,20 @@ export default function AdminPatternDetailPage() {
               </p>
             )}
             {needsCategoryRecover && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={recoverCategory}
-                className="mt-3 w-full rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
-              >
-                Recover category from design spec
-              </button>
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={recoverCategory}
+                  className="mt-3 w-full rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+                >
+                  Recover category from design spec
+                </button>
+                <p className="mt-2 text-xs text-slate-500">
+                  Recover saves the category immediately — you do not need Save
+                  changes for it to stick.
+                </p>
+              </>
             )}
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">

@@ -232,12 +232,66 @@ export async function upsertPattern(
   pattern: CrochetPattern
 ): Promise<CrochetPattern> {
   const content = await readSiteContent();
-  const normalized = normalizePattern(pattern);
+  let normalized = normalizePattern(pattern);
+
+  // Pattern saves rewrite the whole site doc. If a prior recover/create wrote a
+  // new category and this read is stale, re-create orphans from the design spec
+  // so Save does not wipe them again.
+  const ensured = await ensureOrphanCategories(normalized, content.categories);
+  content.categories = ensured.categories;
+  normalized = { ...normalized, categoryIds: ensured.categoryIds };
+
   const idx = content.patterns.findIndex((p) => p.id === normalized.id);
   if (idx >= 0) content.patterns[idx] = normalized;
   else content.patterns.unshift(normalized);
   await saveSiteContent(content);
   return normalized;
+}
+
+/**
+ * Recreate any categoryIds that point at missing category rows.
+ */
+async function ensureOrphanCategories(
+  pattern: CrochetPattern,
+  categories: Category[]
+): Promise<{ categories: Category[]; categoryIds: string[] }> {
+  let cats = [...categories];
+  const ids = [...(pattern.categoryIds || [])];
+
+  for (const orphanId of ids.filter(
+    (id) => !cats.some((c) => c.id === id || c.slug === id)
+  )) {
+    const created = await ensureCategoryFromSpec(
+      pattern.designSpec,
+      cats,
+      orphanId
+    );
+    if (created) cats = created.categories;
+  }
+
+  const validIds = ids.filter((id) =>
+    cats.some((c) => c.id === id || c.slug === id)
+  );
+  if (validIds.length > 0) {
+    return { categories: cats, categoryIds: validIds };
+  }
+
+  const fromSpec = await ensureCategoryFromSpec(pattern.designSpec, cats);
+  if (fromSpec) {
+    return {
+      categories: fromSpec.categories,
+      categoryIds: [fromSpec.id],
+    };
+  }
+
+  return {
+    categories: cats,
+    categoryIds: guessCategoryIds(
+      pattern.designSpec.construction,
+      pattern.designSpec.object,
+      cats.map((c) => c.id)
+    ),
+  };
 }
 
 export async function deletePattern(id: string): Promise<boolean> {
@@ -271,61 +325,30 @@ export async function recoverPatternCategory(patternId: string): Promise<{
   const idx = content.patterns.findIndex((p) => p.id === patternId);
   if (idx < 0) return null;
 
-  const pattern = content.patterns[idx];
-  const known = new Set(content.categories.map((c) => c.id));
-  const orphanIds = (pattern.categoryIds || []).filter((id) => !known.has(id));
-  const hasValid = (pattern.categoryIds || []).some((id) => known.has(id));
+  const pattern = normalizePattern(content.patterns[idx]);
+  const beforeIds = new Set(content.categories.map((c) => c.id));
+  const ensured = await ensureOrphanCategories(pattern, content.categories);
+  content.categories = ensured.categories;
 
-  // Prefer restoring the orphan id the pattern still points at
-  const preferredId = orphanIds[0];
-  const ensured = await ensureCategoryFromSpec(
-    pattern.designSpec,
-    content.categories,
-    preferredId
+  const categoryId = ensured.categoryIds[0];
+  const category = content.categories.find(
+    (c) => c.id === categoryId || c.slug === categoryId
   );
-
-  let category: Category | undefined;
-  let created = false;
-  let categoryId: string | undefined;
-
-  if (ensured) {
-    content.categories = ensured.categories;
-    categoryId = ensured.id;
-    created = ensured.created;
-    category = content.categories.find((c) => c.id === ensured.id);
-  }
-
-  if (!categoryId) {
-    const guessed = guessCategoryIds(
-      pattern.designSpec.construction,
-      pattern.designSpec.object,
-      content.categories.map((c) => c.id)
-    );
-    categoryId = guessed[0];
-    category = content.categories.find((c) => c.id === categoryId);
-  }
-
   if (!category || !categoryId) return null;
 
-  // Keep any still-valid ids; replace orphans / empty with recovered id
-  const nextIds = hasValid
-    ? [
-        ...new Set([
-          ...(pattern.categoryIds || []).filter((id) => known.has(id)),
-          categoryId,
-        ]),
-      ]
-    : [categoryId];
-
   const updated: CrochetPattern = {
-    ...normalizePattern(pattern),
-    categoryIds: nextIds,
+    ...pattern,
+    categoryIds: ensured.categoryIds,
     updatedAt: new Date().toISOString(),
   };
   content.patterns[idx] = updated;
   await saveSiteContent(content);
 
-  return { pattern: updated, category, created };
+  return {
+    pattern: updated,
+    category,
+    created: !beforeIds.has(category.id),
+  };
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
