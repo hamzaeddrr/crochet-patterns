@@ -782,18 +782,18 @@ export default function AdminTechniquesPage() {
               />
             </label>
             <label className="block text-sm text-slate-400 sm:col-span-2">
-              YouTube URL — main video (landscape)
+              Normal video URL (landscape 16:9)
               <input
                 value={form.youtubeUrl || ""}
                 onChange={(e) =>
                   setForm({ ...form, youtubeUrl: e.target.value })
                 }
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-                placeholder="https://www.youtube.com/watch?v=…"
+                placeholder="https://www.youtube.com/watch?v=… — wide tutorial"
               />
             </label>
             <label className="block text-sm text-slate-400">
-              Start (seconds)
+              Normal — start (sec)
               <input
                 type="number"
                 min={0}
@@ -807,11 +807,11 @@ export default function AdminTechniquesPage() {
                   })
                 }
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-                placeholder="e.g. 45 — skip intro"
+                placeholder="e.g. 45"
               />
             </label>
             <label className="block text-sm text-slate-400">
-              End (seconds)
+              Normal — end (sec)
               <input
                 type="number"
                 min={0}
@@ -825,22 +825,22 @@ export default function AdminTechniquesPage() {
                   })
                 }
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-                placeholder="e.g. 180 — stop before outro"
+                placeholder="e.g. 180"
               />
             </label>
             <label className="block text-sm text-slate-400 sm:col-span-2">
-              YouTube Shorts URL — 2nd video (optional, vertical)
+              Vertical / Shorts URL (9:16 phone frame)
               <input
                 value={form.youtubeShortUrl || ""}
                 onChange={(e) =>
                   setForm({ ...form, youtubeShortUrl: e.target.value })
                 }
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-                placeholder="https://www.youtube.com/shorts/… or watch URL"
+                placeholder="https://www.youtube.com/shorts/… — always shown vertical"
               />
             </label>
             <label className="block text-sm text-slate-400">
-              Short start (seconds)
+              Vertical — start (sec)
               <input
                 type="number"
                 min={0}
@@ -857,7 +857,7 @@ export default function AdminTechniquesPage() {
               />
             </label>
             <label className="block text-sm text-slate-400">
-              Short end (seconds)
+              Vertical — end (sec)
               <input
                 type="number"
                 min={0}
@@ -874,9 +874,9 @@ export default function AdminTechniquesPage() {
               />
             </label>
             <p className="sm:col-span-2 text-xs text-slate-500">
-              Official YouTube embeds only. Main video is 16:9; Shorts show in a
-              9:16 frame. Start/end skip bumpers — do not re-upload trimmed
-              copies of other creators&apos; videos.
+              Use the first fields for a normal wide video (16:9). Put Shorts /
+              vertical clips only in the second fields — they always render in a
+              phone-shaped 9:16 player. Official YouTube embeds only.
             </p>
             <label className="block text-sm text-slate-400 sm:col-span-2">
               Status

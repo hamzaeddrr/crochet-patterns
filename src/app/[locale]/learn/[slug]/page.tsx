@@ -69,10 +69,10 @@ export default async function LearnTechniquePage({
       {embed || shortEmbed ? (
         <div
           className={cn(
-            "mt-8 gap-5",
+            "mt-8 gap-6",
             hasBothVideos
-              ? "grid items-start lg:grid-cols-[1.2fr_0.55fr]"
-              : "grid"
+              ? "grid items-start lg:grid-cols-[minmax(0,1fr)_auto]"
+              : "flex flex-col items-stretch"
           )}
         >
           {embed ? (
@@ -82,11 +82,12 @@ export default async function LearnTechniquePage({
                 !hasBothVideos && "mx-auto w-full max-w-4xl"
               )}
             >
-              <div className="aspect-video w-full">
+              {/* Normal / landscape tutorial — always 16:9 */}
+              <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                 <iframe
                   src={embed}
                   title={pickLocalized(technique.title, locale)}
-                  className="h-full w-full"
+                  className="absolute inset-0 h-full w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
@@ -100,22 +101,26 @@ export default async function LearnTechniquePage({
           {shortEmbed ? (
             <div
               className={cn(
-                "mx-auto w-full max-w-[320px] overflow-hidden rounded-[1.25rem] border border-line bg-ink/5 lg:mx-0 lg:max-w-none",
-                !embed && "justify-self-center"
+                "mx-auto w-full max-w-[280px] overflow-hidden rounded-[1.35rem] border border-line bg-ink shadow-sm sm:max-w-[300px]",
+                hasBothVideos && "lg:mx-0"
               )}
             >
-              <div className="mx-auto aspect-[9/16] w-full max-h-[min(78vh,640px)]">
+              {/* Vertical / Shorts — always 9:16 phone frame */}
+              <div
+                className="relative w-full bg-black"
+                style={{ paddingBottom: "177.78%" }}
+              >
                 <iframe
                   src={shortEmbed}
                   title={`${pickLocalized(technique.title, locale)} — Short`}
-                  className="h-full w-full"
+                  className="absolute inset-0 h-full w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"
                 />
               </div>
-              <p className="px-4 py-2 text-center text-xs text-muted">
+              <p className="bg-bg px-4 py-2 text-center text-xs text-muted">
                 {t("shortsCredit")}
               </p>
             </div>
