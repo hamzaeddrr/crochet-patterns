@@ -30,6 +30,15 @@ const LOCALES: { code: Locale; label: string }[] = [
   { code: "es", label: "Español" },
 ];
 
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "copy", label: "Copy & SEO" },
+  { id: "pattern", label: "Pattern" },
+  { id: "tools", label: "Tools" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 function withCacheBust(url: string | undefined, version: string | number) {
   if (!url) return "";
   const sep = url.includes("?") ? "&" : "?";
@@ -52,6 +61,7 @@ export default function AdminPatternDetailPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [tab, setTab] = useState<TabId>("overview");
   const [localeTab, setLocaleTab] = useState<Locale>("en");
   const [title, setTitle] = useState<LocalizedString>(emptyLocalized());
   const [summary, setSummary] = useState<LocalizedString>(emptyLocalized());
@@ -67,6 +77,7 @@ export default function AdminPatternDetailPage() {
   const [imageElapsed, setImageElapsed] = useState(0);
   const [imageHint, setImageHint] = useState(IMAGE_PROGRESS_HINTS[0]);
   const [imageVersion, setImageVersion] = useState(0);
+  const [showDesignSpec, setShowDesignSpec] = useState(false);
   const imageElapsedRef = useRef(0);
 
   function applyPatternForm(p: CrochetPattern) {
@@ -83,6 +94,13 @@ export default function AdminPatternDetailPage() {
     setImageVersion(Date.parse(p.updatedAt) || Date.now());
   }
 
+  function reloadCategories() {
+    return fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => setCategories([]));
+  }
+
   useEffect(() => {
     fetch(`/api/admin/patterns/${id}`)
       .then(async (r) => {
@@ -94,10 +112,7 @@ export default function AdminPatternDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    fetch("/api/admin/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.categories || []))
-      .catch(() => setCategories([]));
+    reloadCategories();
   }, []);
 
   useEffect(() => {
@@ -123,6 +138,8 @@ export default function AdminPatternDetailPage() {
   }, [imageBusy]);
 
   const busy = saving || imageBusy;
+  const localeLabel =
+    LOCALES.find((l) => l.code === localeTab)?.label || localeTab;
 
   async function patch(body: Record<string, unknown>) {
     setSaving(true);
@@ -270,14 +287,8 @@ export default function AdminPatternDetailPage() {
         setError(data.error || "Could not recover category");
         return;
       }
-      const p = data.pattern as CrochetPattern;
-      applyPatternForm(p);
-      if (data.category) {
-        setCategories((prev) => {
-          if (prev.some((c) => c.id === data.category.id)) return prev;
-          return [...prev, data.category as Category];
-        });
-      }
+      applyPatternForm(data.pattern as CrochetPattern);
+      await reloadCategories();
       setMessage(
         data.created
           ? `Category saved: ${data.category?.name?.en || data.category?.id}`
@@ -369,21 +380,72 @@ export default function AdminPatternDetailPage() {
 
   return (
     <AdminShell title={pattern.content.title.en}>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Link href="/admin/patterns" className="text-sm text-slate-400">
-          ← Library
-        </Link>
-        <button
-          type="button"
-          onClick={saveAll}
-          disabled={busy}
-          className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? "Saving…" : "Save changes"}
-        </button>
-        {message && <span className="text-sm text-emerald-400">{message}</span>}
-        {error && <span className="text-sm text-rose-400">{error}</span>}
+      {/* Header */}
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-800 pb-4">
+        <div className="min-w-0">
+          <Link
+            href="/admin/patterns"
+            className="text-sm text-slate-400 hover:text-slate-200"
+          >
+            ← Library
+          </Link>
+          <h1 className="mt-1 truncate text-xl font-semibold text-white">
+            {title.en || pattern.content.title.en}
+          </h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="font-mono">/{pattern.slug}</span>
+            <span
+              className={`rounded-md px-2 py-0.5 capitalize ${
+                status === "published"
+                  ? "bg-emerald-500/15 text-emerald-300"
+                  : "bg-slate-800 text-slate-400"
+              }`}
+            >
+              {status}
+            </span>
+            {assignedCategories.map((c) => (
+              <span
+                key={c.id}
+                className="rounded-md bg-slate-800 px-2 py-0.5 text-slate-300"
+              >
+                {c.icon} {c.name.en}
+              </span>
+            ))}
+            {needsCategoryRecover && (
+              <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-amber-300">
+                Category missing
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {status === "published" && (
+            <a
+              href={`/patterns/${pattern.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-rose-300 hover:bg-slate-900"
+            >
+              View on site
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={saveAll}
+            disabled={busy}
+            className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </div>
       </div>
+
+      {(message || error) && (
+        <div className="mb-4 flex flex-wrap gap-3 text-sm">
+          {message && <span className="text-emerald-400">{message}</span>}
+          {error && <span className="text-rose-400">{error}</span>}
+        </div>
+      )}
 
       {imageBusy && (
         <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -400,8 +462,27 @@ export default function AdminPatternDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <div className="space-y-4">
+      {/* Tabs */}
+      <div className="mb-5 flex flex-wrap gap-1 rounded-xl bg-slate-900 p-1">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+              tab === t.id
+                ? "bg-rose-500 text-white"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview */}
+      {tab === "overview" && (
+        <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
           <div className="relative aspect-square overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
             {previewSrc ? (
               <Image
@@ -423,208 +504,200 @@ export default function AdminPatternDetailPage() {
                 <p className="text-sm font-semibold text-amber-100">
                   Generating… {imageElapsed}s
                 </p>
-                <p className="text-xs text-slate-300">{imageHint}</p>
               </div>
             )}
           </div>
-          <label className="block text-sm text-slate-400">
-            Status
-            <select
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-              value={status}
-              disabled={busy}
-              onChange={(e) => setStatus(e.target.value as PatternStatus)}
-            >
-              {(
-                [
-                  "draft",
-                  "reviewed",
-                  "tested",
-                  "published",
-                  "archived",
-                ] as PatternStatus[]
-              ).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-            <p className="text-sm font-medium text-slate-300">Category</p>
-            {assignedCategories.length > 0 ? (
-              <ul className="mt-2 space-y-1 text-sm text-white">
-                {assignedCategories.map((c) => (
-                  <li key={c.id}>
-                    {c.icon} {c.name.en}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-amber-300">
-                {orphanCategoryIds.length
-                  ? `Missing category (${orphanCategoryIds.join(", ")})`
-                  : "No category assigned"}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:col-span-2">
+              <h2 className="text-sm font-semibold text-white">Publishing</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm text-slate-400">
+                  Status
+                  <select
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                    value={status}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setStatus(e.target.value as PatternStatus)
+                    }
+                  >
+                    {(
+                      [
+                        "draft",
+                        "reviewed",
+                        "tested",
+                        "published",
+                        "archived",
+                      ] as PatternStatus[]
+                    ).map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm text-slate-400">
+                  Price (USD)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceUsd}
+                    disabled={busy}
+                    onChange={(e) => setPriceUsd(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={featured}
+                    disabled={busy}
+                    onChange={(e) => setFeatured(e.target.checked)}
+                  />
+                  Featured on homepage
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={free}
+                    disabled={busy}
+                    onChange={(e) => setFree(e.target.checked)}
+                  />
+                  Free download
+                </label>
+              </div>
+              <p className="text-xs text-slate-500">
+                Featured only appears on the site when status is published.
               </p>
-            )}
-            {needsCategoryRecover && (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={recoverCategory}
-                  className="mt-3 w-full rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
-                >
-                  Recover category from design spec
-                </button>
-                <p className="mt-2 text-xs text-slate-500">
-                  Recover saves the category immediately — you do not need Save
-                  changes for it to stick.
+            </section>
+
+            <section
+              className={`rounded-xl border p-4 sm:col-span-2 ${
+                needsCategoryRecover
+                  ? "border-amber-500/40 bg-amber-500/5"
+                  : "border-slate-800 bg-slate-900"
+              }`}
+            >
+              <h2 className="text-sm font-semibold text-white">Category</h2>
+              {assignedCategories.length > 0 ? (
+                <ul className="mt-2 space-y-1 text-sm text-white">
+                  {assignedCategories.map((c) => (
+                    <li key={c.id}>
+                      {c.icon} {c.name.en}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-amber-300">
+                  {orphanCategoryIds.length
+                    ? `Missing category (${orphanCategoryIds.join(", ")})`
+                    : "No category assigned"}
                 </p>
-              </>
-            )}
-          </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={featured}
-              disabled={busy}
-              onChange={(e) => setFeatured(e.target.checked)}
-            />
-            Featured on homepage
-          </label>
-          <p className="text-xs text-slate-500">
-            Featured only shows on the site when status is{" "}
-            <span className="text-slate-300">published</span>. Click{" "}
-            <span className="text-slate-300">Save changes</span> after toggling.
-          </p>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={free}
-              disabled={busy}
-              onChange={(e) => setFree(e.target.checked)}
-            />
-            Free download
-          </label>
-          <label className="block text-sm text-slate-400">
-            Price (USD)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={priceUsd}
-              disabled={busy}
-              onChange={(e) => setPriceUsd(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-            />
-          </label>
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={saveAll}
-              className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-bold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={revalidate}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
-            >
-              Re-run stitch validation
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={autoFixStitches}
-              className="rounded-lg border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
-            >
-              Auto-fix stitch counts
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={retranslate}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
-            >
-              Re-translate FR/ES
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={regenImage}
-              className="rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
-            >
-              {imageBusy
-                ? `Generating image… ${imageElapsed}s`
-                : "Regenerate image"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={rebuildPdf}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-900 disabled:opacity-60"
-            >
-              Rebuild PDF
-            </button>
-            {pattern.pdfPath && (
-              <a
-                href={pattern.pdfPath}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg bg-slate-800 px-3 py-2 text-center text-sm font-bold text-white"
-              >
-                Open PDF (admin)
-              </a>
-            )}
-            {status === "published" && (
-              <a
-                href={`/patterns/${pattern.slug}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-center text-sm text-rose-300"
-              >
-                View on site →
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={remove}
-              className="text-sm text-rose-400 hover:text-rose-300"
-            >
-              Delete pattern
-            </button>
+              )}
+              {needsCategoryRecover && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={recoverCategory}
+                    className="rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+                  >
+                    Recover category from design spec
+                  </button>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Saves immediately — no need to click Save changes for the
+                    category.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-xl border border-slate-800 bg-slate-900 p-4 sm:col-span-2">
+              <h2 className="text-sm font-semibold text-white">Quick facts</h2>
+              <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-slate-500">Object</dt>
+                  <dd className="text-slate-200">{pattern.designSpec.object}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Difficulty</dt>
+                  <dd className="capitalize text-slate-200">
+                    {pattern.designSpec.difficulty}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Construction</dt>
+                  <dd className="text-slate-200">
+                    {pattern.designSpec.construction}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Confidence</dt>
+                  <dd className="capitalize text-slate-200">
+                    {pattern.confidence}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Validation</dt>
+                  <dd
+                    className={
+                      pattern.validation.ok
+                        ? "text-emerald-400"
+                        : "text-amber-300"
+                    }
+                  >
+                    {pattern.validation.ok
+                      ? "OK"
+                      : `${pattern.validation.issues.length} issues`}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Suggested category</dt>
+                  <dd className="text-slate-200">
+                    {pattern.designSpec.suggested_category_name ||
+                      pattern.designSpec.suggested_category_slug ||
+                      "—"}
+                  </dd>
+                </div>
+              </dl>
+            </section>
           </div>
         </div>
+      )}
 
-        <div className="space-y-6">
-          <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-semibold text-white">Copy & meta tags</h2>
-              <div className="flex gap-1">
-                {LOCALES.map((loc) => (
-                  <button
-                    key={loc.code}
-                    type="button"
-                    onClick={() => setLocaleTab(loc.code)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      localeTab === loc.code
-                        ? "bg-rose-500 text-white"
-                        : "bg-slate-800 text-slate-400"
-                    }`}
-                  >
-                    {loc.label}
-                  </button>
-                ))}
-              </div>
+      {/* Copy & SEO */}
+      {tab === "copy" && (
+        <div className="max-w-3xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-400">
+              Editing in <span className="text-slate-200">{localeLabel}</span>
+            </p>
+            <div className="flex gap-1 rounded-lg bg-slate-900 p-1">
+              {LOCALES.map((loc) => (
+                <button
+                  key={loc.code}
+                  type="button"
+                  onClick={() => setLocaleTab(loc.code)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                    localeTab === loc.code
+                      ? "bg-rose-500 text-white"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {loc.label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <h2 className="font-semibold text-white">Page copy</h2>
             <p className="text-xs text-slate-500">
-              Editing {LOCALES.find((l) => l.code === localeTab)?.label}. Meta
-              title and description are used for search engines and social
-              previews.
+              Title and summary shown on the pattern page ({localeLabel})
             </p>
             <label className="block text-sm text-slate-400">
               Title
@@ -633,7 +706,7 @@ export default function AdminPatternDetailPage() {
                 onChange={(e) =>
                   setTitle({ ...title, [localeTab]: e.target.value })
                 }
-                placeholder={`Title (${localeTab})`}
+                placeholder={`Title · ${localeLabel}`}
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
             </label>
@@ -644,11 +717,18 @@ export default function AdminPatternDetailPage() {
                 onChange={(e) =>
                   setSummary({ ...summary, [localeTab]: e.target.value })
                 }
-                rows={3}
-                placeholder={`Summary (${localeTab})`}
+                rows={4}
+                placeholder={`Summary · ${localeLabel}`}
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
             </label>
+          </section>
+
+          <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <h2 className="font-semibold text-white">Meta tags</h2>
+            <p className="text-xs text-slate-500">
+              Search engines and social previews ({localeLabel})
+            </p>
             <label className="block text-sm text-slate-400">
               Meta title
               <input
@@ -656,7 +736,7 @@ export default function AdminPatternDetailPage() {
                 onChange={(e) =>
                   setSeoTitle({ ...seoTitle, [localeTab]: e.target.value })
                 }
-                placeholder={`Meta title (${localeTab})`}
+                placeholder={`Meta title · ${localeLabel}`}
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
             </label>
@@ -670,29 +750,68 @@ export default function AdminPatternDetailPage() {
                     [localeTab]: e.target.value,
                   })
                 }
-                rows={2}
-                placeholder={`Meta description (${localeTab})`}
+                rows={3}
+                placeholder={`Meta description · ${localeLabel}`}
                 className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
               />
             </label>
           </section>
 
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h2 className="font-semibold text-white">Design spec</h2>
-            <pre className="mt-3 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-300">
-              {JSON.stringify(pattern.designSpec, null, 2)}
-            </pre>
-          </section>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={retranslate}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-900 disabled:opacity-60"
+          >
+            Re-translate FR/ES from English
+          </button>
+        </div>
+      )}
 
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h2 className="font-semibold text-white">
-              Validation{" "}
-              {pattern.validation.ok ? (
-                <span className="text-emerald-400">✓</span>
-              ) : (
-                <span className="text-amber-400">⚠</span>
-              )}
-            </h2>
+      {/* Pattern preview */}
+      {tab === "pattern" && (
+        <div className="space-y-4">
+          {pattern.content.components.map((c) => (
+            <section
+              key={c.id}
+              className="rounded-xl border border-slate-800 bg-slate-900 p-5"
+            >
+              <h2 className="font-semibold text-rose-200">{c.name}</h2>
+              <ul className="mt-3 space-y-1.5 text-sm text-slate-300">
+                {c.rounds.map((r) => (
+                  <li key={r.round} className="flex gap-2">
+                    <span className="w-10 shrink-0 font-mono text-slate-500">
+                      R{r.round}
+                    </span>
+                    <span>
+                      {r.instructions}{" "}
+                      <span className="text-slate-500">({r.result})</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {/* Tools */}
+      {tab === "tools" && (
+        <div className="grid max-w-3xl gap-4">
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold text-white">
+                Validation{" "}
+                {pattern.validation.ok ? (
+                  <span className="text-emerald-400">✓</span>
+                ) : (
+                  <span className="text-amber-400">⚠</span>
+                )}
+              </h2>
+              <p className="text-xs capitalize text-slate-500">
+                Confidence: {pattern.confidence}
+              </p>
+            </div>
             {pattern.validation.issues.length === 0 ? (
               <p className="mt-2 text-sm text-slate-400">No issues detected.</p>
             ) : (
@@ -704,32 +823,87 @@ export default function AdminPatternDetailPage() {
                 ))}
               </ul>
             )}
-            <p className="mt-2 text-xs capitalize text-slate-500">
-              Confidence: {pattern.confidence} (admin only)
-            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={revalidate}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-950 disabled:opacity-60"
+              >
+                Re-run validation
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={autoFixStitches}
+                className="rounded-lg border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+              >
+                Auto-fix stitch counts
+              </button>
+            </div>
           </section>
 
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h2 className="font-semibold text-white">Pattern preview</h2>
-            {pattern.content.components.map((c) => (
-              <div key={c.id} className="mt-4">
-                <h3 className="text-rose-200">{c.name}</h3>
-                <ul className="mt-2 space-y-1 text-sm text-slate-300">
-                  {c.rounds.map((r) => (
-                    <li key={r.round}>
-                      <span className="font-mono text-slate-500">
-                        R{r.round}
-                      </span>{" "}
-                      {r.instructions}{" "}
-                      <span className="text-slate-500">({r.result})</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <h2 className="font-semibold text-white">Assets</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={regenImage}
+                className="rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/20 disabled:opacity-60"
+              >
+                {imageBusy
+                  ? `Generating image… ${imageElapsed}s`
+                  : "Regenerate image"}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={rebuildPdf}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-950 disabled:opacity-60"
+              >
+                Rebuild PDF
+              </button>
+              {pattern.pdfPath && (
+                <a
+                  href={pattern.pdfPath}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-bold text-white"
+                >
+                  Open PDF
+                </a>
+              )}
+            </div>
           </section>
+
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <button
+              type="button"
+              onClick={() => setShowDesignSpec((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <h2 className="font-semibold text-white">Design spec</h2>
+              <span className="text-xs text-slate-500">
+                {showDesignSpec ? "Hide" : "Show"}
+              </span>
+            </button>
+            {showDesignSpec && (
+              <pre className="mt-3 max-h-96 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-300">
+                {JSON.stringify(pattern.designSpec, null, 2)}
+              </pre>
+            )}
+          </section>
+
+          <button
+            type="button"
+            onClick={remove}
+            className="justify-self-start text-sm text-rose-400 hover:text-rose-300"
+          >
+            Delete pattern
+          </button>
         </div>
-      </div>
+      )}
     </AdminShell>
   );
 }
